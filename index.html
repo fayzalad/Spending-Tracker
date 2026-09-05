@@ -481,6 +481,12 @@
     <button class="dismiss" id="bannerX" aria-label="Dismiss">×</button>
   </div>
 
+  <div class="banner" id="billBanner" style="display:none" aria-live="polite">
+    <span>🗒</span><span id="billBannerText"></span>
+    <button id="billBannerAct">Review</button>
+    <button class="dismiss" id="billBannerX" aria-label="Dismiss">×</button>
+  </div>
+
   <div class="msg" id="msg"><span class="ic">•</span><span id="msgText"></span></div>
 
   <div class="card" id="saveCard">
@@ -938,7 +944,7 @@
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
     bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[]};
-  let syncTimer=null, bannerOff=false;
+  let syncTimer=null, bannerOff=false, billBannerOff=false;
   let scope='week', kind='out';
   let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
 
@@ -1531,7 +1537,7 @@
     if(!data.deleted)return;
     Object.keys(data.deleted).forEach(k=>{if(data.deleted[k]<cut)delete data.deleted[k]});
   }
-  function save(){data.rev=Date.now();pruneTombs();S.set(KEY,data);render();showBanner();queueSync()}
+  function save(){data.rev=Date.now();pruneTombs();S.set(KEY,data);render();showBanner();showBillBanner();queueSync()}
 
   // merge two copies entry by entry instead of letting one clobber the other
   function mergeStores(a,b){
@@ -2547,7 +2553,7 @@
       {type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download='tracker-backup-'+today()+'.json';a.click();
-    data.lastBackup=today();S.set(KEY,data);showBanner();
+    data.lastBackup=today();S.set(KEY,data);showBanner();showBillBanner();
   };
   $('importBtn').onclick=()=>$('impFile').click();
   $('impFile').onchange=e=>{const f=e.target.files[0];if(!f)return;
@@ -2846,7 +2852,7 @@
       data.gistId=j.id; data.lastBackup=today(); data.syncedRev=data.rev||Date.now(); S.set(KEY,data);
       st.textContent='Synced '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})+
         '. Every change from now on saves itself.';
-      showBanner(); return true;
+      showBanner(); showBillBanner(); return true;
     }catch(e){
       st.textContent=e.message==='401'?'That token was rejected — check it has the gist scope.'
         :'Could not reach GitHub. It will retry on your next change.';
@@ -2864,7 +2870,7 @@
       const tok=data.tok;
       data=mergeStores(data,d); data.tok=tok;
       data.syncedRev=data.rev||0;
-      S.set(KEY,data);render();fillSet();applyTheme();showBanner();
+      S.set(KEY,data);render();fillSet();applyTheme();showBanner();showBillBanner();
       $('syncState').textContent='Pulled the cloud copy — '+data.entries.length+' entries.';
       if(!quiet)alert('Restored '+data.entries.length+' entries.');
     }catch(e){if(!quiet)alert('Could not read the cloud copy.')}
@@ -2897,6 +2903,18 @@
   $('bannerAct').onclick=()=>{if(data.tok)push(false);else{$('setDlg').showModal();
     setTimeout(()=>$('ghTok').focus(),200)}};
   $('bannerX').onclick=()=>{bannerOff=true;showBanner()};
+
+  function showBillBanner(){
+    const b=$('billBanner');
+    if(billBannerOff){b.style.display='none';return}
+    const list=unpaid(cycStart(today()));
+    if(!list.length){b.style.display='none';return}
+    $('billBannerText').innerHTML='<b>'+list.length+(list.length===1?' bill':' bills')+
+      ' not logged yet</b>'+list.map(x=>x.n).join(', ');
+    b.style.display='flex';
+  }
+  $('billBannerAct').onclick=()=>$('dueStat').click();
+  $('billBannerX').onclick=()=>{billBannerOff=true;showBillBanner()};
   $('ghTok').onchange=async e=>{
     data.tok=e.target.value.trim(); S.set(KEY,data);
     if(!data.tok)return;
@@ -3250,7 +3268,7 @@
       oldShots.forEach(e=>{S.del(e.rcpt);delete e.rcpt});
       S.set(KEY,data);
     }
-    applyTheme();fillSet();setKind('out');$('when').value=today();render();showBanner();
+    applyTheme();fillSet();setKind('out');$('when').value=today();render();showBanner();showBillBanner();
     watchTheClock();
     if(data.ratesAt&&diff(data.ratesAt,today())>=1){
       try{

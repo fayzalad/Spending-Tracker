@@ -1345,6 +1345,25 @@ const seed = {
   $('amt').dispatchEvent(new w.Event('input'));
   ok('an empty amount shows nothing', $('dayPreview').textContent === '', $('dayPreview').textContent);
 
+  console.log('\n=== 54. a nudge appears for a bill nobody logged ===');
+  const nudgeSeed = JSON.parse(JSON.stringify(seed));
+  nudgeSeed.bills = [{ id: 'nb1', n: 'Netflix', a: 199, cat: 'Subscriptions', every: 'month' }];
+  dom = await boot(nudgeSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('the banner shows', $('billBanner').style.display === 'flex', $('billBanner').style.display);
+  ok('names the bill', $('billBannerText').textContent.includes('Netflix'), $('billBannerText').textContent);
+  ok('says how many', /1 bill/.test($('billBannerText').textContent), $('billBannerText').textContent);
+  $('billBannerAct').click();
+  ok('review opens the bills sheet', $('subsDlg').open === true);
+  $('closeSubs').click();
+  $('billBannerX').click();
+  ok('dismissing hides it', $('billBanner').style.display === 'none');
+
+  const paidSeed = JSON.parse(JSON.stringify(nudgeSeed));
+  paidSeed.entries.push({ id: 93, amt: 199, cat: 'Subscriptions', note: '', date: '2026-08-31',
+    type: 'out', cyc: '2026-08-28' });
+  dom = await boot(paidSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('a paid bill shows no nudge', $('billBanner').style.display === 'none', $('billBanner').style.display);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
