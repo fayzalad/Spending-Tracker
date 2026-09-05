@@ -1422,6 +1422,79 @@ const seed = {
   ok('the stale price is left untouched, not zeroed', num($('invValue').textContent) > 0,
      $('invValue').textContent);
 
+  console.log('\n=== 57. sheet drag-to-dismiss reads velocity, not just distance ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  const touch = (type, y, target) => target.dispatchEvent(new w.TouchEvent(type,
+    { touches: type === 'touchend' ? [] : [{ clientY: y, identifier: 1 }],
+      changedTouches: [{ clientY: y, identifier: 1 }], bubbles: true, cancelable: true }));
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  $('openFind').click();
+  let grab = $('findDlg').querySelector('.grab');
+  touch('touchstart', 0, grab);
+  touch('touchmove', 30, grab);          // fast: 30px with no delay
+  touch('touchend', 30, grab);
+  await wait(20);
+  ok('a fast flick dismisses well short of the 110px threshold',
+     $('findDlg').style.transform === 'translateY(110%)', $('findDlg').style.transform);
+  await wait(300);
+  ok('and actually closes', $('findDlg').open === false);
+
+  $('findDlg').style.transform = ''; $('findDlg').style.transition = '';
+  $('openFind').click();
+  grab = $('findDlg').querySelector('.grab');
+  touch('touchstart', 0, grab);
+  touch('touchmove', 40, grab);
+  await wait(250);                       // the finger pauses before lifting
+  touch('touchend', 40, grab);
+  await wait(20);
+  ok('but a stale velocity from before a pause does not still count as a flick',
+     $('findDlg').style.transform === '', $('findDlg').style.transform);
+  ok('so it snaps back open, short of the threshold', $('findDlg').open === true);
+  $('findDlg').close();
+
+  $('openFind').click();
+  grab = $('findDlg').querySelector('.grab');
+  touch('touchstart', 0, grab);
+  await wait(200);
+  touch('touchmove', 150, grab);         // slow, but past the 110px distance threshold
+  await wait(200);
+  touch('touchend', 150, grab);
+  await wait(20);
+  ok('a slow drag past the distance threshold dismisses regardless of speed',
+     $('findDlg').style.transform === 'translateY(110%)', $('findDlg').style.transform);
+
+  console.log('\n=== 58. reduced motion skips the drag animation, not the gesture ===');
+  const rmDom = new (require('jsdom').JSDOM)(HTML, {
+    runScripts: 'dangerously', url: 'https://x.github.io/a/', pretendToBeVisual: true,
+    beforeParse(win) {
+      const Real = win.Date;
+      class FD extends Real { constructor(...a) { if (!a.length) super(TODAY + 'T09:00:00Z'); else super(...a); }
+        static now() { return new Real(TODAY + 'T09:00:00Z').getTime(); } }
+      win.Date = FD;
+      win.matchMedia = q => ({ matches: /reduced-motion/.test(q), addEventListener() {}, addListener() {} });
+      win.fetch = () => Promise.reject(0);
+      win.confirm = () => true; win.alert = () => {}; win.scrollTo = () => {};
+      win.localStorage.setItem('slip:v4', JSON.stringify(seed));
+      win.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+      win.HTMLDialogElement.prototype.close = function () { this.open = false;
+        this.dispatchEvent(new win.Event('close')); };
+    }
+  });
+  await wait(200);
+  const rd = rmDom.window.document, r$ = id => rd.getElementById(id);
+  r$('openFind').click();
+  const rGrab = r$('findDlg').querySelector('.grab');
+  const rtouch = (type, y) => rGrab.dispatchEvent(new rmDom.window.TouchEvent(type,
+    { touches: type === 'touchend' ? [] : [{ clientY: y, identifier: 1 }],
+      changedTouches: [{ clientY: y, identifier: 1 }], bubbles: true, cancelable: true }));
+  rtouch('touchstart', 0);
+  rtouch('touchmove', 150);
+  rtouch('touchend', 150);
+  ok('a reduced-motion dismiss jumps straight to closed, no transition',
+     r$('findDlg').style.transition === 'none' && r$('findDlg').open === false,
+     r$('findDlg').style.transition + ' / open=' + r$('findDlg').open);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
