@@ -1061,6 +1061,8 @@ const seed = {
   console.log('\n=== 43. the PDF statement is a real file ===');
   const pdfSeed = JSON.parse(JSON.stringify(seed));
   pdfSeed.goal = 3500;
+  pdfSeed.entries.push({ id: 95, amt: 133.48, cat: 'Groceries', note: 'cents test',
+    date: '2026-08-31', type: 'out', cyc: '2026-08-28' });
   let grabbed = null;
   const pdfDom = new (require('jsdom').JSDOM)(HTML, {
     runScripts: 'dangerously', url: 'https://x.github.io/a/', pretendToBeVisual: true,
@@ -1094,6 +1096,8 @@ const seed = {
   ok('with a PDF header', bytes.slice(0, 5).toString() === '%PDF-', bytes.slice(0, 8).toString());
   ok('a cross-reference table', bytes.includes('xref'));
   ok('and a proper ending', bytes.slice(-6).toString().includes('%%EOF'));
+  ok('the entry list keeps cents, like the CSV does — for reconciling against a bank statement',
+     bytes.toString('latin1').includes('133,48'));   // en-ZA locale formatting, same as "R9 347" elsewhere in the statement
   ok('it paginates long months', (bytes.toString('latin1').match(/\/Type\/Page[^s]/g) || []).length >= 1,
      String((bytes.toString('latin1').match(/\/Type\/Page[^s]/g) || []).length));
 

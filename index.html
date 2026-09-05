@@ -1850,6 +1850,9 @@
 
     const ACCENT=[.357,.239,.961], INK=[.07,.08,.10], MUTE=[.45,.47,.52],
           RULE=[.85,.86,.90], TINT=[.965,.962,.99], GREEN=[0,.53,.36], RED=[.78,.18,.20];
+    // the entry list is for reconciling against a bank statement, so it keeps cents —
+    // matching csv(), unlike R() which rounds to whole rand everywhere else in the app
+    const Rc=n=>'R '+Math.abs(n).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
     const L=48, RGT=547, W=RGT-L, TOP=742, BOT=72;
     const pages=[]; let items=[], y=TOP;
     const push=o=>items.push(o);
@@ -1932,7 +1935,7 @@
       const detail=[e.cur?SYM[e.cur]+e.orig+' at R'+e.rate:'',e.note||'']
         .filter(Boolean).join(' - ').slice(0,38);
       if(detail)txt(detail,L+205,{size:8.5,fill:MUTE});
-      rt((credit?'+':'-')+R(Math.abs(e.amt)).replace('R','R '),
+      rt((credit?'+':'-')+Rc(e.amt),
         {size:9,bold:true,fill:credit?GREEN:INK});
       nl(15);
     });
