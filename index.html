@@ -1976,19 +1976,7 @@
         box.appendChild(h);
         ul=document.createElement('ul'); box.appendChild(ul);
       }
-      const li=document.createElement('li');
-      li.className=isIn(e)||isUnsave(e)?'income':(isSave(e)||isBill(e)?'bill':'');
-      li.innerHTML='<span class="dot">'+(isIn(e)?'↓':isSave(e)?'\u{1F512}'
-          :isUnsave(e)?'\u{1F513}':iconOf(e.cat))+'</span>'+
-        '<span class="n"><s>'+(isIn(e)?(e.note||'Money in'):isSave(e)?'Moved to savings'
-          :isUnsave(e)?'Taken from savings':e.cat)+'</s>'+
-        (!isIn(e)&&e.note?'<em>'+e.note+'</em>':'')+'</span>'+
-        '<span class="a num">'+(isIn(e)||isUnsave(e)?'+'+R(e.amt):R(-e.amt))+'</span>';
-      const x=document.createElement('button');x.className='x';x.textContent='×';
-      x.setAttribute('aria-label','Remove entry');
-      x.onclick=()=>{if(confirm('Delete this entry?')){
-        removeEntry(e);save();runFind()}};
-      li.appendChild(x); ul.appendChild(li);
+      ul.appendChild(entryRow(e,()=>runFind()));
     });
     if(hits.length>80){
       const m=document.createElement('div'); m.className='findsum';
@@ -2229,7 +2217,8 @@
       R(out)+' out'+(inn?' · '+R(inn)+' in':'');
     renderDays($('allList'),list,0,c.t,inMode);
   }
-  $('allQ').oninput=renderAll;
+  let allQTimer=null;
+  $('allQ').oninput=()=>{clearTimeout(allQTimer);allQTimer=setTimeout(renderAll,120)};
   $('closeAll').onclick=()=>$('allDlg').close();
 
   $('openFind').onclick=()=>{$('findQ').value='';runFind();$('findDlg').showModal();
