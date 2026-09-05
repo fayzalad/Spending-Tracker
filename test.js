@@ -1,7 +1,8 @@
 const fs = require('fs');
+const path = require('path');
 const { JSDOM } = require('jsdom');
 
-const HTML = fs.readFileSync('/mnt/user-data/outputs/index.html', 'utf8');
+const HTML = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 const HTML_HAS_RECEIPT = /'Receipt'/.test(HTML);
 const TODAY = '2026-08-31';
 
@@ -515,7 +516,7 @@ const seed = {
   ok('goal reads as met', /already put away/.test($('saveSub').textContent), $('saveSub').textContent);
 
   console.log('\n=== 22. two devices merge instead of clobbering ===');
-  const merge = eval('(' + require('fs').readFileSync('/mnt/user-data/outputs/index.html','utf8')
+  const merge = eval('(' + require('fs').readFileSync(path.join(__dirname, 'index.html'), 'utf8')
       .match(/function mergeStores\(a,b\)\{[\s\S]*?\n  \}/)[0].replace('function mergeStores','function') + ')');
   const phone = { rev: 100, deleted: {}, goal: 3500,
     entries: [{ id: 1, date: '2026-08-28', amt: 100 }, { id: 2, date: '2026-08-29', amt: 200 }] };
@@ -865,7 +866,7 @@ const seed = {
   ok('switching tabs swaps the pane',
      panes.find(p => p.getAttribute('data-pane') === 'data').hidden === false);
   ok('clearing needs a typed confirmation', /DELETE/.test(
-     require('fs').readFileSync('/mnt/user-data/outputs/index.html', 'utf8')));
+     require('fs').readFileSync(path.join(__dirname, 'index.html'), 'utf8')));
 
   console.log('\n=== 36. every sheet can be got out of ===');
   dom = await boot(withBills); w = dom.window; d = w.document; $ = id => d.getElementById(id);
@@ -966,7 +967,7 @@ const seed = {
      d.documentElement.getAttribute('data-glass') === 'on',
      d.documentElement.getAttribute('data-glass'));
   ok('and it is remembered', JSON.parse(w.localStorage.getItem('slip:v4')).glass === true);
-  const css = require('fs').readFileSync('/mnt/user-data/outputs/index.html', 'utf8');
+  const css = require('fs').readFileSync(path.join(__dirname, 'index.html'), 'utf8');
   ok('it uses a real backdrop blur', /backdrop-filter:saturate\(180%\) blur/.test(css));
   ok('and stands down for Reduce Transparency',
      /prefers-reduced-transparency: reduce/.test(css));
@@ -1062,6 +1063,7 @@ const seed = {
       win.fetch = () => Promise.reject(0);
       win.confirm = () => true; win.alert = () => {}; win.scrollTo = () => {};
       win.print = () => { grabbed = 'PRINT_WAS_CALLED'; };
+      win.Blob = require('buffer').Blob; // jsdom's own Blob lacks .arrayBuffer()
       win.localStorage.setItem('slip:v4', JSON.stringify(pdfSeed));
       win.URL.createObjectURL = blob => { grabbed = blob; return 'blob:x'; };
       win.URL.revokeObjectURL = () => {};
@@ -1139,6 +1141,7 @@ const seed = {
       win.matchMedia = () => ({ matches:false, addEventListener(){}, addListener(){} });
       win.fetch = () => Promise.reject(0);
       win.confirm = () => true; win.alert = () => {}; win.scrollTo = () => {};
+      win.Blob = require('buffer').Blob; // jsdom's own Blob lacks .arrayBuffer()
       win.localStorage.setItem('slip:v4', JSON.stringify(many));
       win.URL.createObjectURL = b => { pdfBlob = b; return 'blob:x'; };
       win.URL.revokeObjectURL = () => {};
@@ -1290,7 +1293,7 @@ const seed = {
   ok('and the date ready', $('when').value === '2026-08-30', $('when').value);
   ok('no image is stored anywhere',
      !/scanImage|dataURL|readAsDataURL/.test(
-       require('fs').readFileSync('/mnt/user-data/outputs/index.html', 'utf8')));
+       require('fs').readFileSync(path.join(__dirname, 'index.html'), 'utf8')));
 
   // a slip with no total line falls back to the largest number
   $('scanBtn').click();

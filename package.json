@@ -1,0 +1,11 @@
+{
+  "name": "spending-tracker",
+  "private": true,
+  "description": "Dev-only tooling for running the test suite. index.html deploys standalone with no build step.",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0"
+  }
+}
