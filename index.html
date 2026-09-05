@@ -487,6 +487,12 @@
     <button class="dismiss" id="billBannerX" aria-label="Dismiss">×</button>
   </div>
 
+  <div class="banner" id="incBanner" style="display:none" aria-live="polite">
+    <span>↓</span><span id="incBannerText"></span>
+    <button id="incBannerAct">Log it</button>
+    <button class="dismiss" id="incBannerX" aria-label="Dismiss">×</button>
+  </div>
+
   <div class="msg" id="msg"><span class="ic">•</span><span id="msgText"></span></div>
 
   <div class="card" id="saveCard">
@@ -610,6 +616,11 @@
       <input id="sStart" type="date">
       <button class="ghost" id="resetStart" style="margin-top:8px">Back to the usual day</button>
       <p class="hint" id="startNow" style="margin:8px 0 0"></p></div>
+    <label>Recurring income</label>
+    <p class="hint">Nudges you to log it once a new month starts, instead of retyping it from
+      memory each time. Never logs it for you.</p>
+    <div class="catlist" id="incList"></div>
+    <div class="sp"><button class="ghost" id="addIncBtn">Add recurring income</button></div>
   </section>
 
   <section data-pane="rules" hidden>
@@ -885,6 +896,33 @@
   <button class="danger" id="billDelete" style="display:none">Remove this one</button>
 </dialog>
 
+<dialog id="incDlg">
+  <h2>Recurring income</h2>
+  <p class="hint">Roughly what you get is fine — it only nudges you to log it.</p>
+  <div class="sp"><label for="incName">Name</label>
+    <input id="incName" placeholder="Salary, freelance, side income"></div>
+  <div class="sp"><label for="incAmt">Usual amount</label>
+    <div class="field" style="margin:0">
+      <input id="incAmt" type="number" inputmode="decimal">
+      <select id="incCur" class="cursel">
+        <option value="ZAR">R</option><option value="GBP">£</option>
+        <option value="USD">$</option><option value="GHS">₵</option>
+      </select>
+    </div></div>
+  <div class="two">
+    <div class="sp"><label for="incEvery">How often</label>
+      <select id="incEvery">
+        <option value="month">Every month</option>
+        <option value="year">Once a year</option>
+      </select></div>
+    <div class="sp" id="incMonthRow" style="display:none"><label for="incMonth">Arrives in</label>
+      <select id="incMonth"></select></div>
+  </div>
+  <button class="close" id="incSave">Save</button>
+  <button class="ghost" id="incCancel" style="margin-top:8px">Cancel</button>
+  <button class="danger" id="incDelete" style="display:none">Remove this one</button>
+</dialog>
+
 <dialog id="grpDlg">
   <h2>New group</h2>
   <p class="hint">Groups are the headings your categories sit under. The only thing that changes behaviour is whether a group counts as bills.</p>
@@ -947,8 +985,8 @@
     rates:{ZAR:1,GBP:21.78,USD:15.96,GHS:1.44},ratesAt:'2026-08-25',
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
-    bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[]};
-  let syncTimer=null, bannerOff=false, billBannerOff=false;
+    bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[]};
+  let syncTimer=null, bannerOff=false, billBannerOff=false, incBannerOff=false;
   let scope='week', kind='out';
   let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
 
@@ -1091,6 +1129,16 @@
     .filter(b=>b.every==='year'&&b.spread&&!dueIn(b,cs))
     .reduce((s,b)=>s+billZar(b)/12,0);
   const reserveFor=cs=>unpaid(cs).reduce((s,b)=>s+billZar(b),0)+smoothed(cs);
+
+  // recurring income: a nudge only, never auto-logged, never reserved — so unlike bills
+  // it doesn't need a locked-at-save-time rand figure, just today's rate
+  const expectedIncomes=()=>data.incomes||[];
+  const incZar=inc=>inc.cur&&inc.cur!=='ZAR'?inc.a*(Number(data.rates[inc.cur])||1):inc.a;
+  const incDueIn=(inc,cs)=>(inc.every!=='year')||(D(cycEnd(cs)).getMonth()+1===Number(inc.month||1));
+  // ponytail: matched on amount alone, not category — income entries don't carry one.
+  // fine with one recurring income; a second in the same range could double-match.
+  const incMatch=(inc,cs)=>inCyc(cs).some(e=>isIn(e)&&Math.abs(e.amt-incZar(inc))<=Math.max(50,incZar(inc)*0.25));
+  const dueIncomes=cs=>expectedIncomes().filter(inc=>incDueIn(inc,cs)&&!incMatch(inc,cs));
 
   function calc(){
     const t=today(), cs=cycStart(t), ce=cycEnd(cs);
@@ -1522,7 +1570,7 @@
     if(!data.deleted)return;
     Object.keys(data.deleted).forEach(k=>{if(data.deleted[k]<cut)delete data.deleted[k]});
   }
-  function save(){data.rev=Date.now();pruneTombs();S.set(KEY,data);render();showBanner();showBillBanner();queueSync()}
+  function save(){data.rev=Date.now();pruneTombs();S.set(KEY,data);render();showBanner();showBillBanner();showIncBanner();queueSync()}
 
   // merge two copies entry by entry instead of letting one clobber the other
   function mergeStores(a,b){
@@ -2572,7 +2620,7 @@
       {type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download='tracker-backup-'+today()+'.json';a.click();
-    data.lastBackup=today();S.set(KEY,data);showBanner();showBillBanner();
+    data.lastBackup=today();S.set(KEY,data);showBanner();showBillBanner();showIncBanner();
   };
   $('importBtn').onclick=()=>$('impFile').click();
   $('impFile').onchange=e=>{const f=e.target.files[0];if(!f)return;
@@ -2702,6 +2750,21 @@
       x.onclick=()=>{if(confirm('Stop expecting '+b.n+' each month?')){
         data.bills=expected().filter(o=>o.id!==b.id);save();fillSet()}};
       w.appendChild(x); bl2.appendChild(w);
+    });
+
+    const il=$('incList');
+    il.innerHTML=expectedIncomes().length?'':'<span class="none">None yet — salary, side income.</span>';
+    expectedIncomes().forEach(inc=>{
+      const w=document.createElement('span');
+      w.innerHTML=inc.n+' <b>'+R(incZar(inc))+'</b>'+
+        (inc.every==='year'?' <b>'+MONTHNAMES[(inc.month||1)-1].slice(0,3)+'</b>':'');
+      w.style.cursor='pointer';
+      w.onclick=ev=>{if(ev.target.tagName!=='BUTTON')openInc(inc)};
+      const x=document.createElement('button');x.textContent='×';
+      x.setAttribute('aria-label','Remove '+inc.n);
+      x.onclick=()=>{if(confirm('Stop expecting '+inc.n+'?')){
+        data.incomes=expectedIncomes().filter(o=>o.id!==inc.id);save();fillSet()}};
+      w.appendChild(x); il.appendChild(w);
     });
 
     const gl=$('grpList'); gl.innerHTML='';
@@ -2871,7 +2934,7 @@
       data.gistId=j.id; data.lastBackup=today(); data.syncedRev=data.rev||Date.now(); S.set(KEY,data);
       st.textContent='Synced '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})+
         '. Every change from now on saves itself.';
-      showBanner(); showBillBanner(); return true;
+      showBanner(); showBillBanner(); showIncBanner(); return true;
     }catch(e){
       st.textContent=e.message==='401'?'That token was rejected — check it has the gist scope.'
         :'Could not reach GitHub. It will retry on your next change.';
@@ -2889,7 +2952,7 @@
       const tok=data.tok;
       data=mergeStores(data,d); data.tok=tok;
       data.syncedRev=data.rev||0;
-      S.set(KEY,data);render();fillSet();applyTheme();showBanner();showBillBanner();
+      S.set(KEY,data);render();fillSet();applyTheme();showBanner();showBillBanner();showIncBanner();
       $('syncState').textContent='Pulled the cloud copy — '+data.entries.length+' entries.';
       if(!quiet)alert('Restored '+data.entries.length+' entries.');
     }catch(e){if(!quiet)alert('Could not read the cloud copy.')}
@@ -2934,6 +2997,25 @@
   }
   $('billBannerAct').onclick=()=>$('dueStat').click();
   $('billBannerX').onclick=()=>{billBannerOff=true;showBillBanner()};
+
+  function showIncBanner(){
+    const b=$('incBanner');
+    if(incBannerOff){b.style.display='none';return}
+    const list=dueIncomes(cycStart(today()));
+    if(!list.length){b.style.display='none';return}
+    $('incBannerText').innerHTML='<b>'+(list.length===1?list[0].n:list.length+' incomes')+
+      ' not logged yet</b>'+cycName(cycStart(today()))+' has started';
+    b.style.display='flex';
+  }
+  $('incBannerAct').onclick=()=>{
+    const inc=dueIncomes(cycStart(today()))[0];
+    if(!inc)return;
+    setKind('in');render();
+    $('amt').value=inc.a; $('cur').value=inc.cur||'ZAR'; showConv();
+    $('logCard').scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>$('amt').focus(),350);
+  };
+  $('incBannerX').onclick=()=>{incBannerOff=true;showIncBanner()};
   $('ghTok').onchange=async e=>{
     data.tok=e.target.value.trim(); S.set(KEY,data);
     if(!data.tok)return;
@@ -3263,6 +3345,49 @@
     if($('subsDlg').open)renderSubs();
   };
   $('addBillBtn').onclick=()=>openBill(null);
+
+  let editInc=null;
+  function openInc(inc){
+    editInc=inc||null;
+    $('incName').value=inc?inc.n:'';
+    $('incAmt').value=inc?inc.a:'';
+    $('incCur').value=inc&&inc.cur?inc.cur:'ZAR';
+    $('incMonth').innerHTML=MONTHNAMES.map((m,n)=>'<option value="'+(n+1)+'">'+m+'</option>').join('');
+    $('incEvery').value=inc&&inc.every?inc.every:'month';
+    $('incMonth').value=inc&&inc.month?inc.month:String(D(today()).getMonth()+1);
+    incEveryChanged();
+    $('incDlg').querySelector('h2').textContent=inc?'Edit '+inc.n:'Recurring income';
+    $('incDelete').style.display=inc?'block':'none';
+    $('incDlg').showModal();
+    setTimeout(()=>$('incName').focus(),150);
+  }
+  function incEveryChanged(){
+    $('incMonthRow').style.display=$('incEvery').value==='year'?'block':'none';
+  }
+  $('incEvery').onchange=incEveryChanged;
+  $('incDelete').onclick=()=>{
+    if(!editInc)return;
+    if(!confirm('Stop expecting '+editInc.n+'?'))return;
+    data.incomes=expectedIncomes().filter(o=>o.id!==editInc.id);
+    editInc=null; save(); fillSet(); $('incDlg').close();
+  };
+  $('incCancel').onclick=()=>$('incDlg').close();
+  $('incSave').onclick=()=>{
+    const n=$('incName').value.trim(), a=Number($('incAmt').value), cur=$('incCur').value;
+    if(!n){$('incName').focus();return}
+    if(!a||a<=0){$('incAmt').focus();return}
+    const every=$('incEvery').value;
+    const rec={n,a,cur,every,month:every==='year'?Number($('incMonth').value):undefined};
+    data.incomes=expectedIncomes().slice();
+    if(editInc){
+      data.incomes=data.incomes.map(x=>x.id===editInc.id?Object.assign({id:x.id},rec):x);
+    }else{
+      data.incomes.push(Object.assign(
+        {id:'i'+Date.now()+Math.random().toString(36).slice(2,7)},rec));
+    }
+    editInc=null; save(); fillSet(); $('incDlg').close();
+  };
+  $('addIncBtn').onclick=()=>openInc(null);
   $('addCatBtn').onclick=()=>newCategory();
   $('addHoldBtn').onclick=()=>openHold(null);
   $('addGrpBtn').onclick=()=>{fillGroupSel();$('grpName').value='';
@@ -3287,7 +3412,7 @@
       oldShots.forEach(e=>{S.del(e.rcpt);delete e.rcpt});
       S.set(KEY,data);
     }
-    applyTheme();fillSet();setKind('out');$('when').value=today();render();showBanner();showBillBanner();
+    applyTheme();fillSet();setKind('out');$('when').value=today();render();showBanner();showBillBanner();showIncBanner();
     watchTheClock();
     if(data.ratesAt&&diff(data.ratesAt,today())>=1){
       try{

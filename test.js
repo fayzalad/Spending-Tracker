@@ -1372,6 +1372,38 @@ const seed = {
   dom = await boot(paidSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   ok('a paid bill shows no nudge', $('billBanner').style.display === 'none', $('billBanner').style.display);
 
+  console.log('\n=== 55. recurring income nudges instead of retyping it from memory ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openSet').click(); $('addIncBtn').click();
+  ok('the dialog opens', $('incDlg').open === true);
+  $('incName').value = 'Salary';
+  $('incAmt').value = '20795';
+  $('incSave').click();
+  ok('it saves without logging anything',
+     JSON.parse(w.localStorage.getItem('slip:v4')).entries.length === seed.entries.length);
+  ok('and lists it in settings', $('incList').textContent.includes('Salary'), $('incList').textContent);
+  $('closeSet').click();
+
+  const incSeed = JSON.parse(JSON.stringify(seed));
+  incSeed.incomes = [{ id: 'inc1', n: 'Salary', a: 20795, cur: 'ZAR', every: 'month' }];
+  // this cycle's R20 795 "Money in" entry already matches it — no nudge expected
+  dom = await boot(incSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('a matched income shows no nudge', $('incBanner').style.display === 'none',
+     $('incBanner').style.display);
+
+  const unloggedSeed = JSON.parse(JSON.stringify(incSeed));
+  unloggedSeed.entries = unloggedSeed.entries.filter(e => e.id !== 1);   // remove the Money in entry
+  dom = await boot(unloggedSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('an unmatched income nudges', $('incBanner').style.display === 'flex', $('incBanner').style.display);
+  ok('names it', $('incBannerText').textContent.includes('Salary'), $('incBannerText').textContent);
+  $('kOut').click();
+  $('incBannerAct').click();
+  ok('log it switches to Received', $('kIn').getAttribute('aria-selected') === 'true');
+  ok('and prefills the usual amount', Number($('amt').value) === 20795, $('amt').value);
+  $('addBtn').click();
+  ok('logging it clears the nudge on the next render',
+     $('incBanner').style.display === 'none', $('incBanner').style.display);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
