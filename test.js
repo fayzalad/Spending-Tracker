@@ -925,6 +925,10 @@ const seed = {
      String(d.querySelectorAll('#monthStats div').length));
   ok('and the entries inside it', d.querySelectorAll('#monthList li').length > 0,
      String(d.querySelectorAll('#monthList li').length));
+  ok('a closed month gets a category recap too',
+     $('monthBreakCard').style.display === 'block', $('monthBreakCard').style.display);
+  ok('naming what it went on', $('monthBreakList').textContent.includes('Rent'),
+     $('monthBreakList').textContent);
 
   const firstTitle = $('monthTitle').textContent;
   ok('previous is disabled at the earliest month', $('monthPrev').disabled === true);

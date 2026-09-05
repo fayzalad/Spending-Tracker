@@ -761,6 +761,10 @@
     <button class="dnav" id="monthNext" aria-label="Next month">›</button>
   </div>
   <div class="mstats" id="monthStats"></div>
+  <div class="card" id="monthBreakCard" style="display:none">
+    <div class="ch">Where it went</div>
+    <div id="monthBreakList"></div>
+  </div>
   <div id="monthList"></div>
   <button class="close" id="closeMonth">Done</button>
 </dialog>
@@ -1469,31 +1473,12 @@
 
     // where it went, for the scope on screen
     const bFrom=isW?c.ws:c.cs;
-    const spendIn=data.entries.filter(e=>isSpend(e)&&e.date>=bFrom&&e.date<=c.t);
-    const tally={};
-    spendIn.forEach(e=>{tally[e.cat]=(tally[e.cat]||0)+e.amt});
-    const rows=Object.entries(tally).sort((a,b)=>b[1]-a[1]);
+    const rows=catTally(bFrom,c.t);
     const bc=$('breakCard'), bl=$('breakList');
     if(rows.length){
       bc.style.display='block';
       $('breakTitle').textContent=isW?'Where it went this week':'Where it went this month';
-      const top=Math.max(1,...rows.map(r=>Math.abs(r[1])));
-      bl.innerHTML='';
-      rows.slice(0,8).forEach(([cat,v])=>{
-        const bill=isFixedCat(cat);
-        const r=document.createElement('div'); r.className='brow';
-        r.innerHTML='<span class="dot">'+iconOf(cat)+'</span>'+
-          '<span class="bn">'+cat+(bill?' · bill':'')+'</span>'+
-          '<span class="bt"><i class="'+(bill?'bill':'')+(v<0?' credit':'')+'" style="width:'+
-            Math.max(6,Math.min(100,Math.abs(v)/top*100))+'%"></i></span>'+
-          '<span class="bv num">'+R(v)+'</span>';
-        bl.appendChild(r);
-      });
-      if(rows.length>8){
-        const more=document.createElement('div'); more.className='chsub';
-        more.textContent='and '+(rows.length-8)+' more';
-        bl.appendChild(more);
-      }
+      renderBreakRows(bl,rows);
     }else bc.style.display='none';
 
     const log=$('log');
@@ -1562,6 +1547,34 @@
         arr.map(c=>'<option>'+c+'</option>').join('')+'</optgroup>':'';
     }).join('')+(withNew?
       '<optgroup label="—"><option value="__new">+ Add a category…</option></optgroup>':'');
+  }
+
+  // per-category spend totals over a date range, highest first — used by the live
+  // "where it went" card and the month-recap breakdown alike
+  function catTally(from,to){
+    const tally={};
+    data.entries.filter(e=>isSpend(e)&&e.date>=from&&e.date<=to)
+      .forEach(e=>{tally[e.cat]=(tally[e.cat]||0)+e.amt});
+    return Object.entries(tally).sort((a,b)=>b[1]-a[1]);
+  }
+  function renderBreakRows(container,rows){
+    const top=Math.max(1,...rows.map(r=>Math.abs(r[1])));
+    container.innerHTML='';
+    rows.slice(0,8).forEach(([cat,v])=>{
+      const bill=isFixedCat(cat);
+      const r=document.createElement('div'); r.className='brow';
+      r.innerHTML='<span class="dot">'+iconOf(cat)+'</span>'+
+        '<span class="bn">'+cat+(bill?' · bill':'')+'</span>'+
+        '<span class="bt"><i class="'+(bill?'bill':'')+(v<0?' credit':'')+'" style="width:'+
+          Math.max(6,Math.min(100,Math.abs(v)/top*100))+'%"></i></span>'+
+        '<span class="bv num">'+R(v)+'</span>';
+      container.appendChild(r);
+    });
+    if(rows.length>8){
+      const more=document.createElement('div'); more.className='chsub';
+      more.textContent='and '+(rows.length-8)+' more';
+      container.appendChild(more);
+    }
   }
 
   function entryRow(e,after){
@@ -2267,6 +2280,9 @@
       cell('Day to day',l)+cell('Put away',put)+
       cell('Left over',over,over<0?'bad':'')+
       cell('Days',(diff(cs,cycEnd(cs))+1)).replace(/R(\d+)/,'$1');
+    const brows=catTally(cs,cycEnd(cs));
+    $('monthBreakCard').style.display=brows.length?'block':'none';
+    if(brows.length)renderBreakRows($('monthBreakList'),brows);
     renderDays($('monthList'),es,0,today(),false);
   }
   $('monthPrev').onclick=()=>{const l=allCycles(),i=l.indexOf(monthOpen);if(i>0)openMonth(l[i-1])};
