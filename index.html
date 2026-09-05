@@ -3161,7 +3161,7 @@
   // Anything that fails keeps whatever price it already had.
   async function refreshPrices(){
     const btn=$('invRefresh'); btn.textContent='Updating…';
-    let done=0, failed=0;
+    let done=0; const failedSyms=[];
     const coins=holds().filter(h=>h.kind==='crypto'&&h.sym);
     if(coins.length){
       try{
@@ -3171,9 +3171,9 @@
         const j=await r.json();
         coins.forEach(h=>{
           const px=j[h.sym.toLowerCase()]&&j[h.sym.toLowerCase()].zar;
-          if(px){h.price=px;h.at=today();done++}else failed++;
+          if(px){h.price=px;h.at=today();done++}else failedSyms.push(h.sym);
         });
-      }catch(e){failed+=coins.length}
+      }catch(e){coins.forEach(h=>failedSyms.push(h.sym))}   // CoinGecko unreachable — name every coin, not just "could not fetch"
     }
     for(const h of holds().filter(x=>x.sym&&x.kind!=='crypto'&&x.kind!=='cash')){
       try{
@@ -3181,12 +3181,15 @@
           '&f=sd2t2ohlcv&h&e=csv');
         const rows=(await r.text()).trim().split('\n');
         const close=Number((rows[1]||'').split(',')[6]);
-        if(close>0){h.price=close;h.at=today();done++}else failed++;
-      }catch(e){failed++}
+        if(close>0){h.price=close;h.at=today();done++}else failedSyms.push(h.sym);
+      }catch(e){failedSyms.push(h.sym)}
     }
     if(done)data.invAt=today();
     save();
-    btn.textContent=done?'Updated '+done:(failed?'Could not fetch':'Nothing to fetch');
+    const names=n=>n.length>3?n.slice(0,3).join(', ')+' and '+(n.length-3)+' more':n.join(', ');
+    btn.textContent=!failedSyms.length?(done?'Updated '+done:'Nothing to fetch')
+      :done?'Updated '+done+', not '+names(failedSyms)
+      :'Could not fetch '+names(failedSyms);
     setTimeout(()=>{btn.textContent='Update prices'},2600);
   }
   $('invRefresh').onclick=refreshPrices;

@@ -1404,6 +1404,24 @@ const seed = {
   ok('logging it clears the nudge on the next render',
      $('incBanner').style.display === 'none', $('incBanner').style.display);
 
+  console.log('\n=== 56. a failed price fetch names what it could not reach ===');
+  const priceSeed = JSON.parse(JSON.stringify(seed));
+  priceSeed.holdings = [
+    { id: 'h1', n: 'Bitcoin', kind: 'crypto', sym: 'bitcoin', in: 2000, units: 0.001, price: 1800000, val: 0 },
+    { id: 'h2', n: 'Satrix MSCI World', kind: 'etf', sym: 'stx.jse', in: 5000, units: 10, price: 620, val: 0 }
+  ];
+  dom = await boot(priceSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('invRefresh').click();
+  await new Promise(r => setTimeout(r, 100));
+  ok('names the symbol it could not fetch, not just "could not fetch"',
+     /bitcoin/i.test($('invRefresh').textContent) || /stx/i.test($('invRefresh').textContent),
+     $('invRefresh').textContent);
+  ok('offline in test rejects every price call, so both are named',
+     /bitcoin/i.test($('invRefresh').textContent) && /stx/i.test($('invRefresh').textContent),
+     $('invRefresh').textContent);
+  ok('the stale price is left untouched, not zeroed', num($('invValue').textContent) > 0,
+     $('invValue').textContent);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
