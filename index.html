@@ -566,6 +566,7 @@
       <button class="go" id="addBtn">Add</button>
     </div>
     <div class="conv" id="conv"></div>
+    <div class="conv" id="dayPreview" aria-live="polite"></div>
     <div class="field" id="catRow"><select id="cat" aria-label="Category"></select></div>
     <div class="field"><input id="when" type="date" aria-label="Date"></div>
     <div class="field" id="cycRow" style="display:none"><select id="cyc" aria-label="Counts toward"></select></div>
@@ -939,6 +940,7 @@
     bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[]};
   let syncTimer=null, bannerOff=false;
   let scope='week', kind='out';
+  let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
 
   const $=id=>document.getElementById(id);
   const R=n=>(n<0?'−R':'R')+Math.round(Math.abs(n)).toLocaleString('en-ZA');
@@ -1145,7 +1147,8 @@
   }
 
   function render(){
-    const c=calc(), isW=scope==='week';
+    const c=calc(); lastCalc=c;
+    const isW=scope==='week';
     const budget=isW?c.wBudget:c.mBudget, used=isW?c.wLive:c.cLive;
     const dLeft=isW?c.wDaysLeft:c.mDaysLeft;
     const remain=budget-used, pct=budget>0?used/budget:1;
@@ -2412,10 +2415,10 @@
     if(kind==='out')$('cat').value=n;
   };
   $('cat').onchange=e=>{ if(e.target.value==='__new')newCategory(); };
-  $('kOut').onclick=()=>{setKind('out');render()};
-  $('kIn').onclick=()=>{setKind('in');render()};
-  $('kRef').onclick=()=>{setKind('refund');render()};
-  $('quickIn').onclick=()=>{setKind('in');render();$('logCard').scrollIntoView({behavior:'smooth',block:'center'});
+  $('kOut').onclick=()=>{setKind('out');render();showConv()};
+  $('kIn').onclick=()=>{setKind('in');render();showConv()};
+  $('kRef').onclick=()=>{setKind('refund');render();showConv()};
+  $('quickIn').onclick=()=>{setKind('in');render();showConv();$('logCard').scrollIntoView({behavior:'smooth',block:'center'});
     setTimeout(()=>$('amt').focus(),350)};
   $('tabWeek').onclick=()=>{scope='week';$('tabWeek').setAttribute('aria-selected','true');
     $('tabMonth').setAttribute('aria-selected','false');render()};
@@ -2721,6 +2724,10 @@
     const c=$('cur').value, v=Number($('amt').value);
     $('conv').textContent=(c==='ZAR'||!v)?'':
       SYM[c]+v.toLocaleString('en-ZA')+' = '+R(v*data.rates[c])+' at R'+data.rates[c]+' to the '+c;
+    const zar=c==='ZAR'?v:v*data.rates[c];
+    const daily=lastCalc&&lastCalc.baseDaily;
+    $('dayPreview').textContent=(kind==='out'&&v&&daily>0)
+      ?(zar/daily).toFixed(1)+' days of your allowance':'';
   }
   $('cur').onchange=showConv; $('amt').oninput=showConv;
   ['GBP','USD','GHS'].forEach(k=>{$('r'+k).onchange=e=>{

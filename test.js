@@ -222,6 +222,12 @@ const seed = {
   $('findQ').value = 'rent';
   $('findQ').dispatchEvent(new w.Event('input'));
   ok('search finds rent', $('findSum').textContent.includes('1 entry'), $('findSum').textContent);
+  // typing in search must not trigger a full recompute of the money figures
+  const bigBefore = $('bigNum').textContent;
+  $('findQ').value = 'rent again';
+  $('findQ').dispatchEvent(new w.Event('input'));
+  ok('the big number is untouched by searching', $('bigNum').textContent === bigBefore,
+     bigBefore + ' → ' + $('bigNum').textContent);
   // history
   $('openHist').click();
   ok('history renders', $('histList').textContent.length > 5);
@@ -1324,6 +1330,20 @@ const seed = {
      $('foodCostSub').textContent.includes(' — high'), $('foodCostSub').textContent);
   ok('foodCost itself still reads bad', $('foodCost').className.includes('bad'),
      $('foodCost').className);
+
+  console.log('\n=== 53. days of allowance shows while typing, not just after ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('kOut').click();
+  $('amt').value = '500';
+  $('amt').dispatchEvent(new w.Event('input'));
+  ok('a spend amount previews its cost in days',
+     /days of your allowance/.test($('dayPreview').textContent), $('dayPreview').textContent);
+  $('kIn').click();
+  ok('switching to Received clears it', $('dayPreview').textContent === '', $('dayPreview').textContent);
+  $('kOut').click();
+  $('amt').value = '';
+  $('amt').dispatchEvent(new w.Event('input'));
+  ok('an empty amount shows nothing', $('dayPreview').textContent === '', $('dayPreview').textContent);
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
