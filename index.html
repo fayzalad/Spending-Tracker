@@ -446,7 +446,7 @@
 
   <div class="card hero">
     <span class="cap heroCap" id="scopeCap">Left this week</span>
-    <div class="big num" id="bigNum">R0</div>
+    <div class="big num" id="bigNum" aria-live="polite">R0</div>
     <div class="subline num" id="bigSub">—</div>
 
     <div class="prow" id="rowWeek">
@@ -470,12 +470,12 @@
     <button class="addmoney" id="quickIn">+ Money received</button>
   </div>
 
-  <div class="banner" id="updBanner" style="display:none">
+  <div class="banner" id="updBanner" style="display:none" aria-live="polite">
     <span>⬆</span><span><b>A new version is ready</b>Tap to load it. Your entries are untouched.</span>
     <button id="updNow">Update</button>
   </div>
 
-  <div class="banner" id="banner" style="display:none">
+  <div class="banner" id="banner" style="display:none" aria-live="polite">
     <span id="bannerIcon">⚠</span><span id="bannerText"></span>
     <button id="bannerAct">Back up</button>
     <button class="dismiss" id="bannerX" aria-label="Dismiss">×</button>
@@ -492,7 +492,7 @@
           <b class="num" id="vaultAll">R0</b></div></div>
       <button class="ghost sm" id="withdrawBtn">Take some out</button>
     </div>
-    <div id="sweepBox"></div>
+    <div id="sweepBox" aria-live="polite"></div>
   </div>
 
   <div class="card" id="invCard" style="display:none">
@@ -1406,8 +1406,10 @@
       const h=Math.min(TOP,Math.max(3,Math.max(0,v)/scale*TOP));
       const fx=fixedPer[i]||0;
       // only the part you actually chose to spend counts as running hot
-      b.className='bar'+(v===0?' zero':(v-fx)>lineAt?' hot':'')+(clipped?' clip':'');
+      const hot=v===0?false:(v-fx)>lineAt;
+      b.className='bar'+(v===0?' zero':hot?' hot':'')+(clipped?' clip':'');
       b.style.height=h+'%';
+      if(hot)b.setAttribute('aria-label','over your daily allowance');
       if(fx>0&&v>0){
         const seg=document.createElement('i'); seg.className='fix';
         seg.style.height=Math.min(100,fx/v*100)+'%';
@@ -1421,7 +1423,8 @@
         b.appendChild(lab);
       }
       const d=addDays(start,i);
-      b.title=D(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})+' · '+R(v);
+      b.title=D(d).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})+' · '+R(v)+
+        (hot?' · over your daily allowance':'');
       col.appendChild(b);bars.appendChild(col);
       if(isW){const s=document.createElement('span');s.textContent=names[i];
         if(d===c.t)s.className='now';dow.appendChild(s)}
@@ -1451,7 +1454,8 @@
       const costDays=c.baseDaily>0?avg/c.baseDaily:0;
       $('foodCost').textContent=costDays?costDays.toFixed(1):'—';
       $('foodCost').className='num '+(costDays>=2?'bad':costDays>=1?'warn':'');
-      $('foodCostSub').textContent='days of allowance per order';
+      $('foodCostSub').textContent='days of allowance per order'+
+        (costDays>=2?' — high':costDays>=1?' — above average':'');
     }else fc.style.display='none';
 
     // where it went, for the scope on screen

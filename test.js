@@ -1303,6 +1303,28 @@ const seed = {
   ok('and says it guessed', /largest amount/.test($('scanFound').textContent),
      $('scanFound').textContent);
 
+  console.log('\n=== 52. dynamic state is not signalled by colour alone ===');
+  ok('the big number is announced to screen readers',
+     d.getElementById('bigNum').getAttribute('aria-live') === 'polite');
+  ok('so is the update banner', d.getElementById('updBanner').getAttribute('aria-live') === 'polite');
+  ok('so is the backup banner', d.getElementById('banner').getAttribute('aria-live') === 'polite');
+  ok('so is the sweep/shortfall box', d.getElementById('sweepBox').getAttribute('aria-live') === 'polite');
+
+  const hotSeed = JSON.parse(JSON.stringify(seed));
+  hotSeed.entries.push({ id: 92, amt: 5000, cat: 'Uber Eats', note: 'huge order',
+    date: '2026-08-31', type: 'out', cyc: '2026-08-28' });
+  dom = await boot(hotSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  const hotBar = [...d.querySelectorAll('.bar.hot')][0];
+  ok('a bar over the daily allowance is flagged in more than colour',
+     !!hotBar && hotBar.getAttribute('aria-label') === 'over your daily allowance',
+     hotBar && hotBar.getAttribute('aria-label'));
+  ok('its tooltip says so too', !!hotBar && / over your daily allowance$/.test(hotBar.title),
+     hotBar && hotBar.title);
+  ok('a costly order is flagged in text, not just colour',
+     $('foodCostSub').textContent.includes(' — high'), $('foodCostSub').textContent);
+  ok('foodCost itself still reads bad', $('foodCost').className.includes('bad'),
+     $('foodCost').className);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
