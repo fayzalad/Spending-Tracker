@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-06-1">
+<meta name="slip-build" content="2026-09-06-2">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -649,6 +649,11 @@
     <label>Investments</label>
     <p class="hint">Tracked separately from your spending. Nothing here affects your allowance.</p>
     <div class="sp"><button class="ghost" id="addHoldBtn">Add a holding</button></div>
+    <div class="sp"><label for="avKey">Alpha Vantage API key</label>
+      <input id="avKey" type="password" placeholder="Free key, for stock/ETF prices" autocomplete="off">
+      <p class="hint" style="margin:8px 0 0">Needed to update stock and ETF prices — crypto works
+        without one. Free, no card: <a href="https://www.alphavantage.co/support/#api-key"
+        target="_blank" rel="noopener">alphavantage.co/support/#api-key</a>.</p></div>
     <label>Groups</label>
     <div class="catlist" id="grpList"></div>
     <div class="sp"><button class="ghost" id="addGrpBtn">Add a group</button></div>
@@ -985,7 +990,7 @@
     rates:{ZAR:1,GBP:21.78,USD:15.96,GHS:1.44},ratesAt:'2026-08-25',
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
-    bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[]};
+    bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[],avKey:''};
   let syncTimer=null, bannerOff=false, billBannerOff=false, incBannerOff=false;
   let scope='week', kind='out';
   let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
@@ -2823,6 +2828,7 @@
     fillGauge();
     $('buildLine').textContent='Version '+BUILD+'.';
     $('ghTok').value=data.tok||'';
+    $('avKey').value=data.avKey||'';
     if(data.tok&&data.gistId)$('syncState').innerHTML='Connected \u00b7 last saved '+
       (data.lastBackup||'never')+'. Changes sync a few seconds after you make them.<br>'+
       'Gist ID for another device: <b>'+data.gistId+'</b>';
@@ -3050,6 +3056,7 @@
     }
     push(false);
   };
+  $('avKey').onchange=e=>{data.avKey=e.target.value.trim();save()};
   $('pullNow').onclick=()=>pull(false);
   const holds=()=>data.holdings||[];
   const holdValue=h=>(h.units>0&&h.price>0)?h.units*h.price:(Number(h.val)||0);
@@ -3198,19 +3205,29 @@
         });
       }catch(e){coins.forEach(h=>failedSyms.push(h.sym))}   // CoinGecko unreachable — name every coin, not just "could not fetch"
     }
-    for(const h of holds().filter(x=>x.sym&&x.kind!=='crypto'&&x.kind!=='cash')){
+    const stocks=holds().filter(x=>x.sym&&x.kind!=='crypto'&&x.kind!=='cash');
+    let noKey=false;
+    if(stocks.length&&!data.avKey){
+      noKey=true; stocks.forEach(h=>failedSyms.push(h.sym));
+    }else for(const h of stocks){
       try{
-        const r=await fetch('https://stooq.com/q/l/?s='+encodeURIComponent(h.sym.toLowerCase())+
-          '&f=sd2t2ohlcv&h&e=csv');
-        const rows=(await r.text()).trim().split('\n');
-        const close=Number((rows[1]||'').split(',')[6]);
-        if(close>0){h.price=close;h.at=today();done++}else failedSyms.push(h.sym);
+        // stooq's CSV endpoint (used here previously) was discontinued and never sent CORS
+        // headers anyway, so it could never work from a real browser — alphavantage does both
+        const r=await fetch('https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol='+
+          encodeURIComponent(h.sym)+'&apikey='+encodeURIComponent(data.avKey));
+        const j=await r.json();
+        const px=Number(j['Global Quote']&&j['Global Quote']['05. price']);
+        if(px>0){h.price=px;h.at=today();done++}else failedSyms.push(h.sym);
       }catch(e){failedSyms.push(h.sym)}
+      // ponytail: free tier is rate-limited per minute; a short gap keeps a full
+      // portfolio refresh under it without needing real request-counting
+      await new Promise(res=>setTimeout(res,300));
     }
     if(done)data.invAt=today();
     save();
     const names=n=>n.length>3?n.slice(0,3).join(', ')+' and '+(n.length-3)+' more':n.join(', ');
-    btn.textContent=!failedSyms.length?(done?'Updated '+done:'Nothing to fetch')
+    btn.textContent=noKey&&!done?'Add an Alpha Vantage key in Settings for '+names(failedSyms)
+      :!failedSyms.length?(done?'Updated '+done:'Nothing to fetch')
       :done?'Updated '+done+', not '+names(failedSyms)
       :'Could not fetch '+names(failedSyms);
     setTimeout(()=>{btn.textContent='Update prices'},2600);

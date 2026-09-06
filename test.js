@@ -1497,12 +1497,20 @@ const seed = {
 
   console.log('\n=== 59. prices refresh once a day on their own, not on a schedule that needs the app open ===');
   const staleSeed = JSON.parse(JSON.stringify(seed));
-  staleSeed.holdings = [{ id: 'h1', n: 'AMD', kind: 'stock', sym: 'amd', in: 2427.20, units: 0, price: 0, val: 2652.71 }];
+  staleSeed.holdings = [{ id: 'h1', n: 'AMD', kind: 'stock', sym: 'AMD.US', in: 2427.20, units: 0, price: 0, val: 2652.71 }];
+  staleSeed.avKey = 'demo';
   // no invAt at all — never refreshed before
   dom = await boot(staleSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
-  await wait(150);
+  await wait(500);
   ok('it tries on its own at boot, with nobody tapping the button',
      /Could not fetch/.test($('invRefresh').textContent), $('invRefresh').textContent);
+
+  const noKeySeed = JSON.parse(JSON.stringify(staleSeed));
+  delete noKeySeed.avKey;
+  dom = await boot(noKeySeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  await wait(500);
+  ok('and asks for a key by name when there is none',
+     /Add an Alpha Vantage key/.test($('invRefresh').textContent), $('invRefresh').textContent);
 
   const freshSeed = JSON.parse(JSON.stringify(staleSeed));
   freshSeed.invAt = TODAY;   // already refreshed today
