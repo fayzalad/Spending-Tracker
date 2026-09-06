@@ -1495,6 +1495,22 @@ const seed = {
      r$('findDlg').style.transition === 'none' && r$('findDlg').open === false,
      r$('findDlg').style.transition + ' / open=' + r$('findDlg').open);
 
+  console.log('\n=== 59. prices refresh once a day on their own, not on a schedule that needs the app open ===');
+  const staleSeed = JSON.parse(JSON.stringify(seed));
+  staleSeed.holdings = [{ id: 'h1', n: 'AMD', kind: 'stock', sym: 'amd', in: 2427.20, units: 0, price: 0, val: 2652.71 }];
+  // no invAt at all — never refreshed before
+  dom = await boot(staleSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  await wait(150);
+  ok('it tries on its own at boot, with nobody tapping the button',
+     /Could not fetch/.test($('invRefresh').textContent), $('invRefresh').textContent);
+
+  const freshSeed = JSON.parse(JSON.stringify(staleSeed));
+  freshSeed.invAt = TODAY;   // already refreshed today
+  dom = await boot(freshSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  await wait(150);
+  ok('but not again the same day', $('invRefresh').textContent === 'Update prices',
+     $('invRefresh').textContent);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

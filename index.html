@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-05-1">
+<meta name="slip-build" content="2026-09-06-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -3450,6 +3450,11 @@
           data.ratesAt=today(); S.set(KEY,data); fillSet(); render();
         }
       }catch(e){}
+    }
+    // once a day, on open — not hourly, and not while closed: a PWA on iOS can't run in
+    // the background, so "the moment you open it" is the honest version of automatic
+    if(holds().some(h=>h.sym)&&(!data.invAt||diff(data.invAt,today())>=1)){
+      refreshPrices().catch(()=>{});
     }
     document.addEventListener('visibilitychange',()=>{
       if(document.visibilityState!=='visible'||!data.tok||!data.gistId)return;
