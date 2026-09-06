@@ -1501,7 +1501,7 @@ const seed = {
   staleSeed.avKey = 'demo';
   // no invAt at all — never refreshed before
   dom = await boot(staleSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
-  await wait(500);
+  await wait(1500);
   ok('it tries on its own at boot, with nobody tapping the button',
      /Could not fetch/.test($('invRefresh').textContent), $('invRefresh').textContent);
 

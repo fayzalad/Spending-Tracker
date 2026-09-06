@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-06-3">
+<meta name="slip-build" content="2026-09-06-4">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -3248,9 +3248,11 @@
         const px=Number(j['Global Quote']&&j['Global Quote']['05. price']);
         if(px>0){h.price=px;h.at=today();done++}else failedSyms.push(h.sym);
       }catch(e){failedSyms.push(h.sym)}
-      // ponytail: free tier is rate-limited per minute; a short gap keeps a full
-      // portfolio refresh under it without needing real request-counting
-      await new Promise(res=>setTimeout(res,300));
+      // alphavantage's actual burst limit is ~1 request/second (confirmed against a live
+      // key: a tighter gap silently dropped some quotes to a rate-limit response, not an
+      // error — verified live, not assumed). ponytail: still a fixed gap, not real
+      // request-counting, but matches what's actually enforced rather than a guess.
+      await new Promise(res=>setTimeout(res,1100));
     }
     if(done)data.invAt=today();
     save();
