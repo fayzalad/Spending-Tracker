@@ -1519,6 +1519,50 @@ const seed = {
   ok('but not again the same day', $('invRefresh').textContent === 'Update prices',
      $('invRefresh').textContent);
 
+  console.log('\n=== 60. a holding shows in whatever currency it actually is ===');
+  const usdSeed = JSON.parse(JSON.stringify(seed));
+  usdSeed.holdings = [
+    { id: 'h1', n: 'AMD', kind: 'stock', cur: 'USD', sym: 'AMD.US', in: 152.08, units: 0, price: 0, val: 166.21 },
+    { id: 'h2', n: 'Vanguard S&P 500', kind: 'etf', cur: 'USD', sym: 'VOO.US', in: 700, units: 0, price: 0, val: 791.79 }
+  ];
+  dom = await boot(usdSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('the total shows in dollars, not rand, when every holding is USD',
+     $('invValue').textContent.startsWith('$'), $('invValue').textContent);
+  ok('right total: 166.21 + 791.79 = 958.00',
+     Math.abs(num($('invValue').textContent) - 958) < 0.5, $('invValue').textContent);
+  ok('put-in figure is in dollars too', $('invSub').textContent.includes('$852'), $('invSub').textContent);
+  ok('each row shows its own holding in dollars',
+     [...d.querySelectorAll('#invList .iv b')].every(el => el.textContent.startsWith('$')),
+     [...d.querySelectorAll('#invList .iv b')].map(el => el.textContent).join(', '));
+
+  const mixedSeed = JSON.parse(JSON.stringify(seed));
+  mixedSeed.holdings = [
+    { id: 'h1', n: 'AMD', kind: 'stock', cur: 'USD', sym: 'AMD.US', in: 152.08, units: 0, price: 0, val: 166.21 },
+    { id: 'h2', n: 'Satrix', kind: 'etf', cur: 'ZAR', sym: '', in: 5000, units: 0, price: 0, val: 6200 }
+  ];
+  dom = await boot(mixedSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('a mixed-currency portfolio falls back to rand for the total, rather than adding unlike numbers',
+     $('invValue').textContent.startsWith('R'), $('invValue').textContent);
+  ok('but each row still shows its own currency correctly',
+     d.querySelector('#invList .iv b').textContent.startsWith('$') ||
+     [...d.querySelectorAll('#invList .iv b')].some(el => el.textContent.startsWith('$')),
+     [...d.querySelectorAll('#invList .iv b')].map(el => el.textContent).join(', '));
+
+  console.log('\n=== 61. the holding dialog labels follow the chosen currency ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openSet').click(); $('addHoldBtn').click();
+  ok('starts in rand by default', $('holdInLabel').textContent.includes('(R)'), $('holdInLabel').textContent);
+  $('holdCur').value = 'USD';
+  $('holdCur').dispatchEvent(new w.Event('change'));
+  ok('switches to dollars', $('holdInLabel').textContent.includes('($)'), $('holdInLabel').textContent);
+  ok('worth-now label follows too', $('holdValLabel').textContent.includes('($)'), $('holdValLabel').textContent);
+  $('holdName').value = 'Test holding';
+  $('holdIn').value = '100';
+  $('holdVal').value = '110';
+  $('holdSave').click();
+  const savedHold = JSON.parse(w.localStorage.getItem('slip:v4')).holdings[0];
+  ok('the currency is saved on the holding', savedHold.cur === 'USD', savedHold.cur);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

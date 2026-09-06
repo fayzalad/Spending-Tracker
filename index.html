@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-06-2">
+<meta name="slip-build" content="2026-09-06-3">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -835,21 +835,30 @@
         <option value="cash">Cash / savings</option>
         <option value="other">Other</option>
       </select></div>
-    <div class="sp"><label for="holdSym">Ticker or coin id</label>
-      <input id="holdSym" placeholder="stxwdm.jo / bitcoin"></div>
+    <div class="sp"><label for="holdCur">Currency</label>
+      <select id="holdCur">
+        <option value="ZAR">R (ZAR)</option>
+        <option value="USD">$ (USD)</option>
+        <option value="GBP">£ (GBP)</option>
+        <option value="GHS">₵ (GHS)</option>
+      </select></div>
   </div>
+  <div class="sp"><label for="holdSym">Ticker or coin id</label>
+    <input id="holdSym" placeholder="stxwdm.jo / bitcoin / AAPL"></div>
   <div class="two">
-    <div class="sp"><label for="holdIn">Money put in (R)</label>
+    <div class="sp"><label for="holdIn" id="holdInLabel">Money put in (R)</label>
       <input id="holdIn" type="number" inputmode="decimal"></div>
-    <div class="sp"><label for="holdVal">Worth now (R)</label>
+    <div class="sp"><label for="holdVal" id="holdValLabel">Worth now (R)</label>
       <input id="holdVal" type="number" inputmode="decimal"></div>
   </div>
   <div class="two">
     <div class="sp"><label for="holdUnits">Units held</label>
       <input id="holdUnits" type="number" inputmode="decimal" placeholder="optional"></div>
-    <div class="sp"><label for="holdPrice">Price each (R)</label>
+    <div class="sp"><label for="holdPrice" id="holdPriceLabel">Price each (R)</label>
       <input id="holdPrice" type="number" inputmode="decimal" placeholder="optional"></div>
   </div>
+  <p class="hint">The currency is just how it's shown here — put in and worth stay in whatever you
+    actually deal with (e.g. USD for a US brokerage). Nothing converts unless you tell it to.</p>
   <p class="hint">Give units and a price and the value works itself out. A ticker or coin id also
     lets Update prices fetch it. Otherwise just type what it is worth.</p>
   <div class="sp"><label for="holdNote">Note</label><input id="holdNote" placeholder="Optional"></div>
@@ -3062,6 +3071,17 @@
   const holdValue=h=>(h.units>0&&h.price>0)?h.units*h.price:(Number(h.val)||0);
   const investedTotal=()=>holds().reduce((s,h)=>s+(Number(h.in)||0),0);
   const worthTotal=()=>holds().reduce((s,h)=>s+holdValue(h),0);
+  // a holding's own currency is just how it's displayed — R() everywhere else in the app is
+  // untouched, this only affects the Investments card and its dialog
+  const RC=(n,cur)=>(!cur||cur==='ZAR')?R(n):
+    (n<0?'−':'')+SYM[cur]+Math.round(Math.abs(n)).toLocaleString('en-ZA');
+  // the total only makes sense in one currency at a time — while every holding shares one,
+  // that's exact; ponytail: a genuinely mixed portfolio falls back to a raw ZAR sum here,
+  // not a real conversion, since nothing has asked for that yet
+  const investCur=()=>{
+    const curs=[...new Set(holds().map(h=>h.cur||'ZAR'))];
+    return curs.length===1?curs[0]:'ZAR';
+  };
 
   // Which shop maps to which category. Cheap, but it gets the common ones right.
   const SHOPHINTS=[
@@ -3150,11 +3170,20 @@
   };
 
   let editHold=null;
+  function holdCurChanged(){
+    const sym=SYM[$('holdCur').value]||'R';
+    $('holdInLabel').textContent='Money put in ('+sym+')';
+    $('holdValLabel').textContent='Worth now ('+sym+')';
+    $('holdPriceLabel').textContent='Price each ('+sym+')';
+  }
+  $('holdCur').onchange=holdCurChanged;
   function openHold(h){
     editHold=h||null;
     $('holdTitle').textContent=h?'Edit '+h.n:'New holding';
     $('holdName').value=h?h.n:'';
     $('holdKind').value=h?(h.kind||'etf'):'etf';
+    $('holdCur').value=h&&h.cur?h.cur:'ZAR';
+    holdCurChanged();
     $('holdSym').value=h&&h.sym?h.sym:'';
     $('holdIn').value=h&&h.in?h.in:'';
     $('holdVal').value=h?(Math.round(holdValue(h)*100)/100||''):'';
@@ -3175,7 +3204,7 @@
   $('holdSave').onclick=()=>{
     const n=$('holdName').value.trim();
     if(!n){$('holdName').focus();return}
-    const rec={n,kind:$('holdKind').value,sym:$('holdSym').value.trim(),
+    const rec={n,kind:$('holdKind').value,cur:$('holdCur').value,sym:$('holdSym').value.trim(),
       in:Number($('holdIn').value)||0,units:Number($('holdUnits').value)||0,
       price:Number($('holdPrice').value)||0,val:Number($('holdVal').value)||0,
       note:$('holdNote').value.trim()};
@@ -3271,11 +3300,11 @@
       $('invFoot').textContent='Kept separate from your spending money.';
       return;
     }
-    const worth=worthTotal(), put=investedTotal(), gain=worth-put;
-    $('invValue').textContent=R(worth);
+    const worth=worthTotal(), put=investedTotal(), gain=worth-put, dispCur=investCur();
+    $('invValue').textContent=RC(worth,dispCur);
     $('invValue').className='num '+(put>0?(gain>=0?'up':'down'):'');
     $('invSub').textContent=put>0
-      ? R(put)+' put in · '+(gain>=0?'up ':'down ')+R(Math.abs(gain))+
+      ? RC(put,dispCur)+' put in · '+(gain>=0?'up ':'down ')+RC(Math.abs(gain),dispCur)+
         ' ('+(gain/put*100).toFixed(1)+'%)'
       : 'tap to add another';
     list.innerHTML='';
@@ -3287,16 +3316,16 @@
       row.innerHTML='<span class="dot">'+
         ({etf:'📈',stock:'🏦',crypto:'₿',cash:'💰',other:'🏷'}[h.kind]||'🏷')+'</span>'+
         '<span class="in"><s>'+h.n+'</s><em>'+
-        [h.units>0?h.units+' at '+R(h.price):'',h.sym||'',h.note||'']
+        [h.units>0?h.units+' at '+RC(h.price,h.cur):'',h.sym||'',h.note||'']
           .filter(Boolean).join(' · ')+'</em></span>'+
-        '<span class="iv"><b>'+R(v)+'</b><span class="'+(g>=0?'up':'down')+'">'+
-        (h.in>0?((g>=0?'+':'')+R(g)):'')+'</span></span>';
+        '<span class="iv"><b>'+RC(v,h.cur)+'</b><span class="'+(g>=0?'up':'down')+'">'+
+        (h.in>0?((g>=0?'+':'')+RC(g,h.cur)):'')+'</span></span>';
       list.appendChild(row);
     });
     snapshotInvest();
     const tr=investTrend();
     $('invFoot').textContent=(tr
-      ? (tr.change>=0?'Up ':'Down ')+R(Math.abs(tr.change))+' ('+tr.pct.toFixed(1)+
+      ? (tr.change>=0?'Up ':'Down ')+RC(Math.abs(tr.change),dispCur)+' ('+tr.pct.toFixed(1)+
         '%) over '+tr.days+(tr.days===1?' day':' days')+'. '
       : '')+
       'Separate from your spending money'+
