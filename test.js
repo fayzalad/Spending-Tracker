@@ -903,7 +903,7 @@ const seed = {
   console.log('\n=== 37. navigation moved to a bottom bar ===');
   dom = await boot(twoMonths); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   ok('there is a bottom bar', !!$('tabbar'));
-  ok('with four destinations', $('tabbar').querySelectorAll('button').length === 4,
+  ok('with five destinations', $('tabbar').querySelectorAll('button').length === 5,
      String($('tabbar').querySelectorAll('button').length));
   ok('the header is just the name', d.querySelector('.top').textContent.trim() === 'Tracker',
      d.querySelector('.top').textContent.trim());
@@ -1229,7 +1229,9 @@ const seed = {
     { id: 'h3', n: 'Emergency fund', kind: 'cash', sym: '', in: 3000, units: 0, price: 0, val: 3050 }
   ];
   dom = await boot(inv); w = dom.window; d = w.document; $ = id => d.getElementById(id);
-  ok('the card appears', $('invCard').style.display === 'block');
+  ok('lives behind its own tab, not the daily dashboard', !!$('openInvest'));
+  $('openInvest').click();
+  ok('opens its own sheet', $('investDlg').open === true);
   // 6200 + (0.001 x 1 800 000 = 1800) + 3050 = 11 050 against 10 000 in
   ok('it totals what things are worth', num($('invValue').textContent) === 11050,
      $('invValue').textContent);
@@ -1274,6 +1276,7 @@ const seed = {
     { d: '2026-07-25', w: 5600, i: 5000 }
   ];
   dom = await boot(hist); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openInvest').click();
   ok('it reports the trend against a month ago',
      /Up R400 \(7.1%\) over 37 days/.test($('invFoot').textContent),
      $('invFoot').textContent);
@@ -1411,6 +1414,7 @@ const seed = {
     { id: 'h2', n: 'Satrix MSCI World', kind: 'etf', sym: 'stx.jse', in: 5000, units: 10, price: 620, val: 0 }
   ];
   dom = await boot(priceSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openInvest').click();
   $('invRefresh').click();
   await new Promise(r => setTimeout(r, 100));
   ok('names the symbol it could not fetch, not just "could not fetch"',
@@ -1526,6 +1530,7 @@ const seed = {
     { id: 'h2', n: 'Vanguard S&P 500', kind: 'etf', cur: 'USD', sym: 'VOO.US', in: 700, units: 0, price: 0, val: 791.79 }
   ];
   dom = await boot(usdSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openInvest').click();
   ok('the total shows in dollars, not rand, when every holding is USD',
      $('invValue').textContent.startsWith('$'), $('invValue').textContent);
   ok('right total: 166.21 + 791.79 = 958.00',
@@ -1541,6 +1546,7 @@ const seed = {
     { id: 'h2', n: 'Satrix', kind: 'etf', cur: 'ZAR', sym: '', in: 5000, units: 0, price: 0, val: 6200 }
   ];
   dom = await boot(mixedSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openInvest').click();
   ok('a mixed-currency portfolio falls back to rand for the total, rather than adding unlike numbers',
      $('invValue').textContent.startsWith('R'), $('invValue').textContent);
   ok('but each row still shows its own currency correctly',
@@ -1550,7 +1556,7 @@ const seed = {
 
   console.log('\n=== 61. the holding dialog labels follow the chosen currency ===');
   dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
-  $('openSet').click(); $('addHoldBtn').click();
+  $('openInvest').click(); $('invAdd').click();
   ok('starts in rand by default', $('holdInLabel').textContent.includes('(R)'), $('holdInLabel').textContent);
   $('holdCur').value = 'USD';
   $('holdCur').dispatchEvent(new w.Event('change'));
@@ -1562,6 +1568,75 @@ const seed = {
   $('holdSave').click();
   const savedHold = JSON.parse(w.localStorage.getItem('slip:v4')).holdings[0];
   ok('the currency is saved on the holding', savedHold.cur === 'USD', savedHold.cur);
+
+  console.log('\n=== 62. a fetched price respects the holding\'s own currency ===');
+  const cryptoSeed = JSON.parse(JSON.stringify(seed));
+  cryptoSeed.invAt = TODAY;   // suppress the automatic boot-time refresh; this test drives it by hand
+  cryptoSeed.holdings = [
+    { id: 'h1', n: 'Bitcoin', kind: 'crypto', cur: 'USD', sym: 'bitcoin', in: 100, units: 0, price: 0, val: 100 }
+  ];
+  const cgDom = new (require('jsdom').JSDOM)(HTML, {
+    runScripts: 'dangerously', url: 'https://x.github.io/a/', pretendToBeVisual: true,
+    beforeParse(win) {
+      const Real = win.Date;
+      class FD extends Real { constructor(...a) { if (!a.length) super(TODAY + 'T09:00:00Z'); else super(...a); }
+        static now() { return new Real(TODAY + 'T09:00:00Z').getTime(); } }
+      win.Date = FD;
+      win.matchMedia = () => ({ matches: false, addEventListener() {}, addListener() {} });
+      win.fetch = url => {
+        if (String(url).includes('coingecko')) {
+          // a coin priced very differently in each currency, so picking the wrong one is obvious
+          return Promise.resolve({ json: () => Promise.resolve({ bitcoin: { usd: 65000, zar: 999999 } }) });
+        }
+        return Promise.reject(0);
+      };
+      win.confirm = () => true; win.alert = () => {}; win.scrollTo = () => {};
+      win.localStorage.setItem('slip:v4', JSON.stringify(cryptoSeed));
+      win.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+      win.HTMLDialogElement.prototype.close = function () { this.open = false;
+        this.dispatchEvent(new win.Event('close')); };
+    }
+  });
+  await wait(200);
+  const cgD = cgDom.window.document, cg$ = id => cgD.getElementById(id);
+  cg$('openInvest').click();
+  cg$('invRefresh').click();
+  await wait(150);
+  const cgHold = JSON.parse(cgDom.window.localStorage.getItem('slip:v4')).holdings[0];
+  ok('fetched the price in the holding\'s own currency (USD), not always ZAR',
+     cgHold.price === 65000, String(cgHold.price));
+
+  console.log('\n=== 63. a resolved price refresh corrects the day\'s snapshot, not just the display ===');
+  const snapSeed = JSON.parse(JSON.stringify(seed));
+  snapSeed.holdings = [
+    { id: 'h1', n: 'Test Co', kind: 'stock', cur: 'USD', sym: 'TEST', in: 100, units: 1, price: 50, val: 0 }
+  ];
+  snapSeed.avKey = 'realkey';
+  // no invAt at all, so boot's own auto-refresh fires without being awaited —
+  // exactly the race this test is checking
+  const snapDom = new (require('jsdom').JSDOM)(HTML, {
+    runScripts: 'dangerously', url: 'https://x.github.io/a/', pretendToBeVisual: true,
+    beforeParse(win) {
+      const Real = win.Date;
+      class FD extends Real { constructor(...a) { if (!a.length) super(TODAY + 'T09:00:00Z'); else super(...a); }
+        static now() { return new Real(TODAY + 'T09:00:00Z').getTime(); } }
+      win.Date = FD;
+      win.matchMedia = () => ({ matches: false, addEventListener() {}, addListener() {} });
+      win.fetch = url => String(url).includes('alphavantage')
+        ? Promise.resolve({ json: () => Promise.resolve({ 'Global Quote': { '05. price': '200' } }) })
+        : Promise.reject(0);
+      win.confirm = () => true; win.alert = () => {}; win.scrollTo = () => {};
+      win.localStorage.setItem('slip:v4', JSON.stringify(snapSeed));
+      win.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
+      win.HTMLDialogElement.prototype.close = function () { this.open = false;
+        this.dispatchEvent(new win.Event('close')); };
+    }
+  });
+  await wait(1800);   // past the 1100ms alphavantage spacing, so the auto-refresh has resolved
+  const snaps63 = JSON.parse(snapDom.window.localStorage.getItem('slip:v4')).invHist;
+  const today63 = snaps63[snaps63.length - 1];
+  ok('the day\'s snapshot reflects the price the fetch actually resolved to (1 unit @ 200), not the stale 50',
+     today63.w === 200, JSON.stringify(today63));
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

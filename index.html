@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-06-4">
+<meta name="slip-build" content="2026-09-11-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -507,17 +507,6 @@
     <div id="sweepBox" aria-live="polite"></div>
   </div>
 
-  <div class="card" id="invCard" style="display:none">
-    <div class="savetop">
-      <div id="invOpen" style="cursor:pointer">
-        <span class="cap">Investments ›</span><b class="num" id="invValue">R0</b>
-        <span class="sub" id="invSub">—</span></div>
-      <button class="ghost sm" id="invRefresh">Update prices</button>
-    </div>
-    <div id="invList"></div>
-    <p class="hint" id="invFoot" style="margin:12px 0 0"></p>
-  </div>
-
   <div class="card" id="dueCard" style="display:none">
     <div class="ch">Subscriptions still to pay</div>
     <div class="chsub" id="dueSub"></div>
@@ -647,8 +636,8 @@
     <div class="catlist" id="billList"></div>
     <div class="sp"><button class="ghost" id="addBillBtn">Add an expected bill</button></div>
     <label>Investments</label>
-    <p class="hint">Tracked separately from your spending. Nothing here affects your allowance.</p>
-    <div class="sp"><button class="ghost" id="addHoldBtn">Add a holding</button></div>
+    <p class="hint">Manage holdings from the Invest tab. This key just powers its price
+      updates.</p>
     <div class="sp"><label for="avKey">Alpha Vantage API key</label>
       <input id="avKey" type="password" placeholder="Free key, for stock/ETF prices" autocomplete="off">
       <p class="hint" style="margin:8px 0 0">Needed to update stock and ETF prices — crypto works
@@ -739,6 +728,7 @@
   <button id="quickAdd" aria-label="Add"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
   <button id="openFind" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span></button>
   <button id="openHist" aria-label="Months"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span>Months</span></button>
+  <button id="openInvest" aria-label="Investments"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16 9.5 10 14 13.5 20 6"/><path d="M14 6h6v6"/></svg><span>Invest</span></button>
   <button id="openSet" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.65 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span>Settings</span></button>
 </nav>
 
@@ -749,6 +739,21 @@
   <button class="ghost" id="subsAdd" style="margin-top:10px">Add a subscription or bill</button>
   <p class="hint" id="subsFoot" style="margin-top:12px"></p>
   <button class="close" id="closeSubs">Done</button>
+</dialog>
+
+<dialog id="investDlg" tabindex="-1" autofocus>
+  <h2>Investments</h2>
+  <p class="hint">Kept separate from your spending money — nothing here affects your allowance.</p>
+  <div class="savetop">
+    <div id="invOpen">
+      <span class="cap">Worth now</span><b class="num" id="invValue">R0</b>
+      <span class="sub" id="invSub">—</span></div>
+    <button class="ghost sm" id="invRefresh">Update prices</button>
+  </div>
+  <div id="invList"></div>
+  <p class="hint" id="invFoot" style="margin:12px 0 0"></p>
+  <button class="ghost" id="invAdd" style="margin-top:10px">Add a holding</button>
+  <button class="close" id="closeInvest">Done</button>
 </dialog>
 
 <dialog id="allDlg" tabindex="-1" autofocus>
@@ -1261,8 +1266,6 @@
         ?'Rent & water':'Kept out');
     $('billVal').textContent=R(isW?c.wBill:c.cBill);
     $('outVal').textContent=R(isW?c.wLive:c.cLive);
-
-    renderInvest();
 
     // savings
     const vault=savingsTotal();
@@ -2597,12 +2600,12 @@
   });
 
   const TABFOR={findDlg:'openFind',histDlg:'openHist',monthDlg:'openHist',
-                setDlg:'openSet',allDlg:'openFind'};
+                setDlg:'openSet',allDlg:'openFind',investDlg:'openInvest'};
   function syncTabbar(){
     const open=[...document.querySelectorAll('dialog')].filter(x=>x.open).map(x=>x.id);
     const active=open.map(id=>TABFOR[id]).filter(Boolean).pop()
       || (document.activeElement===$('amt')?'quickAdd':null);
-    ['quickAdd','openFind','openHist','openSet'].forEach(id=>
+    ['quickAdd','openFind','openHist','openInvest','openSet'].forEach(id=>
       $(id).classList.toggle('on',id===active));
   }
   document.querySelectorAll('dialog').forEach(dl=>dl.addEventListener('close',syncTabbar));
@@ -3200,6 +3203,7 @@
     if(!confirm('Remove '+editHold.n+' from your investments?'))return;
     data.holdings=holds().filter(x=>x.id!==editHold.id);
     editHold=null; save(); $('holdDlg').close();
+    if($('investDlg').open)renderInvest();
   };
   $('holdSave').onclick=()=>{
     const n=$('holdName').value.trim();
@@ -3214,6 +3218,7 @@
     else data.holdings.push(Object.assign(
       {id:'h'+Date.now()+Math.random().toString(36).slice(2,7)},rec));
     editHold=null; save(); $('holdDlg').close();
+    if($('investDlg').open)renderInvest();
   };
 
   // best-effort price refresh: CoinGecko for crypto, Stooq for shares and ETFs.
@@ -3225,11 +3230,16 @@
     if(coins.length){
       try{
         const ids=coins.map(h=>h.sym.toLowerCase()).join(',');
+        // fetch in whatever currency each coin is actually tagged as (default ZAR), not
+        // always ZAR regardless — a crypto holding set to USD was getting a raw ZAR number
+        // formatted with a $ sign, since RC() trusts h.cur but this always fetched zar
+        const currs=[...new Set(coins.map(h=>(h.cur||'ZAR').toLowerCase()))];
         const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids='+
-          encodeURIComponent(ids)+'&vs_currencies=zar');
+          encodeURIComponent(ids)+'&vs_currencies='+encodeURIComponent(currs.join(',')));
         const j=await r.json();
         coins.forEach(h=>{
-          const px=j[h.sym.toLowerCase()]&&j[h.sym.toLowerCase()].zar;
+          const cur=(h.cur||'ZAR').toLowerCase();
+          const px=j[h.sym.toLowerCase()]&&j[h.sym.toLowerCase()][cur];
           if(px){h.price=px;h.at=today();done++}else failedSyms.push(h.sym);
         });
       }catch(e){coins.forEach(h=>failedSyms.push(h.sym))}   // CoinGecko unreachable — name every coin, not just "could not fetch"
@@ -3256,6 +3266,12 @@
     }
     if(done)data.invAt=today();
     save();
+    // boot fires this without awaiting it, then snapshots the day's history immediately —
+    // if any price actually updated, the snapshot taken before this resolved was stale.
+    // re-snapshot now so a day's history reflects the fetch, not just whatever was on hand
+    // the moment the page loaded.
+    if(done)snapshotInvest();
+    if($('investDlg').open)renderInvest();
     const names=n=>n.length>3?n.slice(0,3).join(', ')+' and '+(n.length-3)+' more':n.join(', ');
     btn.textContent=noKey&&!done?'Add an Alpha Vantage key in Settings for '+names(failedSyms)
       :!failedSyms.length?(done?'Updated '+done:'Nothing to fetch')
@@ -3264,7 +3280,9 @@
     setTimeout(()=>{btn.textContent='Update prices'},2600);
   }
   $('invRefresh').onclick=refreshPrices;
-  $('invOpen').onclick=()=>openHold(null);
+  $('invAdd').onclick=()=>openHold(null);
+  $('openInvest').onclick=()=>{renderInvest();$('investDlg').showModal()};
+  $('closeInvest').onclick=()=>$('investDlg').close();
 
   // one snapshot a day, so there is something to compare against later
   function snapshotInvest(){
@@ -3294,7 +3312,6 @@
 
   function renderInvest(){
     const list=$('invList'), hs=holds();
-    $('invCard').style.display='block';
     if(!hs.length){
       $('invValue').textContent=R(0); $('invValue').className='num';
       $('invSub').textContent='nothing tracked yet — tap to add one';
@@ -3324,7 +3341,6 @@
         (h.in>0?((g>=0?'+':'')+RC(g,h.cur)):'')+'</span></span>';
       list.appendChild(row);
     });
-    snapshotInvest();
     const tr=investTrend();
     $('invFoot').textContent=(tr
       ? (tr.change>=0?'Up ':'Down ')+RC(Math.abs(tr.change),dispCur)+' ('+tr.pct.toFixed(1)+
@@ -3463,7 +3479,6 @@
   };
   $('addIncBtn').onclick=()=>openInc(null);
   $('addCatBtn').onclick=()=>newCategory();
-  $('addHoldBtn').onclick=()=>openHold(null);
   $('addGrpBtn').onclick=()=>{fillGroupSel();$('grpName').value='';
     $('grpDlg').showModal();setTimeout(()=>$('grpName').focus(),150)};
   $('syncNow').onclick=()=>push(false);
@@ -3504,6 +3519,9 @@
     if(holds().some(h=>h.sym)&&(!data.invAt||diff(data.invAt,today())>=1)){
       refreshPrices().catch(()=>{});
     }
+    // moved out of renderInvest() — investments now live behind their own tab, so this
+    // must not depend on the user ever opening it, same reasoning as the block above
+    snapshotInvest();
     document.addEventListener('visibilitychange',()=>{
       if(document.visibilityState!=='visible'||!data.tok||!data.gistId)return;
       remote().then(rm=>{
