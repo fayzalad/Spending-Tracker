@@ -1638,6 +1638,27 @@ const seed = {
   ok('the day\'s snapshot reflects the price the fetch actually resolved to (1 unit @ 200), not the stale 50',
      today63.w === 200, JSON.stringify(today63));
 
+  console.log('\n=== 64. EUR is a full fifth currency ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  for (const sel of ['cur', 'billCur', 'incCur', 'holdCur']) {
+    ok(sel + ' offers EUR', !![...$(sel).options].find(o => o.value === 'EUR'), sel);
+  }
+  $('openSet').click();
+  ok('settings has a euro rate input', !!$('rEUR'));
+  $('rEUR').value = '19.5'; $('rEUR').dispatchEvent(new w.Event('change'));
+  ok('editing it updates data.rates.EUR', JSON.parse(w.localStorage.getItem('slip:v4')).rates.EUR === 19.5,
+     JSON.parse(w.localStorage.getItem('slip:v4')).rates.EUR);
+
+  const eur = JSON.parse(JSON.stringify(seed));
+  eur.rates = { ZAR: 1, GBP: 21.78, USD: 16.23, GHS: 1.4464, EUR: 18.75 };
+  eur.bills = [
+    { id: 'e1', n: 'Netflix', a: 12, cur: 'EUR', zar: 0, cat: 'Subscriptions', note: '' }
+  ];
+  dom = await boot(eur); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('tabMonth').click();
+  ok('a euro bill converts at the stored EUR rate', Math.abs(num($('due').textContent) - 225) < 2,
+     $('due').textContent);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
