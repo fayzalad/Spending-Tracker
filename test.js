@@ -1723,6 +1723,64 @@ const seed = {
   ok('this month\'s currency defaults to rand rather than throwing', $('sCycCur').value === 'ZAR',
      $('sCycCur').value);
 
+  console.log('\n=== 67. savings pots keep their own currency, independent of the month ===');
+  const potSeed2 = JSON.parse(JSON.stringify(seed));
+  potSeed2.rates = { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44, EUR: 18.75 };
+  dom = await boot(potSeed2); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+
+  $('vaultOpen').click(); $('vaultAddMore').click();
+  ok('the currency selector shows when putting money away', $('vaultPotRow').style.display === 'block');
+  $('vaultCur').value = 'GBP'; $('vaultCur').dispatchEvent(new w.Event('change'));
+  $('vaultAmt').value = '100';
+  $('vaultSave').click();
+  let after67 = JSON.parse(w.localStorage.getItem('slip:v4'));
+  let savedGBP = after67.entries.find(e => e.type === 'save' && e.cur === 'GBP');
+  ok('the pot amount is kept native, not pre-converted', savedGBP && savedGBP.orig === 100, JSON.stringify(savedGBP));
+  ok('the ledger side is converted at the live rate', Math.abs(savedGBP.amt - 100 * 21.78) < 0.01, savedGBP.amt);
+
+  $('vaultOpen').click(); $('vaultAddMore').click();
+  $('vaultCur').value = 'ZAR'; $('vaultCur').dispatchEvent(new w.Event('change'));
+  $('vaultAmt').value = '500';
+  $('vaultSave').click();
+  ok('the running total shows one line per pot in use',
+     $('vaultAll').textContent.includes('£') && $('vaultAll').textContent.includes('R'),
+     $('vaultAll').textContent);
+
+  $('withdrawBtn').click();
+  ok('withdrawing offers a pot picker once more than one pot is active',
+     $('vaultPotRow').style.display === 'block');
+  ok('and asks whether it was already converted', $('vaultConvRow').style.display === 'block');
+  $('vaultCur').value = 'GBP'; $('vaultCur').dispatchEvent(new w.Event('change'));
+  $('vaultAmt').value = '40';
+  $('vaultSave').click();
+  after67 = JSON.parse(w.localStorage.getItem('slip:v4'));
+  let plainWithdraw = after67.entries.find(e => e.type === 'unsave' && e.cur === 'GBP');
+  ok('not converted: the pot amount stays native and the rand side uses the live rate',
+     plainWithdraw.orig === 40 && Math.abs(plainWithdraw.amt - 40 * 21.78) < 0.01,
+     JSON.stringify(plainWithdraw));
+
+  $('withdrawBtn').click();
+  $('vaultCur').value = 'GBP'; $('vaultCur').dispatchEvent(new w.Event('change'));
+  $('vaultAmt').value = '30';
+  $('vaultConverted').checked = true; $('vaultConverted').dispatchEvent(new w.Event('change'));
+  ok('checking it reveals the received-amount field', $('vaultRecvRow').style.display === 'block');
+  $('vaultRecv').value = '640';
+  $('vaultSave').click();
+  after67 = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const convertedWithdraws = after67.entries.filter(e => e.type === 'unsave' && e.cur === 'GBP');
+  const manual = convertedWithdraws[convertedWithdraws.length - 1];
+  ok('converted yourself: the rand side is exactly what you typed, not recomputed',
+     manual.orig === 30 && manual.amt === 640, JSON.stringify(manual));
+
+  $('withdrawBtn').click();
+  $('vaultCur').value = 'GBP'; $('vaultCur').dispatchEvent(new w.Event('change'));
+  const beforeOverdraw = after67.entries.length;
+  $('vaultAmt').value = '999999';
+  $('vaultSave').click();
+  after67 = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('cannot overdraw a single pot beyond its own balance', after67.entries.length === beforeOverdraw,
+     after67.entries.length + ' vs ' + beforeOverdraw);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

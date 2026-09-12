@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-12-2">
+<meta name="slip-build" content="2026-09-12-3">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -719,8 +719,20 @@
 <dialog id="vaultDlg" tabindex="-1" autofocus>
   <h2 id="vaultTitle">Savings</h2>
   <p class="hint" id="vaultHint"></p>
-  <div class="sp"><label for="vaultAmt">Amount (R)</label>
+  <div class="sp" id="vaultPotRow" style="display:none"><label for="vaultCur" id="vaultCurLbl">Currency</label>
+    <select id="vaultCur">
+      <option value="ZAR">R (ZAR)</option>
+      <option value="GBP">£ (GBP)</option>
+      <option value="USD">$ (USD)</option>
+      <option value="GHS">₵ (GHS)</option>
+      <option value="EUR">€ (EUR)</option>
+    </select></div>
+  <div class="sp"><label for="vaultAmt" id="vaultAmtLbl">Amount (R)</label>
     <input id="vaultAmt" type="number" inputmode="decimal"></div>
+  <label class="checkline" id="vaultConvRow" style="display:none">
+    <input type="checkbox" id="vaultConverted"><span>Already converted this yourself?</span></label>
+  <div class="sp" id="vaultRecvRow" style="display:none"><label for="vaultRecv">Amount you actually received (R)</label>
+    <input id="vaultRecv" type="number" inputmode="decimal"></div>
   <div class="sp"><label for="vaultNote">What for</label>
     <input id="vaultNote" placeholder="Optional"></div>
   <button class="close" id="vaultSave">Confirm</button>
@@ -1125,6 +1137,21 @@
   const isLiving=e=>isSpend(e)&&!isBill(e);
   const savingsTotal=()=>data.entries.reduce(
     (s,e)=>s+(isSave(e)?e.amt:isUnsave(e)?-e.amt:0),0);
+  // a savings pot is tracked in whatever currency it was actually put away in — separate
+  // from the month's own currency. potAmt reads the native pot-currency amount (orig for a
+  // foreign-currency move, amt for a plain rand one); savingsTotals groups the running
+  // balance per pot, the way investCur groups holdings by currency
+  const potAmt=e=>e.cur?e.orig:e.amt;
+  const savingsTotals=()=>{
+    const t={};
+    data.entries.forEach(e=>{
+      if(!isSave(e)&&!isUnsave(e))return;
+      const c=e.cur||'ZAR';
+      t[c]=(t[c]||0)+(isSave(e)?potAmt(e):-potAmt(e));
+    });
+    return t;
+  };
+  const potCurs=()=>Object.keys(savingsTotals()).filter(c=>savingsTotals()[c]>0.01);
 
   const inCyc=cs=>data.entries.filter(e=>(e.cyc||cycStart(e.date))===cs);
   const sum=(a,f)=>a.filter(f).reduce((s,e)=>s+e.amt,0);
@@ -1302,15 +1329,17 @@
     $('billVal').textContent=R(isW?c.wBill:c.cBill);
     $('outVal').textContent=R(isW?c.wLive:c.cLive);
 
-    // savings
-    const vault=savingsTotal();
+    // savings \u2014 each pot keeps its own currency, so the running total is shown per pot
+    // rather than blended into one (mis)leading rand figure once more than one is in use
+    const potTotals=savingsTotals();
+    const potList=Object.keys(potTotals).filter(k=>Math.abs(potTotals[k])>0.01);
     $('vault').textContent=R(Math.max(0,c.cSaved));
-    $('vaultAll').textContent=R(vault);
+    $('vaultAll').textContent=potList.length?potList.map(k=>RC(potTotals[k],k)).join(' \u00b7 '):R(0);
     $('vaultSub').textContent=data.goal>0
       ? (c.goalLeft>0?R(c.goalLeft)+' of your '+R(data.goal)+' goal still held back from your daily rate'
                      :'this month\u2019s '+R(data.goal)+' goal is done')
       : (c.cSaved>0?'moved across this month':'nothing put away this month');
-    $('withdrawBtn').style.display=vault>0?'block':'none';
+    $('withdrawBtn').style.display=potList.length?'block':'none';
     const sweeps=unsweptMonths();
     const sb=$('sweepBox'); sb.innerHTML='';
     // the goal is only protected until you actually move it — offer to do that now
@@ -2134,32 +2163,80 @@
       .filter(cs=>cs<cur&&leftoverOf(cs)>0.5).sort();
   }
 
-  let vaultMode='save';
+  let vaultMode='save', lastPotCur='ZAR';
+  function updateVaultUI(){
+    const cur=$('vaultCur').value;
+    $('vaultAmtLbl').textContent='Amount ('+SYM[cur]+')';
+    if(vaultMode==='save'){
+      $('vaultHint').textContent='It comes out of your spending money and stops rolling into next month.';
+    }else{
+      const bal=savingsTotals()[cur]||0;
+      $('vaultHint').textContent='Comes back into this month’s spending money. You have '+
+        RC(bal,cur)+' put away in this pot.';
+    }
+    const converted=$('vaultConverted').checked;
+    $('vaultRecvRow').style.display=(vaultMode==='unsave'&&converted)?'block':'none';
+  }
   function openVault(mode,preset,label,intoCyc){
     vaultMode=mode;
     if(intoCyc)$('vaultAmt').dataset.cyc=intoCyc; else delete $('vaultAmt').dataset.cyc;
-    const bal=savingsTotal();
     $('vaultTitle').textContent=mode==='save'?'Move money to savings':'Take from savings';
-    $('vaultHint').textContent=mode==='save'
-      ? 'It comes out of your spending money and stops rolling into next month.'
-      : 'Comes back into this month\u2019s spending money. You have '+R(bal)+' put away.';
+    $('vaultConverted').checked=false;
+    $('vaultConvRow').style.display=mode==='unsave'?'block':'none';
+    if(mode==='save'){
+      $('vaultPotRow').style.display='block';
+      $('vaultCurLbl').textContent='Put it in which currency';
+      [...$('vaultCur').options].forEach(o=>o.hidden=false);
+      $('vaultCur').value=preset?'ZAR':lastPotCur;
+    }else{
+      const active=potCurs();
+      $('vaultCurLbl').textContent='Which pot';
+      if(active.length>1){
+        $('vaultPotRow').style.display='block';
+        [...$('vaultCur').options].forEach(o=>o.hidden=active.indexOf(o.value)<0);
+        $('vaultCur').value=active[0];
+      }else{
+        $('vaultPotRow').style.display='none';
+        [...$('vaultCur').options].forEach(o=>o.hidden=false);
+        $('vaultCur').value=active[0]||'ZAR';
+      }
+    }
     $('vaultAmt').value=preset||'';
+    $('vaultRecv').value='';
     $('vaultNote').value=label||'';
+    updateVaultUI();
     $('vaultDlg').showModal();
   }
+  $('vaultCur').onchange=updateVaultUI;
+  $('vaultConverted').onchange=updateVaultUI;
   $('vaultCancel').onclick=()=>$('vaultDlg').close();
   $('vaultSave').onclick=()=>{
     const a=Number($('vaultAmt').value);
     if(!a||a<=0){$('vaultAmt').focus();return}
-    if(vaultMode==='unsave'&&a>savingsTotal()+0.5){
-      alert('You only have '+R(savingsTotal())+' put away.');return;
+    const cur=$('vaultCur').value;
+    if(vaultMode==='unsave'&&a>(savingsTotals()[cur]||0)+0.5){
+      alert('You only have '+RC(savingsTotals()[cur]||0,cur)+' in this pot.');return;
     }
     const t=today();
     const into=$('vaultAmt').dataset.cyc;
     const cyc=into||cycStart(t);
     const date=into?cycEnd(into):t;
-    data.entries.push({id:Date.now()+Math.random(),amt:a,cat:'Savings',
-      note:$('vaultNote').value.trim(),date,type:vaultMode,cyc});
+    const e={id:Date.now()+Math.random(),cat:'Savings',
+      note:$('vaultNote').value.trim(),date,type:vaultMode,cyc};
+    if(vaultMode==='save'){
+      lastPotCur=cur;
+      if(cur==='ZAR'){e.amt=a}
+      else{e.cur=cur;e.orig=a;e.rate=data.rates[cur]||1;e.amt=a*e.rate}
+    }else{
+      if(cur==='ZAR'){e.amt=a}
+      else{
+        e.cur=cur;e.orig=a;
+        const converted=$('vaultConverted').checked, recv=Number($('vaultRecv').value);
+        if(converted&&recv>0){e.amt=recv;e.rate=recv/a}
+        else{e.rate=data.rates[cur]||1;e.amt=a*e.rate}
+      }
+    }
+    data.entries.push(e);
     delete $('vaultAmt').dataset.cyc;
     save(); $('vaultDlg').close();
     if($('vaultLog').open)renderVaultLog();
@@ -2169,13 +2246,14 @@
   function renderVaultLog(){
     const moves=data.entries.filter(e=>isSave(e)||isUnsave(e))
       .slice().sort((a,b)=>a.date<b.date?1:-1);
-    const put=moves.filter(isSave).reduce((s,e)=>s+e.amt,0);
-    const took=moves.filter(isUnsave).reduce((s,e)=>s+e.amt,0);
+    const totals=savingsTotals();
+    const curs=Object.keys(totals).filter(c=>Math.abs(totals[c])>0.01);
     $('vaultLogSum').textContent=moves.length
-      ? R(savingsTotal())+' put away · '+R(put)+' in, '+R(took)+' taken back out'
+      ? (curs.length?curs.map(c=>RC(totals[c],c)).join(' · ')+' put away':R(0)+' put away')
       : 'Nothing moved into savings yet.';
     renderDays($('vaultLogList'),moves,0,today(),false);
   }
+
   $('vaultOpen').onclick=()=>{renderVaultLog();$('vaultLog').showModal()};
   $('closeVaultLog').onclick=()=>$('vaultLog').close();
   $('vaultAddMore').onclick=()=>{$('vaultLog').close();openVault('save','','')};
