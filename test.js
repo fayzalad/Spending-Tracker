@@ -1781,6 +1781,49 @@ const seed = {
   ok('cannot overdraw a single pot beyond its own balance', after67.entries.length === beforeOverdraw,
      after67.entries.length + ' vs ' + beforeOverdraw);
 
+  console.log('\n=== 68. audit fixes: onboarding hint, shortfall pot, settings ordering ===');
+  const cleanSeed = JSON.parse(JSON.stringify(seed));
+  dom = await boot(cleanSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('first-ever use still offers the real onboarding hint, not the generic one',
+     $('sweepBox').textContent.includes('Whatever is left when a month ends'),
+     $('sweepBox').textContent);
+
+  const shortfallSeed = {
+    day: 25, starts: { '2026-08': '2026-08-28' }, goal: 0, theme: 'light',
+    rates: { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44, EUR: 18.75 },
+    cats: [], groups: [], bills: [], ticks: {},
+    entries: [
+      { id: 1, amt: 1000, cat: 'Money in', note: '', date: '2026-07-28', type: 'in', cyc: '2026-07-28', man: true },
+      { id: 2, amt: 1500, cat: 'Rent', note: '', date: '2026-07-29', type: 'out', cyc: '2026-07-28' },
+      { id: 3, amt: 1089, cat: 'Savings', note: '', date: '2026-08-28', type: 'save', cyc: '2026-08-28', cur: 'GBP', orig: 50, rate: 21.78 },
+      { id: 5, amt: 600, cat: 'Savings', note: '', date: '2026-08-28', type: 'save', cyc: '2026-08-28' },
+      { id: 4, amt: 20000, cat: 'Money in', note: '', date: '2026-08-28', type: 'in', cyc: '2026-08-28', man: true }
+    ]
+  };
+  dom = await boot(shortfallSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  const takeBackBtn = [...d.querySelectorAll('#sweepBox button')].find(b => /Take R.*back/.test(b.textContent));
+  ok('the shortfall-recovery button shows up when a backdated entry pushes a past month negative',
+     !!takeBackBtn, [...d.querySelectorAll('#sweepBox button')].map(b => b.textContent).join(' / '));
+  takeBackBtn.click();
+  ok("it deals in rand without offering a pot picker, even with a GBP pot also active — it's reversing calc()'s own rand figure",
+     $('vaultCur').value === 'ZAR' && $('vaultPotRow').style.display === 'none',
+     $('vaultCur').value + ' / ' + $('vaultPotRow').style.display);
+  $('vaultSave').click();
+  const shortfallEntry = JSON.parse(w.localStorage.getItem('slip:v4')).entries
+    .find(e => e.type === 'unsave' && e.cyc === '2026-07-28');
+  ok('the reversal entry itself carries no foreign-currency tag', shortfallEntry && !shortfallEntry.cur,
+     JSON.stringify(shortfallEntry));
+
+  const bothSeed = JSON.parse(JSON.stringify(seed));
+  dom = await boot(bothSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openSet').click();
+  $('sStart').value = '2026-08-20';
+  $('sCycCur').value = 'GBP';
+  $('closeSet').click();
+  const afterBoth = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('changing the start day and the currency together lands the currency on the new cycle',
+     afterBoth.cycCur['2026-08-20'] === 'GBP', JSON.stringify(afterBoth.cycCur));
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

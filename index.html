@@ -1135,8 +1135,6 @@
   const exCats=()=>(data.exclude&&data.exclude.length)?data.exclude:EXDEF;
   const isBill=e=>isSpend(e)&&exCats().indexOf(e.cat)>-1;
   const isLiving=e=>isSpend(e)&&!isBill(e);
-  const savingsTotal=()=>data.entries.reduce(
-    (s,e)=>s+(isSave(e)?e.amt:isUnsave(e)?-e.amt:0),0);
   // a savings pot is tracked in whatever currency it was actually put away in — separate
   // from the month's own currency. potAmt reads the native pot-currency amount (orig for a
   // foreign-currency move, amt for a plain rand one); savingsTotals groups the running
@@ -1376,7 +1374,7 @@
       b.onclick=()=>openVault('save',Math.round(left*100)/100,cycName(cs)+' leftover',cs);
       row.appendChild(b); sb.appendChild(row);
     });
-    if(!sweeps.length&&vault===0){
+    if(!sweeps.length&&!potList.length){
       const row=document.createElement('div'); row.className='sweep';
       row.innerHTML='<span>Whatever is left when a month ends can be moved here, '+
         'so it stops counting as money to spend.</span>';
@@ -2188,6 +2186,12 @@
       $('vaultCurLbl').textContent='Put it in which currency';
       [...$('vaultCur').options].forEach(o=>o.hidden=false);
       $('vaultCur').value=preset?'ZAR':lastPotCur;
+    }else if(preset){
+      // an automated sweep reversal (a shortfall pulled back out) always deals in rand —
+      // it's reversing a rand figure calc() worked out, never a manual pot choice
+      $('vaultPotRow').style.display='none';
+      [...$('vaultCur').options].forEach(o=>o.hidden=false);
+      $('vaultCur').value='ZAR';
     }else{
       const active=potCurs();
       $('vaultCurLbl').textContent='Which pot';
@@ -2647,11 +2651,15 @@
     if(g!==data.goal){data.goal=g;changed=true}
     ['GBP','USD','GHS','EUR'].forEach(k=>{const v=Number($('r'+k).value);
       if(v&&v!==data.rates[k]){data.rates[k]=v;data.ratesAt=today();changed=true}});
-    const openCyc=cycStart(today()), cc=$('sCycCur').value;
+    // read before any anchor change below, since setAnchor's refile() repopulates this
+    // very field from data — reading it after would just see its own old value echoed back
+    const cc=$('sCycCur').value;
+    if(st&&st!==cycStart(today())){setAnchor(st);changed=true}
+    // applied against the cycle that's actually open once the anchor above takes effect
+    const openCyc=cycStart(today());
     if(cc&&cc!==curForCyc(openCyc)){
       data.cycCur[openCyc]=cc; data.cycRate[openCyc]=data.rates[cc]||1; changed=true;
     }
-    if(st&&st!==cycStart(today())){setAnchor(st);return}
     if(changed)refile();
   }
   const REDUCE_MOTION=matchMedia('(prefers-reduced-motion: reduce)').matches;
