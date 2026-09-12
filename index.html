@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-12-3">
+<meta name="slip-build" content="2026-09-12-4">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -138,7 +138,7 @@
   .flow div:first-child{text-align:left} .flow div:last-child{text-align:right}
   /* week tab: the two remaining sit together, centred */
   .flow.noin{justify-content:center;gap:44px}
-  .flow.noin #inCell{display:none}
+  .flow.noin #inCell,.flow.noin #billCell{display:none}
   .flow.noin div{flex:0 0 auto;text-align:center}
   .flow b{display:block;font-size:16px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
   .flow b.in{color:var(--good)}
@@ -462,7 +462,7 @@
 
     <div class="flow">
       <div id="inCell"><span class="cap">In this month</span><b class="in num" id="inVal">R0</b></div>
-      <div><span class="cap" id="billCap">Rent</span><b class="num" id="billVal">R0</b></div>
+      <div id="billCell"><span class="cap" id="billCap">Rent</span><b class="num" id="billVal">R0</b></div>
       <div><span class="cap">Living</span><b class="num" id="outVal">R0</b></div>
       <div id="saveCell" style="display:none"><span class="cap" id="saveCellCap">Saved</span>
         <b class="num" id="saveCellVal">R0</b></div>
@@ -1310,6 +1310,9 @@
 
     document.querySelector('.flow').classList.toggle('noin',isW);
     $('inCell').style.display=isW?'none':'block';
+    // Rent & the like isn't a weekly outgoing — showing it here read as if it recurred
+    // every week, so it only appears in the month view where it actually applies
+    $('billCell').style.display=isW?'none':'block';
     $('inVal').textContent=R(c.cIn);
     const wSaved=sum(data.entries,e=>isSave(e)&&e.date>=c.ws&&e.date<=c.t)
                 -sum(data.entries,e=>isUnsave(e)&&e.date>=c.ws&&e.date<=c.t);
