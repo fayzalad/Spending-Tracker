@@ -1824,6 +1824,15 @@ const seed = {
   ok('changing the start day and the currency together lands the currency on the new cycle',
      afterBoth.cycCur['2026-08-20'] === 'GBP', JSON.stringify(afterBoth.cycCur));
 
+  console.log('\n=== 69. Rent & the like is a monthly figure, not a weekly one ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('tabWeek').click();
+  ok('hidden in the week view, since rent isn\'t paid weekly', $('billCell').style.display === 'none',
+     $('billCell').style.display);
+  $('tabMonth').click();
+  ok('back in the month view, where it actually applies', $('billCell').style.display === 'block',
+     $('billCell').style.display);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
