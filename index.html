@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-12-4">
+<meta name="slip-build" content="2026-09-12-6">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -563,7 +563,6 @@
       <select id="cur" class="cursel" aria-label="Currency">
         <option value="ZAR">R</option><option value="GBP">£</option>
         <option value="USD">$</option><option value="GHS">₵</option>
-        <option value="EUR">€</option>
       </select>
       <button class="go" id="addBtn">Add</button>
     </div>
@@ -580,7 +579,6 @@
         <option value="GBP">£ (GBP)</option>
         <option value="USD">$ (USD)</option>
         <option value="GHS">₵ (GHS)</option>
-        <option value="EUR">€ (EUR)</option>
       </select>
     </div>
     <div class="field">
@@ -621,7 +619,6 @@
         <option value="GBP">£ (GBP)</option>
         <option value="USD">$ (USD)</option>
         <option value="GHS">₵ (GHS)</option>
-        <option value="EUR">€ (EUR)</option>
       </select>
       <p class="hint" style="margin:8px 0 0">Only changes how this open month is shown — past
         months keep whatever currency they were tracked in.</p></div>
@@ -645,7 +642,6 @@
     <div class="rateline"><span>£ GBP</span><input id="rGBP" type="number" step="0.01" inputmode="decimal"></div>
     <div class="rateline"><span>$ USD</span><input id="rUSD" type="number" step="0.01" inputmode="decimal"></div>
     <div class="rateline"><span>₵ GHS</span><input id="rGHS" type="number" step="0.01" inputmode="decimal"></div>
-    <div class="rateline"><span>€ EUR</span><input id="rEUR" type="number" step="0.01" inputmode="decimal"></div>
     <div class="sp"><button class="ghost" id="refreshRates">Fetch today's rates</button>
       <p class="hint" id="ratesAge" style="margin:8px 0 0"></p></div>
   </section>
@@ -725,7 +721,6 @@
       <option value="GBP">£ (GBP)</option>
       <option value="USD">$ (USD)</option>
       <option value="GHS">₵ (GHS)</option>
-      <option value="EUR">€ (EUR)</option>
     </select></div>
   <div class="sp"><label for="vaultAmt" id="vaultAmtLbl">Amount (R)</label>
     <input id="vaultAmt" type="number" inputmode="decimal"></div>
@@ -879,7 +874,6 @@
         <option value="USD">$ (USD)</option>
         <option value="GBP">£ (GBP)</option>
         <option value="GHS">₵ (GHS)</option>
-        <option value="EUR">€ (EUR)</option>
       </select></div>
   </div>
   <div class="sp"><label for="holdSym">Ticker or coin id</label>
@@ -917,7 +911,6 @@
       <select id="billCur" class="cursel">
         <option value="ZAR">R</option><option value="GBP">£</option>
         <option value="USD">$</option><option value="GHS">₵</option>
-        <option value="EUR">€</option>
       </select>
     </div></div>
   <div class="sp" id="billZarRow" style="display:none">
@@ -961,7 +954,6 @@
       <select id="incCur" class="cursel">
         <option value="ZAR">R</option><option value="GBP">£</option>
         <option value="USD">$</option><option value="GHS">₵</option>
-        <option value="EUR">€</option>
       </select>
     </div></div>
   <div class="two">
@@ -1035,9 +1027,9 @@
       localStorage.removeItem(k)}catch(e){}}
   };
 
-  const SYM={ZAR:'R',GBP:'\u00a3',USD:'$',GHS:'\u20b5',EUR:'\u20ac'};
+  const SYM={ZAR:'R',GBP:'\u00a3',USD:'$',GHS:'\u20b5'};
   let data={day:25,goal:0,theme:'auto',
-    rates:{ZAR:1,GBP:21.78,USD:15.96,GHS:1.44,EUR:18.75},ratesAt:'2026-08-25',
+    rates:{ZAR:1,GBP:21.78,USD:15.96,GHS:1.44},ratesAt:'2026-08-25',
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
     bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[],avKey:'',
@@ -2652,7 +2644,7 @@
     let changed=false;
     if(d!==data.day){data.day=d;changed=true}
     if(g!==data.goal){data.goal=g;changed=true}
-    ['GBP','USD','GHS','EUR'].forEach(k=>{const v=Number($('r'+k).value);
+    ['GBP','USD','GHS'].forEach(k=>{const v=Number($('r'+k).value);
       if(v&&v!==data.rates[k]){data.rates[k]=v;data.ratesAt=today();changed=true}});
     // read before any anchor change below, since setAnchor's refile() repopulates this
     // very field from data — reading it after would just see its own old value echoed back
@@ -2873,7 +2865,7 @@
       ? 'Your iPhone has Reduce Transparency switched on, so surfaces stay solid whatever this says.'
       : 'Cards, sheets and the bottom bar blur what is behind them. If your iPhone has Reduce '+
         'Transparency switched on, this stays off to match it.';
-    $('rGBP').value=data.rates.GBP;$('rUSD').value=data.rates.USD;$('rGHS').value=data.rates.GHS;$('rEUR').value=data.rates.EUR;
+    $('rGBP').value=data.rates.GBP;$('rUSD').value=data.rates.USD;$('rGHS').value=data.rates.GHS;
     const _cs=cycStart(today());
     $('sStart').value=_cs;
     $('startNow').textContent='Right now this month runs '+cycRange(_cs)+
@@ -3003,7 +2995,7 @@
     $('cycCurRow').style.display=$('startToday').checked?'flex':'none';
     if($('startToday').checked)$('cycCurSel').value=curForCyc(cycStart(today()));
   };
-  ['GBP','USD','GHS','EUR'].forEach(k=>{$('r'+k).onchange=e=>{
+  ['GBP','USD','GHS'].forEach(k=>{$('r'+k).onchange=e=>{
     data.rates[k]=Number(e.target.value)||data.rates[k];data.ratesAt=today();save();fillSet();showConv()}});
   $('refreshRates').onclick=async()=>{
     const b=$('refreshRates'); b.textContent='Fetching…';
@@ -3011,7 +3003,7 @@
       const r=await fetch('https://open.er-api.com/v6/latest/ZAR');
       const j=await r.json();
       if(!j.rates)throw 0;
-      ['GBP','USD','GHS','EUR'].forEach(k=>{if(j.rates[k])data.rates[k]=Math.round(1/j.rates[k]*100)/100});
+      ['GBP','USD','GHS'].forEach(k=>{if(j.rates[k])data.rates[k]=Math.round(1/j.rates[k]*100)/100});
       data.ratesAt=today();save();fillSet();showConv();b.textContent='Rates updated';
     }catch(e){b.textContent='Could not fetch — enter them by hand'}
     setTimeout(()=>{b.textContent="Fetch today's rates"},2600);
@@ -3637,9 +3629,6 @@
       }
     }
     if(s)data=Object.assign(data,s);
-    // old saved data predates EUR/cycCur/cycRate — fill in what's missing rather than
-    // letting Object.assign's shallow merge silently drop them
-    if(!data.rates.EUR)data.rates.EUR=18.75;
     data.cycCur=data.cycCur||{}; data.cycRate=data.cycRate||{}; data.homeCur=data.homeCur||'ZAR';
     data.entries.forEach(e=>{if(!e.cyc)e.cyc=cycStart(e.date)});
     // clear out anything left from the old receipts feature
@@ -3655,7 +3644,7 @@
         const r=await fetch('https://open.er-api.com/v6/latest/ZAR');
         const j=await r.json();
         if(j&&j.rates){
-          ['GBP','USD','GHS','EUR'].forEach(k=>{
+          ['GBP','USD','GHS'].forEach(k=>{
             if(j.rates[k])data.rates[k]=Math.round(1/j.rates[k]*100)/100});
           data.ratesAt=today(); S.set(KEY,data); fillSet(); render();
         }

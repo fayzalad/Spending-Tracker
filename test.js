@@ -1638,31 +1638,10 @@ const seed = {
   ok('the day\'s snapshot reflects the price the fetch actually resolved to (1 unit @ 200), not the stale 50',
      today63.w === 200, JSON.stringify(today63));
 
-  console.log('\n=== 64. EUR is a full fifth currency ===');
-  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
-  for (const sel of ['cur', 'billCur', 'incCur', 'holdCur']) {
-    ok(sel + ' offers EUR', !![...$(sel).options].find(o => o.value === 'EUR'), sel);
-  }
-  $('openSet').click();
-  ok('settings has a euro rate input', !!$('rEUR'));
-  $('rEUR').value = '19.5'; $('rEUR').dispatchEvent(new w.Event('change'));
-  ok('editing it updates data.rates.EUR', JSON.parse(w.localStorage.getItem('slip:v4')).rates.EUR === 19.5,
-     JSON.parse(w.localStorage.getItem('slip:v4')).rates.EUR);
-
-  const eur = JSON.parse(JSON.stringify(seed));
-  eur.rates = { ZAR: 1, GBP: 21.78, USD: 16.23, GHS: 1.4464, EUR: 18.75 };
-  eur.bills = [
-    { id: 'e1', n: 'Netflix', a: 12, cur: 'EUR', zar: 0, cat: 'Subscriptions', note: '' }
-  ];
-  dom = await boot(eur); w = dom.window; d = w.document; $ = id => d.getElementById(id);
-  $('tabMonth').click();
-  ok('a euro bill converts at the stored EUR rate', Math.abs(num($('due').textContent) - 225) < 2,
-     $('due').textContent);
-
   console.log('\n=== 65. a month can run in its own currency, without touching past months ===');
   const twoCyc = {
     day: 25, starts: { '2026-08': '2026-08-28' }, goal: 3500, theme: 'light',
-    rates: { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44, EUR: 18.75 },
+    rates: { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44 },
     cycCur: { '2026-08-28': 'GBP' }, cycRate: { '2026-08-28': 21.78 },
     cats: [], groups: [], bills: [], ticks: {},
     entries: [
@@ -1691,10 +1670,10 @@ const seed = {
 
   $('openSet').click();
   ok("settings shows this month's currency as GBP", $('sCycCur').value === 'GBP', $('sCycCur').value);
-  $('sCycCur').value = 'EUR'; $('sCycCur').dispatchEvent(new w.Event('change'));
+  $('sCycCur').value = 'USD'; $('sCycCur').dispatchEvent(new w.Event('change'));
   $('closeSet').click();
   const afterSet = JSON.parse(w.localStorage.getItem('slip:v4'));
-  ok('changing it in Settings only touches the open cycle', afterSet.cycCur['2026-08-28'] === 'EUR',
+  ok('changing it in Settings only touches the open cycle', afterSet.cycCur['2026-08-28'] === 'USD',
      JSON.stringify(afterSet.cycCur));
   ok('the past cycle is untouched', !afterSet.cycCur['2026-07-28'], JSON.stringify(afterSet.cycCur));
 
@@ -1714,18 +1693,16 @@ const seed = {
   ok("settings reflects it immediately, without needing a reopen to refresh",
      $('sCycCur').value === 'GBP', $('sCycCur').value);
 
-  console.log('\n=== 66. old saved data without EUR/cycCur still loads cleanly ===');
-  const oldSeed = JSON.parse(JSON.stringify(seed));   // seed.rates has no EUR key at all
+  console.log('\n=== 66. old saved data without cycCur still loads cleanly ===');
+  const oldSeed = JSON.parse(JSON.stringify(seed));   // seed has no cycCur/cycRate/homeCur at all
   dom = await boot(oldSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   $('openSet').click();
-  ok('the EUR rate field is never blank', $('rEUR').value !== '' && $('rEUR').value !== '0',
-     $('rEUR').value);
   ok('this month\'s currency defaults to rand rather than throwing', $('sCycCur').value === 'ZAR',
      $('sCycCur').value);
 
   console.log('\n=== 67. savings pots keep their own currency, independent of the month ===');
   const potSeed2 = JSON.parse(JSON.stringify(seed));
-  potSeed2.rates = { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44, EUR: 18.75 };
+  potSeed2.rates = { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44 };
   dom = await boot(potSeed2); w = dom.window; d = w.document; $ = id => d.getElementById(id);
 
   $('vaultOpen').click(); $('vaultAddMore').click();
@@ -1790,7 +1767,7 @@ const seed = {
 
   const shortfallSeed = {
     day: 25, starts: { '2026-08': '2026-08-28' }, goal: 0, theme: 'light',
-    rates: { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44, EUR: 18.75 },
+    rates: { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44 },
     cats: [], groups: [], bills: [], ticks: {},
     entries: [
       { id: 1, amt: 1000, cat: 'Money in', note: '', date: '2026-07-28', type: 'in', cyc: '2026-07-28', man: true },
