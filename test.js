@@ -1696,7 +1696,7 @@ const seed = {
   const afterSet = JSON.parse(w.localStorage.getItem('slip:v4'));
   ok('changing it in Settings only touches the open cycle', afterSet.cycCur['2026-08-28'] === 'EUR',
      JSON.stringify(afterSet.cycCur));
-  ok('the past cycle is untouched', !afterSet.cycCur['2026-07-28'], JSON.stringify(afterSet.cycCur));
+  ok('the past cycle is untouched', afterSet.cycCur['2026-07-28'] === 'ZAR', JSON.stringify(afterSet.cycCur));
 
   dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   $('kIn').click();
@@ -1832,6 +1832,35 @@ const seed = {
   $('tabMonth').click();
   ok('back in the month view, where it actually applies', $('billCell').style.display === 'block',
      $('billCell').style.display);
+
+  console.log('\n=== 70. a default currency, without reinterpreting months that already happened ===');
+  const homeCurSeed = JSON.parse(JSON.stringify(seed));
+  dom = await boot(homeCurSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openSet').click();
+  ok('defaults to rand when nothing has been set', $('sHomeCur').value === 'ZAR', $('sHomeCur').value);
+  $('sHomeCur').value = 'GBP'; $('sHomeCur').dispatchEvent(new w.Event('change'));
+  $('closeSet').click();
+  const afterHome = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('setting it is remembered', afterHome.homeCur === 'GBP', afterHome.homeCur);
+  ok("the already-open month is already pinned, so the new default alone doesn't reach it",
+     afterHome.cycCur['2026-08-28'] === 'ZAR', JSON.stringify(afterHome.cycCur));
+  $('tabMonth').click();
+  ok('the current month still reads in rand — you have to say so explicitly to change a month in progress',
+     $('secVal').textContent.includes('R') && !$('secVal').textContent.includes('£'),
+     $('secVal').textContent);
+
+  const emptyCycSeed = JSON.parse(JSON.stringify(seed));
+  emptyCycSeed.entries = [];
+  dom = await boot(emptyCycSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openSet').click();
+  $('sHomeCur').value = 'EUR'; $('sHomeCur').dispatchEvent(new w.Event('change'));
+  $('closeSet').click();
+  const afterEmpty = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok("a month with nothing logged yet just follows the new default, no override needed",
+     afterEmpty.homeCur === 'EUR' && !afterEmpty.cycCur['2026-08-28'],
+     JSON.stringify(afterEmpty.cycCur));
+  $('tabMonth').click();
+  ok('and actually reads in euros', $('secVal').textContent.includes('€'), $('secVal').textContent);
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

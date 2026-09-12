@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-12-4">
+<meta name="slip-build" content="2026-09-12-5">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -625,6 +625,16 @@
       </select>
       <p class="hint" style="margin:8px 0 0">Only changes how this open month is shown — past
         months keep whatever currency they were tracked in.</p></div>
+    <div class="sp"><label for="sHomeCur">Default currency</label>
+      <select id="sHomeCur">
+        <option value="ZAR">R (ZAR)</option>
+        <option value="GBP">£ (GBP)</option>
+        <option value="USD">$ (USD)</option>
+        <option value="GHS">₵ (GHS)</option>
+        <option value="EUR">€ (EUR)</option>
+      </select>
+      <p class="hint" style="margin:8px 0 0">What a new month starts in unless you pick something
+        else for it. Changing this never touches a month that's already begun.</p></div>
     <label>Recurring income</label>
     <p class="hint">Nudges you to log it once a new month starts, instead of retyping it from
       memory each time. Never logs it for you.</p>
@@ -1056,6 +1066,16 @@
   // when the rate table is edited later
   const curForCyc=cyc=>(data.cycCur&&data.cycCur[cyc])||data.homeCur||'ZAR';
   const rateForCyc=cyc=>(data.cycRate&&data.cycRate[cyc])||1;
+  // freezes a cycle's currency+rate the moment it first gets an entry, so it's pinned to
+  // whatever the default was back then — otherwise a cycle that never got an explicit
+  // currency choice would keep reading data.homeCur live, and changing your default currency
+  // later would silently reinterpret every past month that just went with the default
+  const ensureCycCur=cyc=>{
+    if(data.cycCur[cyc]===undefined){
+      const cur=data.homeCur||'ZAR';
+      data.cycCur[cyc]=cur; data.cycRate[cyc]=data.rates[cur]||1;
+    }
+  };
   const Rcyc=(n,cyc)=>fmtMoney(n/rateForCyc(cyc),curForCyc(cyc));
   const R=n=>Rcyc(n,cycStart(today()));
   const D=s=>new Date(s+'T00:00:00');
@@ -1090,6 +1110,7 @@
   // entries you never moved by hand follow the new boundaries
   function refile(){
     data.entries.forEach(e=>{if(!e.man)e.cyc=cycStart(e.date)});
+    [...new Set(data.entries.map(e=>e.cyc))].forEach(ensureCycCur);
     save();fillSet();setKind(kind);
   }
   const cycEnd=cs=>addDays(cycNext(cs),-1);
@@ -1840,6 +1861,7 @@
              type:refund?'out':(type||'out'),refund:refund||undefined,
              cyc:cyc||cycStart(when)};
     if(cur!=='ZAR'){e.cur=cur;e.orig=amt;e.rate=rate}
+    ensureCycCur(e.cyc);
     data.entries.push(e);
     $('amt').value='';$('note').value='';$('when').value=today();save();
     if(newCycCur)fillSet();
@@ -2243,6 +2265,7 @@
         else{e.rate=data.rates[cur]||1;e.amt=a*e.rate}
       }
     }
+    ensureCycCur(e.cyc);
     data.entries.push(e);
     delete $('vaultAmt').dataset.cyc;
     save(); $('vaultDlg').close();
@@ -2316,6 +2339,7 @@
     const t=today(), cyc=cycStart(t), note=$('payNote').value.trim()||paying.n;
     const base=billZar(paying), splitTo=$('paySplit').value, extra=a-base;
     const uid=()=>Date.now()+Math.random();
+    ensureCycCur(cyc);
     if(splitTo&&extra>1){
       // one invoice, two lines — the bill still ticks off and nothing looks paid twice
       data.entries.push({id:uid(),amt:base,cat:paying.cat,note,date:t,type:'out',cyc});
@@ -2652,15 +2676,20 @@
     let changed=false;
     if(d!==data.day){data.day=d;changed=true}
     if(g!==data.goal){data.goal=g;changed=true}
+    const hc=$('sHomeCur').value;
+    if(hc&&hc!==data.homeCur){data.homeCur=hc;changed=true}
     ['GBP','USD','GHS','EUR'].forEach(k=>{const v=Number($('r'+k).value);
       if(v&&v!==data.rates[k]){data.rates[k]=v;data.ratesAt=today();changed=true}});
     // read before any anchor change below, since setAnchor's refile() repopulates this
-    // very field from data — reading it after would just see its own old value echoed back
-    const cc=$('sCycCur').value;
+    // very field from data — reading it after would just see its own old value echoed back.
+    // compared against dataset.orig (what it showed when Settings opened), not against
+    // curForCyc() live — a Default currency change earlier in this same save can shift what
+    // curForCyc() returns, which would make an untouched dropdown look like a deliberate edit
+    const cc=$('sCycCur').value, ccChanged=cc&&cc!==$('sCycCur').dataset.orig;
     if(st&&st!==cycStart(today())){setAnchor(st);changed=true}
     // applied against the cycle that's actually open once the anchor above takes effect
     const openCyc=cycStart(today());
-    if(cc&&cc!==curForCyc(openCyc)){
+    if(ccChanged){
       data.cycCur[openCyc]=cc; data.cycRate[openCyc]=data.rates[cc]||1; changed=true;
     }
     if(changed)refile();
@@ -2879,6 +2908,8 @@
     $('startNow').textContent='Right now this month runs '+cycRange(_cs)+
       ' and is called '+cycName(_cs)+'.';
     $('sCycCur').value=curForCyc(_cs);
+    $('sCycCur').dataset.orig=curForCyc(_cs);
+    $('sHomeCur').value=data.homeCur||'ZAR';
     const exNow=exCats();
     const el=$('exList'); el.innerHTML='';
     const allCats=LIVING.concat(SHOP,BILLS,customs().map(c=>c.n));
@@ -3642,6 +3673,9 @@
     if(!data.rates.EUR)data.rates.EUR=18.75;
     data.cycCur=data.cycCur||{}; data.cycRate=data.cycRate||{}; data.homeCur=data.homeCur||'ZAR';
     data.entries.forEach(e=>{if(!e.cyc)e.cyc=cycStart(e.date)});
+    // every cycle that already has entries gets pinned to rand now, before a default
+    // currency setting can exist to retroactively change what they'd otherwise fall back to
+    [...new Set(data.entries.map(e=>e.cyc))].forEach(ensureCycCur);
     // clear out anything left from the old receipts feature
     const oldShots=data.entries.filter(e=>e.rcpt);
     if(oldShots.length){

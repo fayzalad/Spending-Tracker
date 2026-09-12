@@ -88,11 +88,18 @@ stored exchange rate.
 
 ## Working in a different currency
 
-If you're usually paid in rand but got paid in pounds one particular month, you can set that
-month's currency when you log the income that starts it (tick **Start this month from today** and
-a currency picker appears), or change it any time from **Settings → Month → This month's
-currency**. It only ever affects the month you're changing — anything already closed out stays
-exactly as it was, in whatever currency it was tracked in at the time, forever.
+If you're paid in a different currency every so often, you can set that one month's currency when
+you log the income that starts it (tick **Start this month from today** and a currency picker
+appears), or change it any time from **Settings → Month → This month's currency**. It only ever
+affects the month you're changing — anything already closed out stays exactly as it was, in
+whatever currency it was tracked in at the time, forever.
+
+If you're mostly paid in one particular currency and just want the app to run in that by default —
+say you're paid in pounds most months, not rand — set **Settings → Month → Default currency**
+once. Every new month then starts in that currency automatically, without you picking it each
+time; "This month's currency" above it still lets you override any one specific month. Like
+everything else here, changing your default never reaches back and reinterprets a month that's
+already begun.
 
 Logging a single entry in a currency other than your month's main one also works from the amount
 field itself — just pick the currency next to the amount, and it converts automatically using the
