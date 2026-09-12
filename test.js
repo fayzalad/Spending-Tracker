@@ -1659,6 +1659,70 @@ const seed = {
   ok('a euro bill converts at the stored EUR rate', Math.abs(num($('due').textContent) - 225) < 2,
      $('due').textContent);
 
+  console.log('\n=== 65. a month can run in its own currency, without touching past months ===');
+  const twoCyc = {
+    day: 25, starts: { '2026-08': '2026-08-28' }, goal: 3500, theme: 'light',
+    rates: { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44, EUR: 18.75 },
+    cycCur: { '2026-08-28': 'GBP' }, cycRate: { '2026-08-28': 21.78 },
+    cats: [], groups: [], bills: [], ticks: {},
+    entries: [
+      { id: 1, amt: 10000, cat: 'Money in', note: '', date: '2026-07-28', type: 'in', cyc: '2026-07-28', man: true },
+      { id: 2, amt: 2000, cat: 'Rent', note: '', date: '2026-07-29', type: 'out', cyc: '2026-07-28' },
+      { id: 3, amt: 21780, cat: 'Money in', note: '', date: '2026-08-28', type: 'in', cyc: '2026-08-28', man: true },
+      { id: 4, amt: 2178, cat: 'Rent', note: '', date: '2026-08-29', type: 'out', cyc: '2026-08-28' }
+    ]
+  };
+  dom = await boot(twoCyc); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('tabMonth').click();
+  ok('the live dashboard reads in pounds, since the open cycle is GBP',
+     $('secVal').textContent.includes('£'), $('secVal').textContent);
+  ok('and the figure is converted, not the raw rand number relabelled',
+     Math.abs(num($('inVal').textContent) - 1000) < 1, $('inVal').textContent);
+
+  $('openHist').click();
+  const histRows = [...d.querySelectorAll('#histList .hist')];
+  ok('the closed July cycle is listed', histRows.length === 1, histRows.length);
+  ok('and still reads in rand, not pounds', histRows[0].textContent.includes('R') && !histRows[0].textContent.includes('£'),
+     histRows[0].textContent);
+  histRows[0].querySelector('div').click();
+  ok('opening it shows rand figures', $('monthStats').textContent.includes('R'), $('monthStats').textContent);
+  ok('not pounds', !$('monthStats').textContent.includes('£'), $('monthStats').textContent);
+  $('closeMonth').click();
+
+  $('openSet').click();
+  ok("settings shows this month's currency as GBP", $('sCycCur').value === 'GBP', $('sCycCur').value);
+  $('sCycCur').value = 'EUR'; $('sCycCur').dispatchEvent(new w.Event('change'));
+  $('closeSet').click();
+  const afterSet = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('changing it in Settings only touches the open cycle', afterSet.cycCur['2026-08-28'] === 'EUR',
+     JSON.stringify(afterSet.cycCur));
+  ok('the past cycle is untouched', !afterSet.cycCur['2026-07-28'], JSON.stringify(afterSet.cycCur));
+
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('kIn').click();
+  $('startToday').checked = true; $('startToday').dispatchEvent(new w.Event('change'));
+  ok('picking a new month shows its currency selector', $('cycCurRow').style.display === 'flex');
+  $('cycCurSel').value = 'GBP';
+  $('amt').value = '5000';
+  $('addBtn').click();
+  const afterIncome = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok("logging income while starting a new month writes that month's currency",
+     afterIncome.cycCur['2026-08-31'] === 'GBP', JSON.stringify(afterIncome.cycCur));
+  ok('and freezes the rate active at that moment', afterIncome.cycRate['2026-08-31'] === afterIncome.rates.GBP,
+     afterIncome.cycRate['2026-08-31']);
+  $('openSet').click();
+  ok("settings reflects it immediately, without needing a reopen to refresh",
+     $('sCycCur').value === 'GBP', $('sCycCur').value);
+
+  console.log('\n=== 66. old saved data without EUR/cycCur still loads cleanly ===');
+  const oldSeed = JSON.parse(JSON.stringify(seed));   // seed.rates has no EUR key at all
+  dom = await boot(oldSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openSet').click();
+  ok('the EUR rate field is never blank', $('rEUR').value !== '' && $('rEUR').value !== '0',
+     $('rEUR').value);
+  ok('this month\'s currency defaults to rand rather than throwing', $('sCycCur').value === 'ZAR',
+     $('sCycCur').value);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

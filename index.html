@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-12-1">
+<meta name="slip-build" content="2026-09-12-2">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -574,6 +574,15 @@
     <div class="field" id="cycRow" style="display:none"><select id="cyc" aria-label="Counts toward"></select></div>
     <label class="checkline" id="startRow" style="display:none">
       <input type="checkbox" id="startToday"><span id="startTodayLbl">Start this month from today</span></label>
+    <div class="field" id="cycCurRow" style="display:none">
+      <select id="cycCurSel" aria-label="This month's currency">
+        <option value="ZAR">R (ZAR)</option>
+        <option value="GBP">£ (GBP)</option>
+        <option value="USD">$ (USD)</option>
+        <option value="GHS">₵ (GHS)</option>
+        <option value="EUR">€ (EUR)</option>
+      </select>
+    </div>
     <div class="field">
       <input id="note" placeholder="Note (optional)" aria-label="Note">
     </div>
@@ -606,6 +615,16 @@
       <input id="sStart" type="date">
       <button class="ghost" id="resetStart" style="margin-top:8px">Back to the usual day</button>
       <p class="hint" id="startNow" style="margin:8px 0 0"></p></div>
+    <div class="sp"><label for="sCycCur">This month's currency</label>
+      <select id="sCycCur">
+        <option value="ZAR">R (ZAR)</option>
+        <option value="GBP">£ (GBP)</option>
+        <option value="USD">$ (USD)</option>
+        <option value="GHS">₵ (GHS)</option>
+        <option value="EUR">€ (EUR)</option>
+      </select>
+      <p class="hint" style="margin:8px 0 0">Only changes how this open month is shown — past
+        months keep whatever currency they were tracked in.</p></div>
     <label>Recurring income</label>
     <p class="hint">Nudges you to log it once a new month starts, instead of retyping it from
       memory each time. Never logs it for you.</p>
@@ -1009,13 +1028,24 @@
     rates:{ZAR:1,GBP:21.78,USD:15.96,GHS:1.44,EUR:18.75},ratesAt:'2026-08-25',
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
-    bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[],avKey:''};
+    bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[],avKey:'',
+    homeCur:'ZAR',cycCur:{},cycRate:{}};
   let syncTimer=null, bannerOff=false, billBannerOff=false, incBannerOff=false;
   let scope='week', kind='out';
   let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
 
   const $=id=>document.getElementById(id);
-  const R=n=>(n<0?'−R':'R')+Math.round(Math.abs(n)).toLocaleString('en-ZA');
+  const fmtMoney=(n,cur)=>{cur=cur||'ZAR';
+    const neg=n<0, v=Math.round(Math.abs(n)).toLocaleString('en-ZA');
+    return cur==='ZAR'?(neg?'−R':'R')+v:(neg?'−':'')+SYM[cur]+v};
+  // a cycle's currency is a display choice only — the ledger itself always stays in rand.
+  // the rate used to convert it is the one frozen at data.cycRate[cyc] the moment that
+  // cycle's currency was chosen, never the live table, so a closed month never drifts
+  // when the rate table is edited later
+  const curForCyc=cyc=>(data.cycCur&&data.cycCur[cyc])||data.homeCur||'ZAR';
+  const rateForCyc=cyc=>(data.cycRate&&data.cycRate[cyc])||1;
+  const Rcyc=(n,cyc)=>fmtMoney(n/rateForCyc(cyc),curForCyc(cyc));
+  const R=n=>Rcyc(n,cycStart(today()));
   const D=s=>new Date(s+'T00:00:00');
   const iso=d=>{const p=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return p.toISOString().slice(0,10)};
   const today=()=>iso(new Date());
@@ -1627,7 +1657,8 @@
       .forEach(e=>{tally[e.cat]=(tally[e.cat]||0)+e.amt});
     return Object.entries(tally).sort((a,b)=>b[1]-a[1]);
   }
-  function renderBreakRows(container,rows){
+  function renderBreakRows(container,rows,cyc){
+    cyc=cyc||cycStart(today());
     const top=Math.max(1,...rows.map(r=>Math.abs(r[1])));
     container.innerHTML='';
     rows.slice(0,8).forEach(([cat,v])=>{
@@ -1637,7 +1668,7 @@
         '<span class="bn">'+cat+(bill?' · bill':'')+'</span>'+
         '<span class="bt"><i class="'+(bill?'bill':'')+(v<0?' credit':'')+'" style="width:'+
           Math.max(6,Math.min(100,Math.abs(v)/top*100))+'%"></i></span>'+
-        '<span class="bv num">'+R(v)+'</span>';
+        '<span class="bv num">'+Rcyc(v,cyc)+'</span>';
       container.appendChild(r);
     });
     if(rows.length>8){
@@ -1650,6 +1681,7 @@
   function entryRow(e,after){
     const li=document.createElement('li');
     const credit=isIn(e)||isUnsave(e)||e.amt<0;
+    const ecyc=e.cyc||cycStart(e.date);
     li.className=credit?'income':(isSave(e)||isBill(e)?'bill':'');
     li.innerHTML='<span class="dot">'+(isIn(e)?'↓':isSave(e)?'\u{1F512}':isUnsave(e)?'\u{1F513}'
         :e.amt<0?'\u21A9':iconOf(e.cat))+'</span>'+
@@ -1659,7 +1691,7 @@
         if(e.cur)bits.push(SYM[e.cur]+e.orig.toLocaleString('en-ZA')+' at R'+e.rate);
         if(!isIn(e)&&e.note)bits.push(e.note);
         return bits.length?'<em>'+bits.join(' \u00b7 ')+'</em>':''})()+'</span>'+
-      '<span class="a num">'+(credit?'+'+R(Math.abs(e.amt)):R(-e.amt))+'</span>';
+      '<span class="a num">'+(credit?'+'+Rcyc(Math.abs(e.amt),ecyc):Rcyc(-e.amt,ecyc))+'</span>';
     const cv=document.createElement('span');cv.className='chev';cv.textContent='›';
     cv.onclick=()=>openMove(e);
     li.appendChild(cv);
@@ -1668,7 +1700,7 @@
     x.setAttribute('aria-label','Remove entry');
     x.onclick=()=>{
       const what=(isIn(e)?(e.note||'Money in')
-        :isSave(e)?'this move to savings':isUnsave(e)?'this withdrawal':e.cat)+' · '+R(e.amt);
+        :isSave(e)?'this move to savings':isUnsave(e)?'this withdrawal':e.cat)+' · '+Rcyc(e.amt,ecyc);
       if(!confirm('Delete '+what+'? This cannot be undone.'))return;
       removeEntry(e);save();
       if(after)after();
@@ -1689,9 +1721,10 @@
       const net=inMode?all.reduce((s,e)=>s+e.amt,0)
                      :all.reduce((s,e)=>s+(isSpend(e)?e.amt:0),0);
       const h=document.createElement('div');h.className='dayhead';
+      const dcyc=cycStart(d);
       h.innerHTML='<span class="n">'+(d===todayIso?'Today':
         D(d).toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'short'}))+
-        '</span><span class="t num">'+(inMode?'+'+R(net):R(net))+'</span>';
+        '</span><span class="t num">'+(inMode?'+'+Rcyc(net,dcyc):Rcyc(net,dcyc))+'</span>';
       box.appendChild(h);
       const ul=document.createElement('ul');
       items.forEach(e=>ul.appendChild(entryRow(e,()=>{if($('allDlg').open)renderAll()})));
@@ -1706,7 +1739,7 @@
     moving=e;
     const base=e.cyc||cycStart(e.date);
     $('moveWhat').textContent=(isIn(e)?(e.note||'Money in')
-      :isSave(e)?'Moved to savings':isUnsave(e)?'Taken from savings':e.cat)+' · '+R(e.amt)+
+      :isSave(e)?'Moved to savings':isUnsave(e)?'Taken from savings':e.cat)+' · '+Rcyc(e.amt,base)+
       ' · logged '+D(e.date).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
     let opts='', c=base;
     for(let i=0;i<2;i++)c=addDays(cycStart(addDays(c,-1)),0);
@@ -1766,7 +1799,10 @@
     btn.disabled=true; btn.style.opacity='.5';
     setTimeout(()=>{btn.disabled=false;btn.style.opacity=''},700);
     const when=$('when').value||today();
-    if(type==='in'&&$('startToday').checked){setAnchor(when);cyc=cycStart(when)}
+    let newCycCur=false;
+    if(type==='in'&&$('startToday').checked){setAnchor(when);cyc=cycStart(when);
+      const cc=$('cycCurSel').value;
+      data.cycCur[cyc]=cc; data.cycRate[cyc]=data.rates[cc]||1; newCycCur=true}
     const cur=$('cur').value, rate=Number(data.rates[cur])||1;
     const id=Date.now()+Math.random();
     const refund=(type==='refund');
@@ -1776,6 +1812,7 @@
     if(cur!=='ZAR'){e.cur=cur;e.orig=amt;e.rate=rate}
     data.entries.push(e);
     $('amt').value='';$('note').value='';$('when').value=today();save();
+    if(newCycCur)fillSet();
   }
 
   function setKind(k){
@@ -1791,6 +1828,7 @@
       $('startTodayLbl').textContent='Start the month from '+
         D(wd).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})+' instead of the '+
         data.day+'th';}
+    $('cycCurRow').style.display='none';
     $('addBtn').textContent=k==='in'?'Add money':k==='refund'?'Add refund':'Add';
     $('addBtn').className='go'+(k==='in'?' in':'');
     $('amt').placeholder=k==='in'?'Amount received'
@@ -1950,8 +1988,8 @@
 
     // the four figures, in boxes across the page
     y=712;
-    const cells=[['Received',R(i),GREEN],['Rent and the like',R(b),INK],
-                 ['Day to day',R(l),INK],['Left over',R(over),over<0?RED:INK]];
+    const cells=[['Received',Rcyc(i,cs),GREEN],['Rent and the like',Rcyc(b,cs),INK],
+                 ['Day to day',Rcyc(l,cs),INK],['Left over',Rcyc(over,cs),over<0?RED:INK]];
     const cw=(W-18)/4;
     cells.forEach((c,n)=>{
       const x=L+n*(cw+6);
@@ -1963,11 +2001,11 @@
 
     if(put>0||data.goal>0){
       nl(20);
-      txt('Moved to savings',L,{size:10}); rt(R(put),{size:10,bold:true});
+      txt('Moved to savings',L,{size:10}); rt(Rcyc(put,cs),{size:10,bold:true});
       nl(14);
       if(data.goal>0){
-        txt(put>=data.goal?'Savings goal of '+R(data.goal)+' was met.'
-          :'Savings goal of '+R(data.goal)+' was missed by '+R(data.goal-put)+'.',
+        txt(put>=data.goal?'Savings goal of '+Rcyc(data.goal,cs)+' was met.'
+          :'Savings goal of '+Rcyc(data.goal,cs)+' was missed by '+Rcyc(data.goal-put,cs)+'.',
           L,{size:9,fill:MUTE});
         nl(10);
       }
@@ -1982,7 +2020,7 @@
         const bx=L+190, bw=180;
         push({rect:[bx,y-2,bw,7],fill:[.90,.90,.94]});
         push({rect:[bx,y-2,Math.max(2,Math.abs(v)/top*bw),7],fill:v<0?GREEN:ACCENT});
-        rt(R(v)+'   '+(spentAll>0?Math.round(v/spentAll*100)+'%':''),
+        rt(Rcyc(v,cs)+'   '+(spentAll>0?Math.round(v/spentAll*100)+'%':''),
            {size:9.5,fill:v<0?GREEN:INK});
         nl(17);
       });
@@ -2025,8 +2063,10 @@
         pg.push({t:'Amount',x:RGT,y:763,size:7.5,bold:true,right:true,fill:MUTE});
       }
       pg.push({rule:[L,58,RGT,58],stroke:RULE});
-      pg.push({t:'All amounts in South African rand. Foreign entries show the original and the '+
-        'rate used that day.',x:L,y:44,size:7.5,fill:MUTE});
+      pg.push({t:(curForCyc(cs)==='ZAR'?'Summary figures and the entry list below are both in '
+          :'Summary figures are in '+curForCyc(cs)+'; the entry list below stays in ')+
+        'South African rand. Foreign entries show the original and the rate used that day.',
+        x:L,y:44,size:7.5,fill:MUTE});
       pg.push({t:'Page '+(n+1)+' of '+pages.length,x:RGT,y:44,size:7.5,right:true,fill:MUTE});
     });
 
@@ -2347,15 +2387,16 @@
     $('monthPrev').disabled=at<=0;
     $('monthNext').disabled=at<0||at>=list.length-1;
     const cell=(lab,val,cls)=>'<div><span class="cap">'+lab+'</span><b class="num '+
-      (cls||'')+'">'+R(val)+'</b></div>';
+      (cls||'')+'">'+Rcyc(val,cs)+'</b></div>';
+    const plainCell=(lab,val)=>'<div><span class="cap">'+lab+'</span><b class="num">'+val+'</b></div>';
     $('monthStats').innerHTML=
       cell('Received',i,'good')+cell('Rent & the like',b)+
       cell('Day to day',l)+cell('Put away',put)+
       cell('Left over',over,over<0?'bad':'')+
-      cell('Days',(diff(cs,cycEnd(cs))+1)).replace(/R(\d+)/,'$1');
+      plainCell('Days',(diff(cs,cycEnd(cs))+1));
     const brows=catTally(cs,cycEnd(cs));
     $('monthBreakCard').style.display=brows.length?'block':'none';
-    if(brows.length)renderBreakRows($('monthBreakList'),brows);
+    if(brows.length)renderBreakRows($('monthBreakList'),brows,cs);
     renderDays($('monthList'),es,0,today(),false);
   }
   $('monthPrev').onclick=()=>{const l=allCycles(),i=l.indexOf(monthOpen);if(i>0)openMonth(l[i-1])};
@@ -2377,12 +2418,12 @@
       const met=data.goal>0&&(put+Math.max(0,leftover))>=data.goal;
       const row=document.createElement('div'); row.className='hist';
       row.innerHTML='<div><div class="l">'+cycName(cs)+'</div>'+
-        '<div class="s">In '+R(i)+' · Bills '+R(b)+' · Living '+R(l)+
-        (put?' · Saved '+R(put):'')+'</div>'+
+        '<div class="s">In '+Rcyc(i,cs)+' · Bills '+Rcyc(b,cs)+' · Living '+Rcyc(l,cs)+
+        (put?' · Saved '+Rcyc(put,cs):'')+'</div>'+
         (data.goal>0?'<span class="pill '+(met?'ok':'no')+'">'+
-          (met?'Goal met':'Missed by '+R(data.goal-leftover))+'</span>':'')+'</div>'+
+          (met?'Goal met':'Missed by '+Rcyc(data.goal-leftover,cs))+'</span>':'')+'</div>'+
         '<div class="r"><b class="num" style="color:'+(leftover>=0?'var(--good)':'var(--bad)')+'">'+
-        R(leftover)+'</b><div class="s">left over</div>'+
+        Rcyc(leftover,cs)+'</b><div class="s">left over</div>'+
         '<button class="mini" data-csv="'+cs+'">CSV</button>'+
         '<button class="mini" data-pdf="'+cs+'">PDF</button></div>';
       row.style.cursor='pointer';
@@ -2528,6 +2569,10 @@
     if(g!==data.goal){data.goal=g;changed=true}
     ['GBP','USD','GHS','EUR'].forEach(k=>{const v=Number($('r'+k).value);
       if(v&&v!==data.rates[k]){data.rates[k]=v;data.ratesAt=today();changed=true}});
+    const openCyc=cycStart(today()), cc=$('sCycCur').value;
+    if(cc&&cc!==curForCyc(openCyc)){
+      data.cycCur[openCyc]=cc; data.cycRate[openCyc]=data.rates[cc]||1; changed=true;
+    }
     if(st&&st!==cycStart(today())){setAnchor(st);return}
     if(changed)refile();
   }
@@ -2744,6 +2789,7 @@
     $('sStart').value=_cs;
     $('startNow').textContent='Right now this month runs '+cycRange(_cs)+
       ' and is called '+cycName(_cs)+'.';
+    $('sCycCur').value=curForCyc(_cs);
     const exNow=exCats();
     const el=$('exList'); el.innerHTML='';
     const allCats=LIVING.concat(SHOP,BILLS,customs().map(c=>c.n));
@@ -2864,6 +2910,10 @@
       ?(zar/daily).toFixed(1)+' days of your allowance':'';
   }
   $('cur').onchange=showConv; $('amt').oninput=showConv;
+  $('startToday').onchange=()=>{
+    $('cycCurRow').style.display=$('startToday').checked?'flex':'none';
+    if($('startToday').checked)$('cycCurSel').value=curForCyc(cycStart(today()));
+  };
   ['GBP','USD','GHS','EUR'].forEach(k=>{$('r'+k).onchange=e=>{
     data.rates[k]=Number(e.target.value)||data.rates[k];data.ratesAt=today();save();fillSet();showConv()}});
   $('refreshRates').onclick=async()=>{
@@ -3081,8 +3131,7 @@
   const worthTotal=()=>holds().reduce((s,h)=>s+holdValue(h),0);
   // a holding's own currency is just how it's displayed — R() everywhere else in the app is
   // untouched, this only affects the Investments card and its dialog
-  const RC=(n,cur)=>(!cur||cur==='ZAR')?R(n):
-    (n<0?'−':'')+SYM[cur]+Math.round(Math.abs(n)).toLocaleString('en-ZA');
+  const RC=(n,cur)=>fmtMoney(n,cur);
   // the total only makes sense in one currency at a time — while every holding shares one,
   // that's exact; ponytail: a genuinely mixed portfolio falls back to a raw ZAR sum here,
   // not a real conversion, since nothing has asked for that yet
@@ -3499,6 +3548,10 @@
       }
     }
     if(s)data=Object.assign(data,s);
+    // old saved data predates EUR/cycCur/cycRate — fill in what's missing rather than
+    // letting Object.assign's shallow merge silently drop them
+    if(!data.rates.EUR)data.rates.EUR=18.75;
+    data.cycCur=data.cycCur||{}; data.cycRate=data.cycRate||{}; data.homeCur=data.homeCur||'ZAR';
     data.entries.forEach(e=>{if(!e.cyc)e.cyc=cycStart(e.date)});
     // clear out anything left from the old receipts feature
     const oldShots=data.entries.filter(e=>e.rcpt);
