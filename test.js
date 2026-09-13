@@ -521,6 +521,21 @@ const seed = {
      !/Put R/.test($('sweepBox').textContent), $('sweepBox').textContent.slice(0, 120));
   ok('goal reads as met', /already put away/.test($('saveSub').textContent), $('saveSub').textContent);
 
+  console.log("\n=== 21b. withdrawing a met goal actually frees the money, doesn't re-reserve it ===");
+  const safeWithGoalMet = num($('safe').textContent);
+  $('withdrawBtn').click();
+  $('vaultAmt').value = '3500';
+  $('vaultSave').click();
+  await new Promise(r => setTimeout(r, 60));
+  ok('the goal no longer nudges to be saved again',
+     !/held back from your daily rate/.test($('vaultSub').textContent), $('vaultSub').textContent);
+  // £3500 spread over the ~25 days left in the cycle, not the full amount in one day
+  ok("withdrawing it actually raises what's spendable, instead of the goal re-reserving the same amount",
+     num($('safe').textContent) > safeWithGoalMet + 100,
+     safeWithGoalMet + ' → ' + num($('safe').textContent));
+  ok('the sweep offer to save the goal does not reappear',
+     !/Put R/.test($('sweepBox').textContent), $('sweepBox').textContent.slice(0, 120));
+
   console.log('\n=== 22. two devices merge instead of clobbering ===');
   const merge = eval('(' + require('fs').readFileSync(path.join(__dirname, 'index.html'), 'utf8')
       .match(/function mergeStores\(a,b\)\{[\s\S]*?\n  \}/)[0].replace('function mergeStores','function') + ')');
