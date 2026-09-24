@@ -1825,6 +1825,171 @@ const seed = {
   ok('back in the month view, where it actually applies', $('billCell').style.display === 'block',
      $('billCell').style.display);
 
+  console.log('\n=== 70. filing money into the next month turns the month over there ===');
+  // payday drifts around the last week, so the allowance day is only ever an approximation.
+  // Choosing "the next one" is the statement that the new month has started.
+  // one payday per calendar month — data.starts holds a single anchor per month, so a seed
+  // with two paydays in the same month would clobber its own earlier boundary
+  const driftSeed = {
+    day: 25, starts: { '2026-07': '2026-07-27' }, goal: 0, theme: 'light',
+    rates: { ZAR: 1, GBP: 21.63, USD: 15.96, GHS: 1.44 },
+    cats: [], groups: [], bills: [], ticks: {}, potCats: [], exclude: [], deleted: {},
+    entries: [
+      { id: 1, amt: 20000, cat: 'Money in', note: 'Aug pay', date: '2026-07-27', type: 'in', cyc: '2026-07-27' },
+      { id: 2, amt: 6000, cat: 'Groceries', note: '', date: '2026-08-10', type: 'out', cyc: '2026-07-27' },
+      { id: 3, amt: 400, cat: 'Groceries', note: 'in cycle', date: '2026-08-28', type: 'out', cyc: '2026-08-25' }
+    ]
+  };
+  dom = await boot(driftSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('kIn').click();
+  ok('the current month is preselected when payday is still a way off',
+     $('cyc').value === '2026-08-25', $('cyc').value);
+  ok('so the checkbox is left alone', $('startToday').checked === false);
+  ok('and the label names the month it would start',
+     /^Start September from 31 Aug/.test($('startTodayLbl').textContent), $('startTodayLbl').textContent);
+
+  // paid early, on the 31st: say it is next month's money
+  $('cyc').value = '2026-09-25';
+  $('cyc').dispatchEvent(new w.Event('change'));
+  ok('picking the next month ticks the start-here box on its own',
+     $('startToday').checked === true, String($('startToday').checked));
+  ok('and the label names the month being started, and the day',
+     /^Start October from 31 Aug/.test($('startTodayLbl').textContent), $('startTodayLbl').textContent);
+  ok('the currency selector for the new month appears with it',
+     $('cycCurRow').style.display === 'flex', $('cycCurRow').style.display);
+
+  $('amt').value = '21100';
+  $('addBtn').click();
+  await new Promise(r => setTimeout(r, 60));
+  let drift = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('the month start moves to the day the money arrived',
+     drift.starts['2026-08'] === '2026-08-31', JSON.stringify(drift.starts));
+  const paid = drift.entries.find(e => e.amt === 21100);
+  ok('and the entry lands in that new month', paid.cyc === '2026-08-31', paid.cyc);
+  $('tabMonth').click();
+  ok('so it shows on the dashboard straight away, not next week',
+     num($('inVal').textContent) === 21100, $('inVal').textContent);
+
+  console.log('\n=== 70b. the checkbox still wins if you untick it ===');
+  dom = await boot(driftSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('kIn').click();
+  $('cyc').value = '2026-09-25'; $('cyc').dispatchEvent(new w.Event('change'));
+  $('startToday').checked = false; $('startToday').dispatchEvent(new w.Event('change'));
+  $('amt').value = '21100';
+  $('addBtn').click();
+  await new Promise(r => setTimeout(r, 60));
+  drift = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('unticking it leaves the boundary where it was',
+     drift.starts['2026-08'] === undefined, JSON.stringify(drift.starts));
+  ok('and the money waits for the usual allowance day',
+     drift.entries.find(e => e.amt === 21100).cyc === '2026-09-25',
+     drift.entries.find(e => e.amt === 21100).cyc);
+
+  console.log('\n=== 70c. the month dropdown and label follow the date field ===');
+  dom = await boot(driftSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('kIn').click();
+  const staleLabel = $('startTodayLbl').textContent;
+  $('when').value = '2026-09-23';
+  $('when').dispatchEvent(new w.Event('change'));
+  ok('changing the date after tapping Received rebuilds the label',
+     $('startTodayLbl').textContent !== staleLabel && /23 Sept/.test($('startTodayLbl').textContent),
+     staleLabel + '  →  ' + $('startTodayLbl').textContent);
+  ok('and rebuilds the month dropdown around that date',
+     [...$('cyc').options].some(o => /25 Sept/.test(o.textContent)),
+     [...$('cyc').options].map(o => o.textContent).join(' || '));
+
+  console.log('\n=== 71. the same correction from the edit sheet ===');
+  // The real report: paid 23 Sept, logged with "counts toward October", but the boundary was
+  // left on the 25th — so on the 24th the money was nowhere on the dashboard. Needs its own
+  // clock, like section 44, because the bug only exists between payday and the allowance day.
+  const strandedSeed = {
+    day: 25, starts: { '2026-08': '2026-08-27' }, goal: 0, theme: 'light',
+    rates: { ZAR: 1, GBP: 21.63, USD: 15.96, GHS: 1.44 },
+    cats: [], groups: [], bills: [], ticks: {}, potCats: [], exclude: [], deleted: {},
+    entries: [
+      { id: 1, amt: 20000, cat: 'Money in', note: 'Sept pay', date: '2026-08-27', type: 'in', cyc: '2026-08-27' },
+      { id: 2, amt: 6000, cat: 'Groceries', note: '', date: '2026-09-10', type: 'out', cyc: '2026-08-27' },
+      { id: 3, amt: 21100, cat: 'Money in', note: '', date: '2026-09-23', type: 'in', cyc: '2026-09-25' }
+    ]
+  };
+  const strandDom = new (require('jsdom').JSDOM)(HTML, {
+    runScripts: 'dangerously', url: 'https://x.github.io/a/', pretendToBeVisual: true,
+    beforeParse(win) {
+      const Real = win.Date;
+      class ND extends Real { constructor(...a){ if(!a.length) super('2026-09-24T09:00:00Z'); else super(...a);}
+        static now(){ return new Real('2026-09-24T09:00:00Z').getTime(); } }
+      win.Date = ND;
+      win.matchMedia = () => ({ matches:false, addEventListener(){}, addListener(){} });
+      win.fetch = () => Promise.reject(0);
+      win.confirm = () => true; win.alert = () => {}; win.scrollTo = () => {};
+      win.Element.prototype.scrollIntoView = () => {};
+      win.localStorage.setItem('slip:v4', JSON.stringify(strandedSeed));
+      win.HTMLDialogElement.prototype.showModal = function(){ this.open = true; };
+      win.HTMLDialogElement.prototype.close = function(){ this.open = false;
+        this.dispatchEvent(new win.Event('close')); };
+    }
+  });
+  await new Promise(r => setTimeout(r, 200));
+  const q = strandDom.window, qd = q.document, q$ = id => qd.getElementById(id);
+  const qStore = () => JSON.parse(q.localStorage.getItem('slip:v4'));
+
+  q$('tabMonth').click();
+  ok('the stranded allowance is invisible to start with',
+     num(q$('inVal').textContent) === 20000, q$('inVal').textContent);
+  ok('and the month still reads as the old one', /27 Aug/.test(q$('secSub').textContent),
+     q$('secSub').textContent);
+  q$('kIn').click();
+  const strandedRow = [...qd.querySelectorAll('#log li')]
+      .find(li => li.textContent.replace(/\s/g, ' ').includes('21 100'));
+  ok('the entry is listed under Received', !!strandedRow,
+     [...qd.querySelectorAll('#log li')].map(li => li.textContent).join(' | ').slice(0, 140));
+  strandedRow.querySelector('.n').click();
+  ok('the edit sheet opens on it', q$('moveDlg').open === true);
+  ok('and already reads as counting toward the next month',
+     q$('moveSel').value === '2026-09-25', q$('moveSel').value);
+  q$('moveSave').click();
+  await new Promise(r => setTimeout(r, 60));
+  let fixed = qStore();
+  ok('saving turns the month over on the day the money arrived',
+     fixed.starts['2026-09'] === '2026-09-23', JSON.stringify(fixed.starts));
+  ok('the entry refiles into it rather than staying pinned forward',
+     fixed.entries.find(e => e.id === 3).cyc === '2026-09-23',
+     fixed.entries.find(e => e.id === 3).cyc);
+  q$('tabMonth').click();
+  ok('and it finally shows on the dashboard', num(q$('inVal').textContent) === 21100,
+     q$('inVal').textContent);
+  ok('the month on screen is now the new one', /23 Sept/.test(q$('secSub').textContent),
+     q$('secSub').textContent);
+  ok('the spending that belonged to the old month stayed there',
+     fixed.entries.find(e => e.id === 2).cyc === '2026-08-27',
+     fixed.entries.find(e => e.id === 2).cyc);
+  ok('and so did the pay that started it',
+     fixed.entries.find(e => e.id === 1).cyc === '2026-08-27',
+     fixed.entries.find(e => e.id === 1).cyc);
+
+  // doing it twice must not walk the boundary anywhere
+  q$('kIn').click();
+  [...qd.querySelectorAll('#log li')]
+    .find(li => li.textContent.replace(/\s/g, ' ').includes('21 100'))
+    .querySelector('.n').click();
+  q$('moveSave').click();
+  await new Promise(r => setTimeout(r, 60));
+  fixed = qStore();
+  ok('saving the same entry again is a no-op', fixed.starts['2026-09'] === '2026-09-23',
+     JSON.stringify(fixed.starts));
+
+  console.log('\n=== 71b. an ordinary edit does not move any boundary ===');
+  dom = await boot(driftSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('tabMonth').click();
+  const spendRow = [...d.querySelectorAll('#log li')].find(li => li.textContent.includes('Groceries'));
+  spendRow.querySelector('.n').click();
+  $('moveAmt').value = '6500';
+  $('moveSave').click();
+  await new Promise(r => setTimeout(r, 60));
+  ok('editing a spend leaves the month start alone',
+     JSON.parse(w.localStorage.getItem('slip:v4')).starts['2026-08'] === undefined,
+     JSON.stringify(JSON.parse(w.localStorage.getItem('slip:v4')).starts));
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

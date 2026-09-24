@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-14-1">
+<meta name="slip-build" content="2026-09-24-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -1797,6 +1797,13 @@
         if(!moving.man)moving.cyc=cycStart(nd);   // follow the date unless pinned by hand
       }
       if(moving.cyc!==$('moveSel').value){moving.cyc=$('moveSel').value;moving.man=true}
+      // money counted toward a month later than its own date turned that month over the day
+      // it arrived — so move that month's start to match, exactly as the checkbox on the add
+      // form does. Otherwise the allowance stays invisible until the old allowance day.
+      if(isIn(moving)&&moving.cyc>cycStart(moving.date)){
+        moving.man=false;          // let it follow the boundary we are about to move
+        setAnchor(moving.date);    // refiles this entry and everything else unpinned
+      }
       if(isSpend(moving))moving.cat=$('moveCat').value;
       const na=Number($('moveAmt').value);
       if(na>0&&Math.abs(na-moving.amt)>0.005){
@@ -1837,6 +1844,7 @@
     if(cur!=='ZAR'){e.cur=cur;e.orig=amt;e.rate=rate}
     data.entries.push(e);
     $('amt').value='';$('note').value='';$('when').value=today();save();
+    if(type==='in'){startTouched=false;incomeRow()}   // the date reset above changes what applies
     if(newCycCur)fillSet();
   }
 
@@ -1848,12 +1856,7 @@
     $('catRow').style.display=k==='in'?'none':'flex';
     $('cycRow').style.display=k==='in'?'flex':'none';
     $('startRow').style.display=k==='in'?'flex':'none';
-    if(k==='in'){$('startToday').checked=false;
-      const wd=$('when').value||today();
-      $('startTodayLbl').textContent='Start the month from '+
-        D(wd).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})+' instead of the '+
-        data.day+'th';}
-    $('cycCurRow').style.display='none';
+    if(k!=='in')$('cycCurRow').style.display='none';
     $('addBtn').textContent=k==='in'?'Add money':k==='refund'?'Add refund':'Add';
     $('addBtn').className='go'+(k==='in'?' in':'');
     $('amt').placeholder=k==='in'?'Amount received'
@@ -1862,13 +1865,41 @@
     if(k!=='in'){
       $('cat').innerHTML=catOptions(true);
     }else{
-      const t=$('when').value||today(), cur=cycStart(t), nxt=cycNext(cur);
-      $('cyc').innerHTML='<option value="'+cur+'">'+cycName(cur)+' · '+cycRange(cur)+
-        ' — the one you are in</option>'+
-        '<option value="'+nxt+'">'+cycName(nxt)+' · '+cycRange(nxt)+' — the next one</option>';
-      $('cyc').value=diff(t,cycEnd(cur))<=1?nxt:cur;
+      startTouched=false;
+      incomeRow();
     }
   }
+
+  // The income row used to be built once, when you tapped Received, and never again — so
+  // typing a date afterwards left the month dropdown and the checkbox label describing the
+  // wrong day. Everything below rebuilds from whatever the date field currently says.
+  let startTouched=false;
+  function incomeRow(keep){
+    const t=$('when').value||today(), cur=cycStart(t), nxt=cycNext(cur);
+    const want=(keep===cur||keep===nxt)?keep:(diff(t,cycEnd(cur))<=1?nxt:cur);
+    $('cyc').innerHTML='<option value="'+cur+'">'+cycName(cur)+' · '+cycRange(cur)+
+      ' — the one you are in</option>'+
+      '<option value="'+nxt+'">'+cycName(nxt)+' · '+cycRange(nxt)+' — the next one</option>';
+    $('cyc').value=want;
+    // Filing money forward is itself the statement that the month has turned over, so the
+    // new month starts the day it arrived. Without this the allowance sat invisible until
+    // the old allowance day came round — which is wrong when payday moves about.
+    if(!startTouched)$('startToday').checked=(want===nxt);
+    startRow();
+  }
+  // names the month being started, not just "the month", so it is obvious which boundary moves
+  function startRow(){
+    const t=$('when').value||today(), on=$('startToday').checked;
+    $('startTodayLbl').textContent='Start '+cycName($('cyc').value||cycStart(t))+' from '+
+      D(t).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})+
+      ' instead of the '+data.day+'th';
+    $('cycCurRow').style.display=on?'flex':'none';
+    if(on)$('cycCurSel').value=curForCyc(cycStart(today()));
+  }
+  // a date change keeps the month you picked where it still applies; picking a month
+  // yourself re-derives the checkbox, and touching the checkbox pins it against both
+  $('when').addEventListener('change',()=>{if(kind==='in')incomeRow($('cyc').value)});
+  $('cyc').onchange=()=>{startTouched=false;incomeRow($('cyc').value)};
 
   const esc=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
   function dl(name,text,mime){
@@ -2994,10 +3025,7 @@
       ?(zar/daily).toFixed(1)+' days of your allowance':'';
   }
   $('cur').onchange=showConv; $('amt').oninput=showConv;
-  $('startToday').onchange=()=>{
-    $('cycCurRow').style.display=$('startToday').checked?'flex':'none';
-    if($('startToday').checked)$('cycCurSel').value=curForCyc(cycStart(today()));
-  };
+  $('startToday').onchange=()=>{startTouched=true;startRow()};
   ['GBP','USD','GHS'].forEach(k=>{$('r'+k).onchange=e=>{
     data.rates[k]=Number(e.target.value)||data.rates[k];data.ratesAt=today();save();fillSet();showConv()}});
   $('refreshRates').onclick=async()=>{
