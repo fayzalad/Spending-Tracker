@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-24-1">
+<meta name="slip-build" content="2026-09-24-2">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -1084,6 +1084,28 @@
     data.entries.forEach(e=>{if(!e.man)e.cyc=cycStart(e.date)});
     save();fillSet();setKind(kind);
   }
+  // Money filed into a later month is itself the statement that the month turned over when it
+  // arrived. If the boundary was never moved to match — logged on an older build, or synced in
+  // from one — turn it over on launch rather than leaving the allowance stranded until the old
+  // allowance day comes round. Entries you deliberately held back (e.hold) are left alone, and
+  // so is closed history: only the live month and anything ahead of it can move.
+  function healForwardIncome(){
+    const cs=cycStart(today()), want={}, freed=[];
+    data.entries.forEach(e=>{
+      if(!isIn(e)||e.hold||!e.cyc||e.cyc<cs)return;
+      if(e.cyc>cycStart(e.date)){
+        const k=e.date.slice(0,7);
+        if(!want[k]||e.date<want[k])want[k]=e.date;   // the month began at the first pay in it
+        freed.push(e);
+      }
+    });
+    if(!freed.length)return false;
+    data.starts=data.starts||{};
+    Object.keys(want).forEach(k=>{data.starts[k]=want[k]});
+    freed.forEach(e=>{e.man=false});                  // let them follow the boundary just moved
+    data.entries.forEach(e=>{if(!e.man)e.cyc=cycStart(e.date)});
+    return true;
+  }
   const cycEnd=cs=>addDays(cycNext(cs),-1);
   const cycName=cs=>D(cycEnd(cs)).toLocaleDateString('en-ZA',{month:'long'});
   const cycRange=cs=>D(cs).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})+' – '+
@@ -1802,6 +1824,7 @@
       // form does. Otherwise the allowance stays invisible until the old allowance day.
       if(isIn(moving)&&moving.cyc>cycStart(moving.date)){
         moving.man=false;          // let it follow the boundary we are about to move
+        delete moving.hold;        // asking for it here overrides any earlier hold
         setAnchor(moving.date);    // refiles this entry and everything else unpinned
       }
       if(isSpend(moving))moving.cat=$('moveCat').value;
@@ -1842,6 +1865,9 @@
              type:refund?'out':(type||'out'),refund:refund||undefined,
              cyc:cyc||cycStart(when)};
     if(cur!=='ZAR'){e.cur=cur;e.orig=amt;e.rate=rate}
+    // you unticked "start the month from …" — remember that, so the launch sweep does not
+    // quietly turn the month over on you anyway
+    if(type==='in'&&!$('startToday').checked&&e.cyc>cycStart(e.date))e.hold=true;
     data.entries.push(e);
     $('amt').value='';$('note').value='';$('when').value=today();save();
     if(type==='in'){startTouched=false;incomeRow()}   // the date reset above changes what applies
@@ -3662,6 +3688,7 @@
     if(s)data=Object.assign(data,s);
     data.cycCur=data.cycCur||{}; data.cycRate=data.cycRate||{}; data.homeCur=data.homeCur||'ZAR';
     data.entries.forEach(e=>{if(!e.cyc)e.cyc=cycStart(e.date)});
+    if(healForwardIncome())S.set(KEY,data);
     // clear out anything left from the old receipts feature
     const oldShots=data.entries.filter(e=>e.rcpt);
     if(oldShots.length){

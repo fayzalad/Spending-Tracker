@@ -27,7 +27,7 @@ be reintroduced — read it before changing the money maths.
 node test.js
 ```
 
-**424 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**425 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -97,12 +97,15 @@ data = {
   entries: []
 }
 
-entry = { id, amt, cat, note, date, cyc, type, refund, man, cur, orig, rate }
+entry = { id, amt, cat, note, date, cyc, type, refund, man, hold, cur, orig, rate }
 ```
 
 `amt` is **always in rand**; negative means a refund. Currency is a display layer — a cycle's
 currency converts through a rate frozen at the moment it was chosen (`data.cycRate`), so a closed
 month never drifts when the rate table is edited later.
+
+`hold` marks an income entry you deliberately filed into a later month without moving the
+month boundary — the launch sweep skips it.
 
 **Use the entry-type helpers** — `isIn`, `isSave`, `isUnsave`, `isSpend`, `isBill`, `isLiving` —
 never test `type` directly. Testing `e.type !== 'in'` is how savings movements once got counted
@@ -113,6 +116,31 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-09-24-2` — and it corrects itself on launch
+
+`2026-09-24-1` changed what happens when you *log* an entry, but it did nothing for an entry
+already sitting in the wrong state — that still needed a settings change or an edit-and-save.
+That's the wrong shape for a fix: the app should notice by itself.
+
+**What changed:**
+
+- **`healForwardIncome()`, run once on launch.** Any income entry filed into a month later than
+  its own date now moves that month's start onto the entry's date, and everything unpinned
+  refiles. So an allowance logged before the old allowance day appears the moment the app opens,
+  with nothing tapped. Taking an in-app update triggers this, because `hardRefresh()` reloads
+  the page and boot runs again.
+- **Two guards on the sweep.** It never touches a cycle earlier than the live one, so settled
+  history can't be reshuffled by an old entry that was deliberately filed forward. And an entry
+  carrying `hold: true` is skipped entirely.
+- **`e.hold`** is set on an income entry when you pick a forward month *and untick* the
+  "start the month from …" checkbox. That's the opt-out, and it now survives relaunches instead
+  of being undone by the sweep. Saving the entry from the edit sheet clears the hold, since
+  asking for it there is an explicit override.
+
+**Tests:** 424 → 425. Section 71 now asserts the launch fix happens with no interaction, that a
+relaunch is a no-op, and that a closed month filed forward months ago is left alone. New 71c
+covers the `hold` opt-out surviving launch and the edit sheet overriding it on demand.
 
 ### `2026-09-24-1` — the month turns over when the money actually arrives
 

@@ -1898,10 +1898,11 @@ const seed = {
      [...$('cyc').options].some(o => /25 Sept/.test(o.textContent)),
      [...$('cyc').options].map(o => o.textContent).join(' || '));
 
-  console.log('\n=== 71. the same correction from the edit sheet ===');
+  console.log('\n=== 71. a stranded allowance turns the month over by itself on launch ===');
   // The real report: paid 23 Sept, logged with "counts toward October", but the boundary was
-  // left on the 25th — so on the 24th the money was nowhere on the dashboard. Needs its own
-  // clock, like section 44, because the bug only exists between payday and the allowance day.
+  // left on the 25th — so on the 24th the money was nowhere on the dashboard. It was logged on
+  // an older build, so nothing ticked the box: launch has to notice and fix it, with no taps.
+  // Its own clock, like section 44, because the gap only exists between payday and the 25th.
   const strandedSeed = {
     day: 25, starts: { '2026-08': '2026-08-27' }, goal: 0, theme: 'light',
     rates: { ZAR: 1, GBP: 21.63, USD: 15.96, GHS: 1.44 },
@@ -1909,74 +1910,88 @@ const seed = {
     entries: [
       { id: 1, amt: 20000, cat: 'Money in', note: 'Sept pay', date: '2026-08-27', type: 'in', cyc: '2026-08-27' },
       { id: 2, amt: 6000, cat: 'Groceries', note: '', date: '2026-09-10', type: 'out', cyc: '2026-08-27' },
-      { id: 3, amt: 21100, cat: 'Money in', note: '', date: '2026-09-23', type: 'in', cyc: '2026-09-25' }
+      { id: 3, amt: 21100, cat: 'Money in', note: '', date: '2026-09-23', type: 'in', cyc: '2026-09-25' },
+      // a closed month filed forward months ago — the sweep must not disturb settled history
+      { id: 4, amt: 900, cat: 'Money in', note: 'old side income', date: '2026-06-20', type: 'in', cyc: '2026-06-25' }
     ]
   };
-  const strandDom = new (require('jsdom').JSDOM)(HTML, {
+  const lateClock = seedObj => ({
     runScripts: 'dangerously', url: 'https://x.github.io/a/', pretendToBeVisual: true,
     beforeParse(win) {
       const Real = win.Date;
-      class ND extends Real { constructor(...a){ if(!a.length) super('2026-09-24T09:00:00Z'); else super(...a);}
-        static now(){ return new Real('2026-09-24T09:00:00Z').getTime(); } }
+      class ND extends Real {
+        constructor(...a){ if(!a.length) super('2026-09-24T09:00:00Z'); else super(...a); }
+        static now(){ return new Real('2026-09-24T09:00:00Z').getTime(); }
+      }
       win.Date = ND;
       win.matchMedia = () => ({ matches:false, addEventListener(){}, addListener(){} });
       win.fetch = () => Promise.reject(0);
       win.confirm = () => true; win.alert = () => {}; win.scrollTo = () => {};
       win.Element.prototype.scrollIntoView = () => {};
-      win.localStorage.setItem('slip:v4', JSON.stringify(strandedSeed));
+      win.localStorage.setItem('slip:v4', JSON.stringify(seedObj));
       win.HTMLDialogElement.prototype.showModal = function(){ this.open = true; };
       win.HTMLDialogElement.prototype.close = function(){ this.open = false;
         this.dispatchEvent(new win.Event('close')); };
     }
   });
+  const strandDom = new (require('jsdom').JSDOM)(HTML, lateClock(strandedSeed));
   await new Promise(r => setTimeout(r, 200));
   const q = strandDom.window, qd = q.document, q$ = id => qd.getElementById(id);
-  const qStore = () => JSON.parse(q.localStorage.getItem('slip:v4'));
 
   q$('tabMonth').click();
-  ok('the stranded allowance is invisible to start with',
-     num(q$('inVal').textContent) === 20000, q$('inVal').textContent);
-  ok('and the month still reads as the old one', /27 Aug/.test(q$('secSub').textContent),
-     q$('secSub').textContent);
-  q$('kIn').click();
-  const strandedRow = [...qd.querySelectorAll('#log li')]
-      .find(li => li.textContent.replace(/\s/g, ' ').includes('21 100'));
-  ok('the entry is listed under Received', !!strandedRow,
-     [...qd.querySelectorAll('#log li')].map(li => li.textContent).join(' | ').slice(0, 140));
-  strandedRow.querySelector('.n').click();
-  ok('the edit sheet opens on it', q$('moveDlg').open === true);
-  ok('and already reads as counting toward the next month',
-     q$('moveSel').value === '2026-09-25', q$('moveSel').value);
-  q$('moveSave').click();
-  await new Promise(r => setTimeout(r, 60));
-  let fixed = qStore();
-  ok('saving turns the month over on the day the money arrived',
-     fixed.starts['2026-09'] === '2026-09-23', JSON.stringify(fixed.starts));
-  ok('the entry refiles into it rather than staying pinned forward',
-     fixed.entries.find(e => e.id === 3).cyc === '2026-09-23',
-     fixed.entries.find(e => e.id === 3).cyc);
-  q$('tabMonth').click();
-  ok('and it finally shows on the dashboard', num(q$('inVal').textContent) === 21100,
+  ok('the month turned over on the day the money arrived, with nothing tapped',
+     /23 Sept/.test(q$('secSub').textContent), q$('secSub').textContent);
+  ok('and the allowance is on the dashboard', num(q$('inVal').textContent) === 21100,
      q$('inVal').textContent);
-  ok('the month on screen is now the new one', /23 Sept/.test(q$('secSub').textContent),
-     q$('secSub').textContent);
+  const healed = JSON.parse(q.localStorage.getItem('slip:v4'));
+  ok('the start is written against the month it belongs to',
+     healed.starts['2026-09'] === '2026-09-23', JSON.stringify(healed.starts));
+  ok('the fix is persisted, not just drawn on screen',
+     healed.entries.find(e => e.id === 3).cyc === '2026-09-23',
+     healed.entries.find(e => e.id === 3).cyc);
   ok('the spending that belonged to the old month stayed there',
-     fixed.entries.find(e => e.id === 2).cyc === '2026-08-27',
-     fixed.entries.find(e => e.id === 2).cyc);
+     healed.entries.find(e => e.id === 2).cyc === '2026-08-27',
+     healed.entries.find(e => e.id === 2).cyc);
   ok('and so did the pay that started it',
-     fixed.entries.find(e => e.id === 1).cyc === '2026-08-27',
-     fixed.entries.find(e => e.id === 1).cyc);
+     healed.entries.find(e => e.id === 1).cyc === '2026-08-27',
+     healed.entries.find(e => e.id === 1).cyc);
+  ok('a closed month filed forward long ago is left alone',
+     healed.starts['2026-06'] === undefined, JSON.stringify(healed.starts));
 
-  // doing it twice must not walk the boundary anywhere
-  q$('kIn').click();
-  [...qd.querySelectorAll('#log li')]
+  // relaunching must not walk the boundary any further
+  const againDom = new (require('jsdom').JSDOM)(HTML, lateClock(healed));
+  await new Promise(r => setTimeout(r, 200));
+  ok('launching again is a no-op',
+     JSON.parse(againDom.window.localStorage.getItem('slip:v4')).starts['2026-09'] === '2026-09-23',
+     JSON.stringify(JSON.parse(againDom.window.localStorage.getItem('slip:v4')).starts));
+
+  console.log('\n=== 71c. money you deliberately held back is not swept up ===');
+  const heldSeed = JSON.parse(JSON.stringify(strandedSeed));
+  heldSeed.entries.find(e => e.id === 3).hold = true;
+  const heldDom = new (require('jsdom').JSDOM)(HTML, lateClock(heldSeed));
+  await new Promise(r => setTimeout(r, 200));
+  const h = heldDom.window, hd = h.document, h$ = id => hd.getElementById(id);
+  h$('tabMonth').click();
+  ok('the boundary stays put when you asked it to',
+     /27 Aug/.test(h$('secSub').textContent), h$('secSub').textContent);
+  ok('and nothing was written to starts',
+     JSON.parse(h.localStorage.getItem('slip:v4')).starts['2026-09'] === undefined,
+     JSON.stringify(JSON.parse(h.localStorage.getItem('slip:v4')).starts));
+
+  // ...but the edit sheet still turns it over on demand, overriding the hold
+  h$('kIn').click();
+  [...hd.querySelectorAll('#log li')]
     .find(li => li.textContent.replace(/\s/g, ' ').includes('21 100'))
     .querySelector('.n').click();
-  q$('moveSave').click();
+  ok('the edit sheet opens on it', h$('moveDlg').open === true);
+  h$('moveSave').click();
   await new Promise(r => setTimeout(r, 60));
-  fixed = qStore();
-  ok('saving the same entry again is a no-op', fixed.starts['2026-09'] === '2026-09-23',
-     JSON.stringify(fixed.starts));
+  const unheld = JSON.parse(h.localStorage.getItem('slip:v4'));
+  ok('saving it turns the month over anyway', unheld.starts['2026-09'] === '2026-09-23',
+     JSON.stringify(unheld.starts));
+  ok('and the hold is cleared, so it stays turned over',
+     !unheld.entries.find(e => e.id === 3).hold,
+     JSON.stringify(unheld.entries.find(e => e.id === 3)));
 
   console.log('\n=== 71b. an ordinary edit does not move any boundary ===');
   dom = await boot(driftSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
