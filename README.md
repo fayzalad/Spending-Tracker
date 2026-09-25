@@ -7,7 +7,9 @@ Screen from GitHub Pages.
 `CLAUDE.md` is the complete project record — every feature, the full change history and an
 append-only session log. **Start there.** This README is the release-facing view: what each piece
 does and what changed in each build. `TRACKER-PROJECT.md` goes deeper on the architecture and on
-bugs that must not be reintroduced — read it before changing the money maths.
+bugs that must not be reintroduced — read it before changing the money maths. `BUILD-SPEC.md` is a
+from-scratch brief for building this kind of app independently: requirements and every trap found
+the hard way, with the owner-specific choices stripped out.
 
 ---
 

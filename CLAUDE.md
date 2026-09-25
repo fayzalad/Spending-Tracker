@@ -11,6 +11,7 @@ project up cold.
 | `CLAUDE.md` (this file) | Complete reference + append-only session log. Start here |
 | `README.md` | Public-facing overview and dated changelog keyed to the build stamp |
 | `TRACKER-PROJECT.md` | The original deep architecture doc. Still accurate on *how* it is built |
+| `BUILD-SPEC.md` | From-scratch brief for rebuilding this kind of app. Requirements and traps, no personal preferences |
 | `HANDOFF.md` | Sep-13 supplement, reconstructed from lost transcripts. **Untracked — holds an API key** |
 
 Per the global "always record what you changed" rule: this project keeps its session log **here**,
@@ -329,6 +330,24 @@ a stranded entry correct itself on launch. Full detail in the session log below.
 
 Newest first. Append-only: never rewrite or delete an older entry. If a later change undoes an
 earlier one, record the undo as its own entry.
+
+### 2026-09-25 — Added BUILD-SPEC.md, a from-scratch specification
+
+- **Changed:** Wrote `BUILD-SPEC.md`: a build-from-scratch brief for this kind of app. Numbered
+  MUST/SHOULD/MAY requirements for the money model and the period model, functional and
+  non-functional requirements, a decision log of ten choices the original made with what you lose
+  by diverging from each, a 19-entry bug catalogue written as symptom + cause + invariant, the
+  testing strategy, a staged build order, an acceptance checklist, and an explicit list of what
+  was stripped. Owner-specific choices are excluded throughout — no currency, income day, savings
+  amount, category list, merchant patterns, palette, investments, sync provider or repo names.
+- **Why:** Requested, to start a fresh session and see how the app would be built differently.
+  The point is to carry the hard-won knowledge across without carrying the personal preferences,
+  so a new build can diverge on the choices while still avoiding the known traps.
+- **Files:** `BUILD-SPEC.md` (new), `README.md` (pointer line)
+- **Revert:** `git rm BUILD-SPEC.md && git commit`
+- **Verified:** Every bug-catalogue entry traced back to a real commit, a fixed-bug list in
+  `TRACKER-PROJECT.md`, or a failure observed in this session. Not committed to the share fork —
+  it is implementation-neutral and would duplicate.
 
 ### 2026-09-25 — Created CLAUDE.md as the canonical project record
 
