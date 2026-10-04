@@ -331,6 +331,19 @@ a stranded entry correct itself on launch. Full detail in the session log below.
 Newest first. Append-only: never rewrite or delete an older entry. If a later change undoes an
 earlier one, record the undo as its own entry.
 
+### 2026-10-04 — Locally excluded the key-holding files; moved session to cloud
+
+- **Changed:** Appended `HANDOFF.md`, `full-transcript-part1.txt`, `full-transcript-part2.txt` to
+  `.git/info/exclude` (machine-local ignore, never committed), so the working tree reads clean and
+  the session could move to a Claude Code cloud session. The files themselves are untouched and
+  stay on this machine only. Also ran a prompt audit of the loaded configuration; its findings
+  were reported, not applied.
+- **Why:** The move-to-cloud check refuses a working tree with untracked files, and these three
+  must never be committed — they hold the Alpha Vantage key and the repo is public.
+- **Files:** `.git/info/exclude` (local, not in the repo), `CLAUDE.md`
+- **Revert:** delete the last four lines of `.git/info/exclude`
+- **Verified:** `git status --short` empty afterwards.
+
 ### 2026-09-25 — Added BUILD-SPEC.md, a from-scratch specification
 
 - **Changed:** Wrote `BUILD-SPEC.md`: a build-from-scratch brief for this kind of app. Numbered
