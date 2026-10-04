@@ -4,6 +4,10 @@ The single canonical record of this project: what it is, what every part does, e
 has been changed, and why. Written so a session that has lost its chat history can pick the
 project up cold.
 
+**A new session starts here, in `CLAUDE.md` — not in `README.md`.** The README is the public
+page on GitHub and has no "Resume here" section; any instruction elsewhere pointing to one is out
+of date. Update the README on every push with what changed (user-facing, keyed to the build stamp).
+
 **Which file does what**
 
 | File | Role |
@@ -330,6 +334,22 @@ a stranded entry correct itself on launch. Full detail in the session log below.
 
 Newest first. Append-only: never rewrite or delete an older entry. If a later change undoes an
 earlier one, record the undo as its own entry.
+
+### 2026-10-04 — Acted on the prompt audit: CLAUDE.md is the starting point
+
+- **Changed:** Stated at the top of this file that a new session starts here, not at the README,
+  and that the README is updated on every push. Owner's choices on the rest of the audit, to be
+  applied on the local machine (not reachable from the cloud session): delete the project-level
+  skill copies (`.claude/skills`, `.agents/skills`) and keep the user-level ones; remove the
+  `modern-web-design` skill; remove the 43 OmniRoute skills (`omni-*`, `cli-*`,
+  `config-codex-cli`); in `Claude code/CLAUDE.md`, point the start-here line at this file and drop
+  the every-5-hours README rule. `interview-me` rewrite: not chosen, left as is.
+- **Why:** The parent folder's note sent new sessions to a README "Resume here" section that does
+  not exist, and two rules disagreed on when to update the README. Owner picked option (b) and
+  "every push".
+- **Files:** `CLAUDE.md`
+- **Revert:** `git revert` this commit
+- **Verified:** Docs-only change; `node test.js` unaffected. Local-machine steps not yet done.
 
 ### 2026-10-04 — Locally excluded the key-holding files; moved session to cloud
 
