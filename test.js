@@ -2005,6 +2005,127 @@ const seed = {
      JSON.parse(w.localStorage.getItem('slip:v4')).starts['2026-08'] === undefined,
      JSON.stringify(JSON.parse(w.localStorage.getItem('slip:v4')).starts));
 
+  console.log('\n=== 72. planned purchases ===');
+  // invented numbers throughout; frozen clock is 2026-08-31, cycle 25 Aug - 24 Sep ("September")
+  const planSeed = () => ({
+    day: 25, starts: {}, goal: 3000, theme: 'light', rates: { ZAR: 1 }, cats: [], groups: [],
+    ticks: {}, potCats: [], exclude: [], deleted: {}, holdings: [], bills: [],
+    planBuf: 1000, planSave: { '2026-11': 4000 },
+    plans: [
+      { id: 'a', o: 1, n: 'Item A', price: 3500, m: '2026-11', status: 'planned', rev: 1 },
+      { id: 'b', o: 2, n: 'Item B', price: 9000, m: '2027-01', only: true, status: 'planned', rev: 1 },
+      { id: 'c', o: 3, n: 'Item C', price: 2500, m: '2027-02', status: 'planned', rev: 1 }
+    ],
+    entries: [
+      { id: 1, amt: 20000, cat: 'Money in', note: '', date: '2026-08-25', type: 'in', cyc: '2026-08-25' },
+      { id: 2, amt: 3000, cat: 'Savings', note: '', date: '2026-08-27', type: 'save', cyc: '2026-08-25' }
+    ]
+  });
+  const norm = s => s.replace(/\s/g, ' ');
+  dom = await boot(planSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('the savings card names what is next and when it is ready',
+     /Next: Item A.*short R500, ready 25 Oct/.test(norm($('planLineText').textContent)),
+     norm($('planLineText').textContent));
+  ok('a plan that stays above the buffer does not warn', !$('planLine').classList.contains('warn'));
+  $('planLine').click();
+  ok('tapping it opens the sheet', $('planDlg').open === true);
+  let trs = [...d.querySelectorAll('#planTabBox tr')].slice(1);
+  ok('the projection has a row per cycle up to the last purchase', trs.length === 6, String(trs.length));
+  const cell = (tr, i) => norm(tr.children[i].textContent);
+  ok('November starts with the vault plus October saving', /6 000/.test(cell(trs[2], 1)), cell(trs[2], 1));
+  ok('and shows Item A leaving it above the buffer', /Item A/.test(cell(trs[2], 2)) && /2 500/.test(cell(trs[2], 3)),
+     cell(trs[2], 2) + ' | ' + cell(trs[2], 3));
+  ok('the per-month override lifts the next month', /6 500/.test(cell(trs[3], 1)), cell(trs[3], 1));
+  ok('a conditional item that would break the buffer is skipped, not subtracted',
+     /Item B.*skipped/.test(cell(trs[4], 2)) && /9 500/.test(cell(trs[4], 3)),
+     cell(trs[4], 2) + ' | ' + cell(trs[4], 3));
+  ok('later months carry on from there', /10 000/.test(cell(trs[5], 3)), cell(trs[5], 3));
+
+  console.log('  -- buffer flag');
+  const lowSeed = planSeed(); lowSeed.plans[0].price = 5500;   // leaves 500 in November
+  dom = await boot(lowSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('an unconditional purchase that dips under the buffer warns on the card',
+     $('planLine').classList.contains('warn') && /dips under/.test($('planLineText').textContent),
+     $('planLineText').textContent);
+  $('planLine').click();
+  trs = [...d.querySelectorAll('#planTabBox tr')].slice(1);
+  ok('and that month is flagged in the table', trs[2].children[3].className === 'low' && /under/.test(cell(trs[2], 3)),
+     trs[2].children[3].className + ' ' + cell(trs[2], 3));
+
+  console.log('  -- bought it');
+  dom = await boot(planSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('planLine').click();
+  [...d.querySelectorAll('#planList li')][0].querySelector('button.buy').click();
+  ok('Bought it asks for the real price', $('planBuy').open === true && $('planPaid').value === '3500');
+  $('planPaid').value = '3400'; $('planPaid').dispatchEvent(new w.Event('input'));
+  ok('and explains the money comes out of savings', /comes out of your savings/.test($('planBuyHint').textContent),
+     $('planBuyHint').textContent);
+  $('planBuyOk').click();
+  await new Promise(r => setTimeout(r, 60));
+  let st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const unsv = st.entries.filter(e => e.type === 'unsave'), outs = st.entries.filter(e => e.type === 'out');
+  ok('one withdrawal, capped at what the vault holds', unsv.length === 1 && unsv[0].amt === 3000,
+     JSON.stringify(unsv));
+  ok('one spend for the actual price, in Big purchases',
+     outs.length === 1 && outs[0].amt === 3400 && outs[0].cat === 'Big purchases', JSON.stringify(outs));
+  ok('the plan is marked bought at the actual price',
+     st.plans[0].status === 'bought' && st.plans[0].paid === 3400, JSON.stringify(st.plans[0]));
+  ok('the vault is empty afterwards', num($('vaultAll').textContent) === 0, $('vaultAll').textContent);
+  ok('the goal is not re-reserved by the withdrawal', !/held back from your daily rate/.test($('vaultSub').textContent)
+     && !/Put R/.test($('sweepBox').textContent), $('vaultSub').textContent + ' | ' + $('sweepBox').textContent);
+  ok('the card moves on to the next item', /Next: Item B/.test($('planLineText').textContent),
+     $('planLineText').textContent);
+
+  console.log('  -- adding, editing, reordering, deleting');
+  dom = await boot(planSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('planLine').click();
+  $('planAdd').click();
+  $('planName').value = 'Item D'; $('planPrice').value = '700';
+  $('planSaveBtn').click();
+  await new Promise(r => setTimeout(r, 60));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('a new purchase is added last', st.plans.length === 4 && st.plans[3].n === 'Item D' && st.plans[3].o === 4,
+     JSON.stringify(st.plans[3]));
+  [...d.querySelectorAll('#planList li')][3].querySelector('button[aria-label="Move up"]').click();
+  await new Promise(r => setTimeout(r, 60));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const byO = st.plans.slice().sort((a, b) => a.o - b.o).map(p => p.n).join();
+  ok('moving up swaps the order', byO === 'Item A,Item B,Item D,Item C', byO);
+  [...d.querySelectorAll('#planList li')][0].querySelector('button:not(.buy):not([aria-label])').click();
+  $('planPrice').value = '4000'; $('planSaveBtn').click();
+  await new Promise(r => setTimeout(r, 60));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('editing changes the price', st.plans.find(p => p.id === 'a').price === 4000);
+  [...d.querySelectorAll('#planList li')][1].querySelector('button:not(.buy):not([aria-label])').click();
+  $('planDel').click();
+  await new Promise(r => setTimeout(r, 60));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('deleting removes it and leaves a tombstone',
+     !st.plans.some(p => p.id === 'b') && !!st.deleted.b, JSON.stringify(st.deleted));
+  $('planBuf').value = '2500'; $('planBuf').dispatchEvent(new w.Event('change'));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('the safety amount is saved', st.planBuf === 2500, String(st.planBuf));
+
+  console.log('  -- sync, backup and old data');
+  const plA = { rev: 100, deleted: {}, entries: [], planSave: { '2026-11': 4000 },
+    plans: [{ id: 'a', o: 1, n: 'Item A', price: 3500, rev: 10 }, { id: 'b', o: 2, n: 'Item B', price: 9000, rev: 10 }] };
+  const plB = { rev: 200, deleted: { b: Date.now() }, entries: [], planSave: { '2026-12': 2000 },
+    plans: [{ id: 'a', o: 1, n: 'Item A', price: 3900, rev: 20 }, { id: 'n', o: 3, n: 'Item N', price: 100, rev: 5 }] };
+  m = merge(plA, plB);
+  ok('plans merge item by item, not as one document', m.plans.map(p => p.id).join() === 'a,n', m.plans.map(p => p.id).join());
+  ok('the newer edit of the same purchase wins', m.plans[0].price === 3900, String(m.plans[0].price));
+  ok('a purchase deleted on another device is not resurrected', !m.plans.some(p => p.id === 'b'));
+  ok('per-month savings from both sides survive',
+     m.planSave['2026-11'] === 4000 && m.planSave['2026-12'] === 2000, JSON.stringify(m.planSave));
+  m = merge({ rev: 1, deleted: {}, entries: [] }, { rev: 2, deleted: {}, entries: [] });
+  ok('data with no plans at all still merges', Array.isArray(m.plans) && m.plans.length === 0);
+  const plOldSeed = planSeed(); delete plOldSeed.plans; delete plOldSeed.planBuf; delete plOldSeed.planSave;
+  dom = await boot(plOldSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('an older save with no plans boots with the defaults', /Plan a purchase/.test($('planLineText').textContent),
+     $('planLineText').textContent);
+  $('planLine').click();
+  ok('and the safety amount defaults to 1000', $('planBuf').value === '1000', $('planBuf').value);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

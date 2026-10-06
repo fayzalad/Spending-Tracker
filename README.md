@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**425 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**456 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -95,13 +95,21 @@ data = {
   rates, ratesAt, cycCur, cycRate, homeCur,   // currency
   groups, cats, bills, incomes, ticks,
   holdings, invHist, invAt,                   // investments
+  plans, planBuf, planSave,                   // planned purchases
   deleted,                                    // tombstones, pruned at 120 days
   lastBackup, gistId, tok, rev, syncedRev,    // sync
   entries: []
 }
 
 entry = { id, amt, cat, note, date, cyc, type, refund, man, hold, cur, orig, rate }
+plan  = { id, o, n, price, m, only, status, note, link, paid, at, rev }
 ```
+
+A **plan** is one planned purchase. `o` is its order, `m` the month its pay cycle is named for
+(`'2026-11'` is the cycle ending in November), `only` the "only if the safety amount is left"
+flag, `status` one of `planned` / `bought` / `skipped`. `planBuf` is the safety amount (default
+1000), `planSave` per-month overrides of expected saving (`{'2026-11': 4000}`); with no override a
+month uses `data.goal`.
 
 `amt` is **always in rand**; negative means a refund. Currency is a display layer — a cycle's
 currency converts through a rate frozen at the moment it was chosen (`data.cycRate`), so a closed
@@ -119,6 +127,36 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-06-1` — planned purchases
+
+A list of big purchases, paid for from the savings vault in order, with a month-by-month
+projection. Nothing new is stored as money: the vault is still the only pot.
+
+- **Savings card** gets one line — "Next: *item* — R3 500 · short R500, ready 25 Oct", or "you have
+  it", amber when the plan dips under the safety amount. Tapping it opens the **Planned
+  purchases** sheet (no new tab).
+- **The sheet** lists purchases (add, edit, reorder, skip, delete) and shows a table: for each pay
+  cycle, the balance at its start, what is bought in it, what is left, and an editable "You save"
+  that overrides the goal for that month. A month that ends under the safety amount is flagged.
+- **Funded in order.** An item's "saved toward it" is what the vault holds after the items above it
+  are paid; "ready" is the first cycle in which the vault plus expected saving covers it.
+- **Only if the safety amount is left.** A conditional item that would leave less than the safety
+  amount is shown as skipped in the projection and is not subtracted, so it cannot sink the
+  months after it.
+- **Bought it** asks what you actually paid, then logs one *Taken from savings* entry (capped at
+  what the rand pot holds) and one spend in the new **Big purchases** category (Living group, so
+  it counts against the day). The withdrawal goes through the normal `unsave` path, so the §7.2
+  rule applies: the goal is not re-reserved. The money is moved once, not counted twice.
+- **Sync and backup.** `mergeStores` now merges `plans` item by item (union by id, tombstones in
+  `data.deleted`, newer `rev` wins per item) and unions `planSave`. `planBuf` follows the newer
+  device like other settings. Old saves without these fields boot with defaults. The visibility
+  and push paths now also adopt a plans-only change.
+- **Not in the Share fork.** Main tracker only.
+
+**Tests:** 425 → 456. Section 72 uses invented numbers and covers the projection, per-month
+overrides, the buffer flag, conditional items, the next-up line, Bought it (one withdrawal, one
+spend, no double count, goal not re-reserved), add/edit/reorder/delete, merge, and old data.
 
 ### `2026-09-24-2` — and it corrects itself on launch
 

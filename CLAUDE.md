@@ -54,7 +54,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**425 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**456 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -160,6 +160,21 @@ back to unmet. When a month closes with money left the card offers to bank it, f
 the month it came from; if a backdated entry later pushes that month negative, the card flags the
 shortfall and offers to pull the money back. Each pot keeps its own currency.
 
+**Planned purchases (main tracker only).** A list of big purchases funded from the vault in
+order, on the savings card (one "Next:" line) and a sheet with a month-by-month projection. Data:
+`data.plans` (`{id,o,n,price,m,only,status,note,link,paid,at,rev}`), `data.planBuf` (safety
+amount, default 1000), `data.planSave` (per-month expected saving; falls back to `data.goal`).
+`m` is the month the target cycle is **named for** (`'2026-11'` = 25 Oct – 24 Nov); one in the
+past means "now". Only the **rand pot** counts: plans are in rand and Bought it can only withdraw
+rand. Funding is in order (an item's saved/missing is the vault minus the items above it);
+"ready" is the first cycle where vault + expected saving covers it (plus the safety amount for an
+`only` item). The projection buys each item at the **start** of its target cycle; a cycle's
+saving lands at the start of the next. A conditional (`only`) item that would leave under the
+safety amount is shown skipped and not subtracted. **Bought it** = one `unsave` (capped at the
+rand pot) + one `out` spend in **Big purchases** (Living group), through the normal paths, so the
+§7.2 withdrawal rule holds. Sync: `mergeStores` merges plans item by item with tombstones and the
+per-item `rev`. Real plan amounts live only in the user's `localStorage`, never in the repo.
+
 **Expected bills.** Unpaid ones are reserved off the top so the daily figure is honest from day
 one. A payment ticks one off when the category matches and the amount is within 25%; an entry
 whose note names the bill wins outright. **One payment settles exactly one bill.** Bills can be
@@ -212,7 +227,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 425 | 355 |
+| Tests | 456 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The
@@ -334,6 +349,42 @@ a stranded entry correct itself on launch. Full detail in the session log below.
 
 Newest first. Append-only: never rewrite or delete an older entry. If a later change undoes an
 earlier one, record the undo as its own entry.
+
+### 2026-10-06 — Planned purchases (build `2026-10-06-1`, DESKTOP)
+
+- **Changed:** Added the Planned purchases feature in `index.html`: `data.plans` / `planBuf` /
+  `planSave` (defaults in the `data` literal and in `boot`), `planProject()` projection, a "Next:"
+  line on the savings card (`#planLine`), three sheets (`planDlg`, `planEdit`, `planBuy`), a
+  **Big purchases** built-in category in the Living group (icon 🛋), item-by-item merge of `plans`
+  and union of `planSave` in `mergeStores`, and the visibility/push sync paths now also adopt a
+  plans-only change. Build stamp bumped to `2026-10-06-1`. Added section 72 to `test.js` (31
+  checks, invented numbers only). README: data-model note, test count, changelog entry.
+- **Why:** Requested from the Decisions handoff (read in place, not copied into the repo): hold the
+  user's buying plan and answer what is next, whether it is affordable, and whether the plan stays
+  above a safety amount. User's choices: starting savings already in the vault; savings card +
+  sheet, no new tab; expected saving defaults to the goal with per-month overrides; Bought it is a
+  withdrawal plus a spend; main tracker only; category **Big purchases** in Living.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`
+- **Revert:** `git revert` the feature commit, then bump `slip-build` and push. Saved `plans`
+  fields in `localStorage` are harmless to an older build (it carries unknown fields through).
+- **Verified:** `node test.js` 456 passed, 0 failed (425 before). The two "Not implemented:
+  navigation" lines in the output are pre-existing (same count on the stashed baseline). Looked
+  at in the browser pane at 375px, dark mode, with invented data: the list rows were cramped, so
+  the buttons were moved under the text; the month table reads fine. Not tried on the phone itself.
+- **Known limits:** only the rand pot funds plans; a month override is keyed by the cycle's
+  naming month; `planSave` is unioned per key (newer device wins) so a cleared override can come
+  back from the other device, and `planBuf` is last-write-wins.
+
+### 2026-10-06 — Pulled `main-h0rr3u` onto local `main` (DESKTOP)
+
+- **Changed:** `git pull --ff-only origin main-h0rr3u`, fast-forwarding local `main` from `9ae64be`
+  to `546e69f`. This brings down the cloud session's `CLAUDE.md` update only. The local-machine
+  audit steps it lists (skill deletions, parent `CLAUDE.md` edit) are **not done yet**.
+- **Why:** Requested, to get the cloud session's `CLAUDE.md` change onto this machine before
+  planning the Planned purchases feature.
+- **Files:** `CLAUDE.md` (via the pull), local `main` ref
+- **Revert:** `git reset --hard 9ae64be` (local only; nothing was pushed)
+- **Verified:** `git log` shows `546e69f` at HEAD; diff is `CLAUDE.md` only (+20 lines).
 
 ### 2026-10-04 — Acted on the prompt audit: CLAUDE.md is the starting point
 

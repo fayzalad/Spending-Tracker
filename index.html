@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-09-24-2">
+<meta name="slip-build" content="2026-10-06-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -173,6 +173,27 @@
   .sweep span{flex:1}
   .sweep button{background:var(--good-soft);color:var(--good);border:0;border-radius:11px;
     padding:10px 13px;font-family:var(--sys);font-size:13px;font-weight:700;flex:none}
+  .planline{margin-top:14px;border-top:1px solid var(--line);padding-top:13px;display:flex;
+    align-items:center;gap:10px;font-size:13px;line-height:1.35;cursor:pointer}
+  .planline span:first-child{flex:1}
+  .planline .chev{color:var(--mut);font-size:18px}
+  .planline.warn span:first-child{color:var(--warn)}
+  #planList{box-shadow:none;border:1px solid var(--line);margin:8px 0 10px}
+  #planList li{display:block}
+  #planList li .prow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  #planList li .pn{flex:1 1 100%;min-width:0}
+  #planList li .pn b{display:block;font-size:14px}
+  #planList li .pn em{display:block;font-style:normal;font-size:12px;color:var(--mut);margin-top:2px}
+  #planList li.skip,#planList li.done{opacity:.55}
+  #planList li button{background:var(--sunk);color:var(--ink);border:0;border-radius:9px;
+    padding:8px 10px;font-family:var(--sys);font-size:12.5px;font-weight:700;flex:none}
+  #planList li button.buy{background:var(--good-soft);color:var(--good)}
+  .ptab{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0 4px}
+  .ptab th{font-weight:700;color:var(--mut);text-align:left;padding:4px 4px;font-size:11px}
+  .ptab td{padding:7px 4px;border-top:1px solid var(--line);vertical-align:top}
+  .ptab td.low{color:var(--bad);font-weight:700}
+  .ptab td.cond{color:var(--warn)}
+  .ptab input{width:74px;padding:6px 7px;font-size:12.5px}
   .stat.tappable{cursor:pointer}
   .stat.tappable:active{background:var(--sunk)}
   .stat:nth-child(2n){border-left:1px solid var(--line)}
@@ -505,6 +526,8 @@
       <button class="ghost sm" id="withdrawBtn">Take some out</button>
     </div>
     <div id="sweepBox" aria-live="polite"></div>
+    <div class="planline" id="planLine" role="button" tabindex="0">
+      <span id="planLineText">Plan a purchase</span><span class="chev">›</span></div>
   </div>
 
   <div class="card" id="dueCard" style="display:none">
@@ -702,6 +725,50 @@
   </section>
 
   <button class="close" id="closeSet">Done</button>
+</dialog>
+
+<dialog id="planDlg" tabindex="-1" autofocus>
+  <h2>Planned purchases</h2>
+  <p class="hint" id="planSum"></p>
+  <ul id="planList"></ul>
+  <button class="ghost" id="planAdd">Add a purchase</button>
+  <div class="sp" style="margin-top:14px"><label for="planBuf">Keep at least this much left after any purchase (R)</label>
+    <input id="planBuf" type="number" inputmode="decimal"></div>
+  <div class="ch" style="margin-top:6px">Month by month</div>
+  <p class="hint" id="planTabHint"></p>
+  <div id="planTabBox"></div>
+  <button class="close" id="closePlan">Done</button>
+</dialog>
+
+<dialog id="planEdit" tabindex="-1" autofocus>
+  <h2 id="planEditTitle">Planned purchase</h2>
+  <div class="sp"><label for="planName">What is it</label>
+    <input id="planName" placeholder="e.g. Washing machine"></div>
+  <div class="sp"><label for="planPrice">Price (R)</label>
+    <input id="planPrice" type="number" inputmode="decimal"></div>
+  <div class="sp"><label for="planWhen">Buy it in</label><select id="planWhen"></select></div>
+  <label class="checkline"><input type="checkbox" id="planOnly">
+    <span>Only if the safety amount is left afterwards</span></label>
+  <div class="sp" id="planStatusRow"><label for="planStatus">Status</label>
+    <select id="planStatus"><option value="planned">Planned</option>
+      <option value="skipped">Skipped</option><option value="bought">Bought</option></select>
+    <p class="hint">To record the money going out, use Bought it on the list.</p></div>
+  <div class="sp"><label for="planNote">Note</label>
+    <input id="planNote" placeholder="Optional"></div>
+  <div class="sp"><label for="planLink">Link</label>
+    <input id="planLink" placeholder="Optional" inputmode="url"></div>
+  <button class="close" id="planSaveBtn">Save</button>
+  <button class="danger" id="planDel" style="margin-top:8px">Delete</button>
+  <button class="ghost" id="planEditCancel" style="margin-top:8px">Cancel</button>
+</dialog>
+
+<dialog id="planBuy" tabindex="-1" autofocus>
+  <h2 id="planBuyTitle">Bought it</h2>
+  <p class="hint" id="planBuyHint"></p>
+  <div class="sp"><label for="planPaid">What you actually paid (R)</label>
+    <input id="planPaid" type="number" inputmode="decimal"></div>
+  <button class="close" id="planBuyOk">Confirm</button>
+  <button class="ghost" id="planBuyCancel" style="margin-top:8px">Cancel</button>
 </dialog>
 
 <dialog id="vaultLog" tabindex="-1" autofocus>
@@ -1033,7 +1100,7 @@
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
     bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[],avKey:'',
-    homeCur:'ZAR',cycCur:{},cycRate:{}};
+    homeCur:'ZAR',cycCur:{},cycRate:{},plans:[],planBuf:1000,planSave:{}};
   let syncTimer=null, bannerOff=false, billBannerOff=false, incBannerOff=false;
   let scope='week', kind='out';
   let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
@@ -1116,13 +1183,13 @@
 
   const BILLS=['Rent','Electricity','Water / levies','Internet','Subscriptions','Phone / data'];
   const LIVING=['Uber Eats','Mr D','Take out','Bella Mare Cafe','Eating out',
-                'Groceries','Transport','Health','Other'];
+                'Groceries','Transport','Health','Big purchases','Other'];
   const SHOP=['Takealot','Amazon','Shein','Temu','Games','Tech / gadgets','Clothes'];
   const ICON={'Rent':'🏠','Electricity':'⚡','Water / levies':'💧','Internet':'🛜','Subscriptions':'🔁',
     'Phone / data':'📶','Uber Eats':'🛵','Groceries':'🛒','Eating out':'🍽','Transport':'🚌',
     'Health':'⚕','Other':'•','Money in':'↓','Takealot':'📦','Amazon':'📦','Shein':'👗','Temu':'🛍',
     'Mr D':'🛵','Take out':'🥡','Bella Mare Cafe':'☕','Savings':'🔒',
-    'Games':'🎮','Tech / gadgets':'🔌','Clothes':'👕'};
+    'Games':'🎮','Tech / gadgets':'🔌','Clothes':'👕','Big purchases':'🛋'};
   const customs=()=>data.cats||[];
   const custom=n=>customs().find(c=>c.n===n);
   const GDEF=[{n:'Living',b:false},{n:'Shopping',b:false},{n:'Bills',b:true}];
@@ -1358,6 +1425,8 @@
                      :'this month\u2019s '+R(data.goal)+' goal is done')
       : (c.cSaved>0?'moved across this month':'nothing put away this month');
     $('withdrawBtn').style.display=potList.length?'block':'none';
+    renderPlanLine();
+    if($('planDlg').open)renderPlanSheet();
     const sweeps=unsweptMonths();
     const sb=$('sweepBox'); sb.innerHTML='';
     // the goal is only protected until you actually move it — offer to do that now
@@ -1683,6 +1752,16 @@
       .filter(e=>!tomb[e.id])
       .sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0);
     out.deleted=tomb;
+    // planned purchases merge item by item too: union by id, a deletion wins, the newer edit wins
+    const pm={};
+    (older.plans||[]).forEach(p=>{pm[p.id]=p});
+    (newer.plans||[]).forEach(p=>{
+      const o=pm[p.id];
+      if(!o||(p.rev||0)>=(o.rev||0))pm[p.id]=p;
+    });
+    out.plans=Object.keys(pm).map(k=>pm[k]).filter(p=>!tomb[p.id])
+      .sort((x,y)=>(x.o||0)-(y.o||0));
+    out.planSave=Object.assign({},older.planSave||{},newer.planSave||{});
     return out;
   }
 
@@ -2316,6 +2395,209 @@
   $('vaultOpen').onclick=()=>{renderVaultLog();$('vaultLog').showModal()};
   $('closeVaultLog').onclick=()=>$('vaultLog').close();
   $('vaultAddMore').onclick=()=>{$('vaultLog').close();openVault('save','','')};
+
+  // ---- planned purchases ------------------------------------------------------------------
+  // Funded from the savings vault, in order — no second pot. Only the rand pot counts: the
+  // plan is in rand, and "Bought it" can only take rand out of it.
+  const plans=()=>data.plans||[];
+  const planVault=()=>Math.max(0,savingsTotals().ZAR||0);
+  const planCycles=n=>{
+    const out=[]; let cs=cycStart(today());
+    for(let i=0;i<n;i++){
+      out.push({cs,ym:cycEnd(cs).slice(0,7),name:cycName(cs),
+        from:D(cs).toLocaleDateString('en-ZA',{day:'numeric',month:'short'})});
+      cs=cycNext(cs);
+    }
+    return out;
+  };
+  // a purchase's target is the month its cycle is named for; one in the past means "now"
+  function planProject(){
+    const N=36, cyc=planCycles(N), buf=Number(data.planBuf)||0, vault=planVault();
+    const exp=ym=>{const v=data.planSave&&data.planSave[ym];
+      return (v===undefined||v===null||v==='')?(Number(data.goal)||0):(Number(v)||0)};
+    const saved0=sum(inCyc(cyc[0].cs),isSave)-sum(inCyc(cyc[0].cs),isUnsave);
+    const contrib=cyc.map((c,k)=>k===0?Math.max(0,exp(c.ym)-saved0):exp(c.ym));
+    const live=plans().filter(p=>p.status==='planned').slice().sort((a,b)=>(a.o||0)-(b.o||0));
+    const idxOf=p=>{
+      if(!p.m||p.m<=cyc[0].ym)return 0;
+      const i=cyc.findIndex(c=>c.ym===p.m); return i<0?N-1:i;
+    };
+    // funding in order: what the vault covers of each item once the ones before it are paid
+    const stock=k=>vault+contrib.slice(0,k).reduce((s,v)=>s+v,0);
+    let earlier=0; const info={};
+    live.forEach(p=>{
+      const price=Number(p.price)||0, need=price+(p.only?buf:0), have=vault-earlier;
+      let ready=null;
+      for(let k=0;k<N;k++){if(stock(k)-earlier>=need-0.005){ready=k;break}}
+      info[p.id]={p,price,saved:Math.max(0,Math.min(price,have)),
+        missing:Math.max(0,need-have),ready,readyCyc:ready===null?null:cyc[ready]};
+      earlier+=price;
+    });
+    // the month-by-month running balance, with each purchase in its target month
+    const last=live.reduce((m,p)=>Math.max(m,idxOf(p)),0);
+    const rows=[]; let bal=vault;
+    for(let k=0;k<=last;k++){
+      if(k>0)bal+=contrib[k-1];
+      const row={c:cyc[k],start:bal,items:[]};
+      live.filter(p=>idxOf(p)===k).forEach(p=>{
+        const after=bal-(Number(p.price)||0);
+        if(p.only&&after<buf-0.005){row.items.push({p,skipped:true,after:bal});return}
+        bal=after; row.items.push({p,after,low:after<buf-0.005});
+      });
+      row.end=bal; rows.push(row);
+    }
+    return {rows,info,live,vault,buf,cyc};
+  }
+
+  const shortDate=cs=>D(cs).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+  function nextUpText(){
+    const pr=planProject(), first=pr.live[0];
+    if(!first)return {text:'Plan a purchase',warn:false};
+    const i=pr.info[first.id];
+    let t='Next: '+first.n+' — '+R(i.price)+' · ';
+    if(i.ready===0)t+='you have it';
+    else if(i.readyCyc)t+='short '+R(i.missing)+', ready '+shortDate(i.readyCyc.cs);
+    else t+='short '+R(i.missing)+', not within 3 years';
+    const low=pr.rows.some(r=>r.items.some(x=>x.low));
+    return {text:t+(low?' · plan dips under your safety amount':''),warn:low};
+  }
+  function renderPlanLine(){
+    const n=nextUpText(); $('planLineText').textContent=n.text;
+    $('planLine').classList.toggle('warn',n.warn);
+  }
+  $('planLine').onclick=()=>openPlans();
+  $('planLine').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openPlans()}};
+
+  function renderPlanSheet(){
+    const pr=planProject(), ul=$('planList');
+    $('planSum').textContent='In savings now: '+R(pr.vault)+(data.goal>0?'. You expect to save '+R(data.goal)+
+      ' a month unless you set a month below.':'. Set a savings goal in settings, or fill in the months below.');
+    ul.innerHTML='';
+    const all=plans().slice().sort((a,b)=>(a.o||0)-(b.o||0));
+    if(!all.length){const li=document.createElement('li');
+      li.textContent='Nothing planned yet.'; ul.appendChild(li)}
+    all.forEach(p=>{
+      const li=document.createElement('li'); li.className=p.status==='planned'?'':(p.status==='bought'?'done':'skip');
+      const i=pr.info[p.id], mon=pr.cyc.find(c=>c.ym===p.m);
+      const sub=p.status==='bought'?'Bought for '+R(p.paid||p.price)
+        :p.status==='skipped'?'Skipped'
+        :R(Number(p.price)||0)+(p.m?' · '+(mon?mon.name:p.m):'')+(p.only?' · only if '+R(pr.buf)+' is left':'')+
+          (i?(i.ready===0?' · you have it':' · short '+R(i.missing)+(i.readyCyc?', ready '+shortDate(i.readyCyc.cs):'')):'');
+      li.innerHTML='<div class="prow"><span class="pn"><b></b><em></em></span></div>';
+      li.querySelector('b').textContent=p.n; li.querySelector('em').textContent=sub+(p.note?' · '+p.note:'');
+      const row=li.querySelector('.prow');
+      const mk=(t,fn,cls,label)=>{const b=document.createElement('button');b.type='button';
+        b.textContent=t;if(cls)b.className=cls;if(label)b.setAttribute('aria-label',label);b.onclick=fn;row.appendChild(b)};
+      if(p.status==='planned')mk('Bought it',()=>openBuy(p),'buy');
+      mk('↑',()=>movePlan(p,-1),'','Move up'); mk('↓',()=>movePlan(p,1),'','Move down');
+      mk('Edit',()=>openPlanEdit(p));
+      ul.appendChild(li);
+    });
+    $('planBuf').value=data.planBuf;
+    const box=$('planTabBox'); box.innerHTML='';
+    if(!pr.rows.length){$('planTabHint').textContent='Add a purchase to see the plan month by month.';return}
+    $('planTabHint').textContent='Each row is a pay cycle. Leave "You save" empty to use your goal. Skipped means a conditional item would leave less than your safety amount.';
+    const t=document.createElement('table'); t.className='ptab';
+    t.innerHTML='<tr><th>Month</th><th>Start</th><th>Buy</th><th>Left</th><th>You save</th></tr>';
+    pr.rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      const buys=r.items.length?r.items.map(x=>x.p.n+' '+R(Number(x.p.price)||0)+(x.skipped?' (skipped)':'')).join('; '):'—';
+      const low=r.items.some(x=>x.low);
+      tr.innerHTML='<td><b></b><br><span style="color:var(--mut)">from '+r.c.from+'</span></td><td>'+R(r.start)+'</td><td></td>'+
+        '<td class="'+(low?'low':'')+'">'+R(r.end)+(low?'<br>under '+R(pr.buf):'')+'</td><td></td>';
+      tr.querySelector('b').textContent=r.c.name;
+      const bt=tr.children[2]; bt.textContent=buys; if(r.items.some(x=>x.skipped))bt.className='cond';
+      const inp=document.createElement('input'); inp.type='number'; inp.inputMode='decimal';
+      inp.placeholder=String(Number(data.goal)||0); inp.setAttribute('aria-label','Expected saving, '+r.c.name);
+      const cur=data.planSave&&data.planSave[r.c.ym]; inp.value=(cur===undefined||cur===null)?'':cur;
+      inp.onchange=()=>{
+        data.planSave=data.planSave||{};
+        if(inp.value==='')delete data.planSave[r.c.ym]; else data.planSave[r.c.ym]=Number(inp.value)||0;
+        save();
+      };
+      tr.children[4].appendChild(inp); t.appendChild(tr);
+    });
+    box.appendChild(t);
+  }
+  function openPlans(){renderPlanSheet();$('planDlg').showModal()}
+  $('closePlan').onclick=()=>$('planDlg').close();
+  $('planBuf').onchange=e=>{data.planBuf=Math.max(0,Number(e.target.value)||0);save()};
+
+  function movePlan(p,dir){
+    const all=plans().slice().sort((a,b)=>(a.o||0)-(b.o||0));
+    const i=all.indexOf(p), j=i+dir; if(j<0||j>=all.length)return;
+    all.forEach((x,n)=>{x.o=n+1});          // renumber so equal or missing orders can't tie
+    const a=all[i], b=all[j], ao=a.o;
+    a.o=b.o; b.o=ao; a.rev=b.rev=Date.now();
+    save();
+  }
+
+  let editPlan=null;
+  function openPlanEdit(p){
+    editPlan=p||null;
+    $('planEditTitle').textContent=p?'Edit purchase':'Add a purchase';
+    const cyc=planCycles(36);
+    $('planWhen').innerHTML=cyc.map(c=>'<option value="'+c.ym+'">'+c.name+' · from '+c.from+'</option>').join('');
+    $('planName').value=p?p.n:''; $('planPrice').value=p?p.price:'';
+    $('planWhen').value=p&&p.m&&p.m>cyc[0].ym&&cyc.some(c=>c.ym===p.m)?p.m:cyc[Math.min(1,cyc.length-1)].ym;
+    $('planOnly').checked=!!(p&&p.only);
+    $('planStatus').value=p?p.status:'planned'; $('planStatusRow').style.display=p?'block':'none';
+    $('planNote').value=p?(p.note||''):''; $('planLink').value=p?(p.link||''):'';
+    $('planDel').style.display=p?'block':'none';
+    $('planEdit').showModal();
+  }
+  $('planAdd').onclick=()=>openPlanEdit(null);
+  $('planEditCancel').onclick=()=>$('planEdit').close();
+  $('planSaveBtn').onclick=()=>{
+    const n=$('planName').value.trim(), price=Number($('planPrice').value);
+    if(!n){$('planName').focus();return}
+    if(!(price>0)){$('planPrice').focus();return}
+    const f={n,price,m:$('planWhen').value,only:$('planOnly').checked,
+      note:$('planNote').value.trim(),link:$('planLink').value.trim(),rev:Date.now()};
+    data.plans=plans().slice();
+    if(editPlan){
+      Object.assign(editPlan,f,{status:$('planStatus').value});
+    }else{
+      const o=plans().reduce((m,x)=>Math.max(m,x.o||0),0)+1;
+      data.plans.push(Object.assign({id:Date.now()+Math.random(),o,status:'planned'},f));
+    }
+    $('planEdit').close(); save();
+  };
+  $('planDel').onclick=()=>{
+    if(!editPlan||!confirm('Delete '+editPlan.n+' from your plan?'))return;
+    tombstone(editPlan.id);
+    data.plans=plans().filter(x=>x.id!==editPlan.id);
+    $('planEdit').close(); save();
+  };
+
+  let buying=null;
+  function openBuy(p){
+    buying=p; $('planBuyTitle').textContent='Bought: '+p.n;
+    $('planPaid').value=p.price;
+    updateBuyHint(); $('planBuy').showModal();
+  }
+  function updateBuyHint(){
+    const paid=Number($('planPaid').value)||0, take=Math.min(paid,planVault());
+    $('planBuyHint').textContent=paid>0
+      ?(take>=paid-0.005?R(paid)+' comes out of your savings and is logged as a spend.'
+        :R(take)+' comes out of your savings; the other '+R(paid-take)+' is an ordinary spend from your available money.')
+      :'';
+  }
+  $('planPaid').oninput=updateBuyHint;
+  $('planBuyCancel').onclick=()=>$('planBuy').close();
+  $('planBuyOk').onclick=()=>{
+    const paid=Math.round((Number($('planPaid').value)||0)*100)/100;
+    if(!buying||!(paid>0)){$('planPaid').focus();return}
+    const t=today(), cs=cycStart(t), take=Math.min(paid,planVault());
+    // one withdrawal and one spend, built the way the vault sheet and the log form build them,
+    // so the withdrawal rule and the money maths treat them like any other pair of entries
+    if(take>0.005)data.entries.push({id:Date.now()+Math.random(),amt:take,cat:'Savings',
+      note:buying.n,date:t,type:'unsave',cyc:cs});
+    data.entries.push({id:Date.now()+Math.random(),amt:paid,cat:'Big purchases',
+      note:buying.n,date:t,type:'out',cyc:cs});
+    Object.assign(buying,{status:'bought',paid,at:t,rev:Date.now()});
+    $('planBuy').close(); save();
+  };
 
   let paying=null, splitChoice=null;
   function paySplitRefresh(){
@@ -3150,10 +3432,10 @@
       if(data.gistId){
         const rm=await remote();
         if(rm&&rm.entries){
-          const before=data.entries.length;
+          const before=data.entries.length, plansBefore=JSON.stringify(data.plans);
           const tok=data.tok;
           data=mergeStores(data,rm); data.tok=tok;
-          if(data.entries.length!==before){S.set(KEY,data);render()}
+          if(data.entries.length!==before||JSON.stringify(data.plans)!==plansBefore){S.set(KEY,data);render()}
         }
       }
       let body=await payload();
@@ -3687,6 +3969,8 @@
     }
     if(s)data=Object.assign(data,s);
     data.cycCur=data.cycCur||{}; data.cycRate=data.cycRate||{}; data.homeCur=data.homeCur||'ZAR';
+    data.plans=data.plans||[]; data.planSave=data.planSave||{};
+    if(typeof data.planBuf!=='number')data.planBuf=1000;
     data.entries.forEach(e=>{if(!e.cyc)e.cyc=cycStart(e.date)});
     if(healForwardIncome())S.set(KEY,data);
     // clear out anything left from the old receipts feature
@@ -3722,7 +4006,8 @@
         if(!rm||!rm.entries)return;
         const tok=data.tok;
         const merged=mergeStores(data,rm); merged.tok=tok;
-        if(JSON.stringify(merged.entries)!==JSON.stringify(data.entries)){
+        if(JSON.stringify(merged.entries)!==JSON.stringify(data.entries)||
+           JSON.stringify(merged.plans)!==JSON.stringify(data.plans)){
           data=merged; S.set(KEY,data); render();
           $('syncState').textContent='Picked up changes from your other device.';
         }
