@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-20-8">
+<meta name="slip-build" content="2026-10-20-9">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -314,7 +314,25 @@
     [data-platform="desktop"] #quickAdd::after{content:"N"}
     [data-platform="desktop"] #openFind::after{content:"/"}
     [data-platform="desktop"] .toTop{bottom:24px}
+    [data-platform="desktop"] .tabbar #navHome{display:flex}
+    /* the main screens open as full pages beside the nav pane, as in the Figma design, instead of
+       as sheets floating over everything (and blocking the nav). The small edit and confirm
+       dialogs stay as centred sheets on top of them. */
+    [data-platform="desktop"] #setDlg,[data-platform="desktop"] #histDlg,[data-platform="desktop"] #findDlg,
+    [data-platform="desktop"] #investDlg,[data-platform="desktop"] #subsDlg,[data-platform="desktop"] #planDlg,
+    [data-platform="desktop"] #budDlg{
+      position:fixed;inset:0 0 0 210px;margin:0;width:auto;height:auto;max-width:none;max-height:none;
+      border-radius:0;box-shadow:none;border:0;background:var(--bg);color:var(--ink);z-index:40;
+      padding:34px max(36px,calc((100% - 820px)/2)) 48px;
+      -webkit-backdrop-filter:none;backdrop-filter:none;transform:none!important;opacity:1!important}
+    [data-platform="desktop"] #setDlg .grab,[data-platform="desktop"] #histDlg .grab,[data-platform="desktop"] #findDlg .grab,
+    [data-platform="desktop"] #investDlg .grab,[data-platform="desktop"] #subsDlg .grab,[data-platform="desktop"] #planDlg .grab,
+    [data-platform="desktop"] #budDlg .grab{display:none}
+    [data-platform="desktop"] #setDlg h2,[data-platform="desktop"] #histDlg h2,[data-platform="desktop"] #findDlg h2,
+    [data-platform="desktop"] #investDlg h2,[data-platform="desktop"] #subsDlg h2,[data-platform="desktop"] #planDlg h2,
+    [data-platform="desktop"] #budDlg h2{font-size:30px;letter-spacing:-.035em}
   }
+  .tabbar #navHome{display:none}
   .stat.tappable{cursor:pointer}
   .stat.tappable:active{background:var(--sunk)}
   .stat:nth-child(2n){border-left:1px solid var(--line)}
@@ -1008,6 +1026,7 @@
 </dialog>
 
 <nav class="tabbar" id="tabbar">
+  <button id="navHome" aria-label="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
   <button id="quickAdd" aria-label="Add"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
   <button id="openFind" aria-label="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span></button>
   <button id="openHist" aria-label="Months"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span>Months</span></button>
@@ -3498,6 +3517,12 @@
     if(changed)refile();
   }
   const REDUCE_MOTION=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // on a wide desktop window the main screens are pages next to the nav pane, not sheets over it:
+  // opened non-modally (so the nav still works), one at a time, Esc closes. Everything else stays a sheet.
+  const WIDE=matchMedia('(min-width:900px)');
+  const PAGES=['setDlg','histDlg','findDlg','investDlg','subsDlg','planDlg','budDlg'];
+  const pageMode=id=>document.documentElement.getAttribute('data-platform')==='desktop'&&WIDE.matches&&
+    PAGES.indexOf(id)>-1&&typeof $(id).show==='function';
   // every sheet gets a back/close bar, and a sheet opened on top of another says Back
   document.querySelectorAll('dialog').forEach(dl=>{
     const h=dl.querySelector('h2'); if(!h)return;
@@ -3515,12 +3540,15 @@
     back.onclick=shut.onclick=()=>dl.close();
 
     const orig=dl.showModal.bind(dl);
+    dl.addEventListener('close',()=>{delete dl.dataset.modal});
     dl.showModal=()=>{
+      const asPage=pageMode(dl.id);
+      if(asPage)PAGES.forEach(id=>{const o=$(id);if(o!==dl&&o.open)o.close()});   // a page replaces the last
       const stacked=[...document.querySelectorAll('dialog')].some(o=>o!==dl&&o.open);
       back.hidden=!stacked;
       shut.hidden=stacked;
       dl.style.transform=''; dl.style.transition=''; dl.style.opacity='';
-      orig();
+      if(asPage){dl.show();dl.scrollTop=0}else{dl.dataset.modal='1';orig()}
       syncTabbar();
     };
 
@@ -3571,28 +3599,47 @@
   });
 
   const TABFOR={findDlg:'openFind',histDlg:'openHist',monthDlg:'openHist',
-                setDlg:'openSet',allDlg:'openFind',investDlg:'openInvest'};
+                setDlg:'openSet',allDlg:'openFind',investDlg:'openInvest',
+                subsDlg:'navHome',planDlg:'navHome',budDlg:'navHome'};
   function syncTabbar(){
     const open=[...document.querySelectorAll('dialog')].filter(x=>x.open).map(x=>x.id);
     const active=open.map(id=>TABFOR[id]).filter(Boolean).pop()
-      || (document.activeElement===$('amt')?'quickAdd':null);
-    ['quickAdd','openFind','openHist','openInvest','openSet'].forEach(id=>
+      || (document.activeElement===$('amt')?'quickAdd':null)
+      || (!open.length&&document.documentElement.getAttribute('data-platform')==='desktop'&&WIDE.matches?'navHome':null);
+    ['navHome','quickAdd','openFind','openHist','openInvest','openSet'].forEach(id=>
       $(id).classList.toggle('on',id===active));
   }
+  // Home: back to the dashboard from wherever you are
+  $('navHome').onclick=()=>{
+    document.querySelectorAll('dialog[open]').forEach(d=>d.close());
+    scrollTo({top:0,behavior:'smooth'});
+  };
+  // Esc closes the page you are on (a sheet over it handles its own Esc)
+  document.addEventListener('keydown',ev=>{
+    if(ev.key!=='Escape')return;
+    const open=[...document.querySelectorAll('dialog[open]')];
+    if(open.some(d=>d.dataset.modal))return;
+    const pg=open.filter(d=>pageMode(d.id)).pop();
+    if(pg){ev.preventDefault();pg.close()}
+  });
   document.querySelectorAll('dialog').forEach(dl=>dl.addEventListener('close',syncTabbar));
+  syncTabbar();                                  // Home is lit from the start on a wide desktop window
+  if(WIDE.addEventListener)WIDE.addEventListener('change',syncTabbar);
   $('amt').addEventListener('focus',syncTabbar);
   $('amt').addEventListener('blur',()=>setTimeout(syncTabbar,60));
 
   // desktop shortcuts: N starts a new entry, / opens search — only when not typing and no sheet is open
   document.addEventListener('keydown',ev=>{
     if(document.documentElement.getAttribute('data-platform')!=='desktop')return;
-    if(ev.ctrlKey||ev.metaKey||ev.altKey||document.querySelector('dialog[open]'))return;
+    if(ev.ctrlKey||ev.metaKey||ev.altKey)return;
+    if([...document.querySelectorAll('dialog[open]')].some(d=>!pageMode(d.id)))return;   // a sheet is open
     const t=ev.target, typing=t&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable);
     if(typing)return;
     if(ev.key==='n'||ev.key==='N'){ev.preventDefault();$('quickAdd').click()}
     else if(ev.key==='/'){ev.preventDefault();$('openFind').click()}
   });
   $('quickAdd').onclick=()=>{
+    PAGES.forEach(id=>{if($(id).open)$(id).close()});   // Add lives on the dashboard
     $('logCard').scrollIntoView({behavior:'smooth',block:'center'});
     setTimeout(()=>$('amt').focus(),350);
   };

@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Desktop screens as pages (build `2026-10-20-9`)
+
+- **Did:** on `data-platform=desktop` + `(min-width:900px)` the seven main dialogs (`PAGES`: set, hist, find, invest, subs, plan, bud) open with `show()` (non-modal) styled as full pages right of the nav pane; one at a time; Esc closes; new `#navHome` button; `syncTabbar` lights Home/the page's button from first paint. Small dialogs still use `showModal` and tag `dataset.modal`. Tests: section 77 (18 checks) plus `matchMedia`/`show` stubs in the harness (`opts.wide`).
+- **Why:** owner compared the desktop Settings (a pop-up over the app, nav blocked) with the Figma Settings page (full page beside the nav).
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 564 tests; Settings, Budget, Investments viewed at 1440px (dark, glass on, invented data). NOT checked: light mode pages, Months/Search/Bills/Plans pages visually, the real Windows app after this build, Figma's richer page layouts (e.g. Investments tiles, Add as a page).
+
 ### 2026-10-20 — Screen pass with the owner's real settings (build `2026-10-20-8`)
 
 - **Did:** loaded a copy of the cloud data (token stripped) into the browser pane via a gitignored `imports/real-view.json` (deleted afterwards, and the pane's localStorage cleared) and looked at Months, Settings (5 tabs), Subscriptions & bills, Search, Planned purchases and Investments at 375px (Android look, dark, glass on) and 1440px (desktop). Fixed: faint unselected chips (.45→.62 opacity), iPhone-only wording (glass hint, receipt tip).

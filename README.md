@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**545 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**564 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,15 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-9` — desktop screens are pages, not pop-ups
+
+On a wide desktop window (900 px and up) Settings, Months, Search, Investments, Subscriptions &
+bills, Planned purchases and Budget now open as full pages beside the left navigation, as in the Figma
+design, instead of as sheets floating over everything. The nav stays clickable and lights the page you
+are on; opening one page replaces the last; **Esc** closes it; the small edit and confirm dialogs still
+appear as centred sheets on top. New **Home** button at the top of the nav (wide desktop only). **N** and
+**/** work from inside a page. Phones, and narrow windows, are unchanged: sheets as before.
 
 ### `2026-10-20-8` — screen pass with real settings
 

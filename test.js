@@ -25,7 +25,7 @@ async function boot(seed, opts = {}) {
         static now() { return new Real(TODAY + 'T09:00:00Z').getTime(); }
       }
       w.Date = FakeDate;
-      w.matchMedia = () => ({ matches: false, addEventListener() {}, addListener() {} });
+      w.matchMedia = q => ({ matches: !!(opts.wide && /min-width:s*900px/.test(q)), addEventListener() {}, addListener() {} });
       w.fetch = () => Promise.reject(new Error('offline in test'));
       w.confirm = () => opts.confirm !== false;
       w.alert = () => {};
@@ -36,6 +36,7 @@ async function boot(seed, opts = {}) {
       w.localStorage.setItem('slip:v4', JSON.stringify(seed));
       // jsdom has no dialog methods
       w.HTMLDialogElement && (w.HTMLDialogElement.prototype.showModal = function () { this.open = true; });
+      w.HTMLDialogElement && (w.HTMLDialogElement.prototype.show = function () { this.open = true; this.dataset.shown = '1'; });
       w.HTMLDialogElement && (w.HTMLDialogElement.prototype.close = function () {
         this.open = false;
         this.dispatchEvent(new w.Event('close'));   // real browsers fire this
@@ -918,7 +919,7 @@ const seed = {
   console.log('\n=== 37. navigation moved to a bottom bar ===');
   dom = await boot(twoMonths); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   ok('there is a bottom bar', !!$('tabbar'));
-  ok('with five destinations', $('tabbar').querySelectorAll('button').length === 5,
+  ok('with five destinations, plus Home which only a wide desktop window shows', $('tabbar').querySelectorAll('button').length === 6,
      String($('tabbar').querySelectorAll('button').length));
   ok('the header is just the name', d.querySelector('.top').textContent.trim() === 'Tracker',
      d.querySelector('.top').textContent.trim());
@@ -2404,7 +2405,7 @@ const seed = {
   const dm = await boot(seed, { query: '?platform=android' });
   key(dm.window, '/');
   ok('phones do not grab keys', !dm.window.document.getElementById('findDlg').open);
-  ok('every platform keeps the same five navigation buttons', d.querySelectorAll('#tabbar button').length === 5);
+  ok('every platform has the same navigation buttons (Home is shown on wide desktop only)', d.querySelectorAll('#tabbar button').length === 6);
   // frosted glass is a user setting; its rules share the hero's specificity, so the later rule must win
   const heroCss = HTML.slice(HTML.indexOf('<style>'), HTML.indexOf('</style>'));
   ok('frosted glass does not turn the filled hero into a see-through card',
@@ -2412,6 +2413,51 @@ const seed = {
      /\[data-glass="on"\] \.hero\{background:linear-gradient/.test(heroCss));
   ok('the hero reads from the scheme tokens, so every colour scheme gets a hero',
      /--hero-a/.test(HTML) && /\[data-theme="dark"\] \.hero/.test(HTML));
+
+  console.log('\n=== 77. on a wide desktop window the main screens are pages, not sheets ===');
+  const wideSeed = JSON.parse(JSON.stringify(seed)); wideSeed.budgets = { '2026-09': { inc: 20000, rev: 1, lines: [{ id: 'r', n: 'Rent', cat: 'Rent', a: 9000 }] } };
+  dom = await boot(wideSeed, { wide: true }); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  const esc = () => d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  const pg = id => $(id).open && $(id).dataset.shown === '1' && !$(id).dataset.modal;
+  ok('Home is lit from the first paint on a wide desktop window', $('navHome').classList.contains('on'));
+  $('openSet').click();
+  ok('Settings opens as a page (not modal) so the nav stays usable', pg('setDlg'));
+  $('openFind').click();
+  ok('another page replaces it', pg('findDlg') && !$('setDlg').open);
+  $('openInvest').click(); $('openHist').click();
+  ok('only one page is ever open', ['setDlg', 'findDlg', 'investDlg', 'histDlg'].filter(id => $(id).open).join() === 'histDlg');
+  ok('and its nav button is lit', $('openHist').classList.contains('on'));
+  esc();
+  ok('Esc closes the page', !$('histDlg').open);
+  ok('and Home is lit when nothing is open', $('navHome').classList.contains('on'));
+  $('openSet').click(); $('navHome').click();
+  ok('Home closes the page', !$('setDlg').open);
+  $('budLine').click();
+  ok('the Budget sheet is a page too', pg('budDlg'));
+  $('budAdd').click();
+  ok('a small edit dialog over a page stays a modal sheet', $('budEdit').open && $('budEdit').dataset.modal === '1' && !$('budEdit').dataset.shown);
+  ok('and the page is still there beneath it', $('budDlg').open);
+  esc();
+  ok('Esc leaves the page alone while a sheet is over it', $('budDlg').open);
+  $('budEdit').close();
+  esc();
+  ok('then closes the page', !$('budDlg').open);
+  $('openSet').click();
+  d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'n', bubbles: true }));
+  ok('N from a page goes back to the dashboard to add an entry', !$('setDlg').open);
+  $('openSet').click();
+  d.dispatchEvent(new w.KeyboardEvent('keydown', { key: '/', bubbles: true }));
+  ok('/ from a page opens search', pg('findDlg') && !$('setDlg').open);
+  for (const q of ['ios', 'android']) {
+    const dw = await boot(wideSeed, { wide: true, query: '?platform=' + q });
+    dw.window.document.getElementById('openSet').click();
+    const sd = dw.window.document.getElementById('setDlg');
+    ok(q + ' keeps sheets even in a wide window', sd.open && sd.dataset.modal === '1' && !sd.dataset.shown);
+  }
+  dom = await boot(wideSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openSet').click();
+  ok('a narrow desktop window keeps the sheet', $('setDlg').dataset.modal === '1' && !$('setDlg').dataset.shown);
+  ok('and Home is not lit there', !$('navHome').classList.contains('on'));
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
