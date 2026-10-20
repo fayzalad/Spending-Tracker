@@ -933,6 +933,8 @@ const seed = {
   $('openHist').click();
   const row = d.querySelector('#histList .hist');
   ok('history rows are tappable', !!row);
+  $('histDlg').close(); $('openHist').click(); $('histDlg').close(); $('openHist').click();
+  ok('the tap-a-month hint is shown once however often the page is opened', d.querySelectorAll('#histDlg .histtip').length === 1, String(d.querySelectorAll('#histDlg .histtip').length));
   row.click();
   ok('a month sheet opens', $('monthDlg').open === true);
   ok('it names the month', $('monthTitle').textContent.length > 2, $('monthTitle').textContent);
@@ -2409,8 +2411,8 @@ const seed = {
   // frosted glass is a user setting; its rules share the hero's specificity, so the later rule must win
   const heroCss = HTML.slice(HTML.indexOf('<style>'), HTML.indexOf('</style>'));
   ok('frosted glass does not turn the filled hero into a see-through card',
-     heroCss.indexOf('[data-glass="on"] .hero{') > heroCss.lastIndexOf('[data-glass="on"] .seeall{') &&
-     /\[data-glass="on"\] \.hero\{background:linear-gradient/.test(heroCss));
+     heroCss.indexOf('[data-glass="on"] .hero,[data-glass="on"] .sumcard{') > heroCss.lastIndexOf('[data-glass="on"] .seeall{') &&
+     /\[data-glass="on"\] \.hero,\[data-glass="on"\] \.sumcard\{background:linear-gradient/.test(heroCss));
   ok('the hero reads from the scheme tokens, so every colour scheme gets a hero',
      /--hero-a/.test(HTML) && /\[data-theme="dark"\] \.hero/.test(HTML));
 
@@ -2458,6 +2460,101 @@ const seed = {
   $('openSet').click();
   ok('a narrow desktop window keeps the sheet', $('setDlg').dataset.modal === '1' && !$('setDlg').dataset.shown);
   ok('and Home is not lit there', !$('navHome').classList.contains('on'));
+
+  console.log('\n=== 78. the Figma pass: Search chips, the Add page, nav sync, Investments and Months cards ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  const chip = f => d.querySelector('#findChips [data-f="' + f + '"]');
+  const found = () => d.querySelectorAll('#findRes li').length;
+  $('openFind').click();
+  ok('nothing is searched until you type or pick a filter', /Start typing/.test($('findSum').textContent));
+  chip('out').click();
+  ok('Spent lists every spend', found() === 7 && /^7 entries/.test($('findSum').textContent), $('findSum').textContent);
+  chip('in').click();
+  ok('Received switches to money in, not both', found() === 1 && chip('out').getAttribute('aria-pressed') === 'false');
+  chip('in').click();
+  ok('pressing the active one again clears it', found() === 0 && chip('all').getAttribute('aria-pressed') === 'true');
+  chip('food').click();
+  ok('Food keeps just the food categories', found() === 4, String(found()));
+  chip('out').click();
+  ok('and combines with Spent', found() === 4);
+  chip('month').click();
+  ok('This month keeps the live cycle only', found() === 4);
+  chip('all').click();
+  ok('All clears every filter', found() === 0 && /Start typing/.test($('findSum').textContent));
+  $('findQ').value = 'powerbank'; $('findQ').dispatchEvent(new w.Event('input'));
+  ok('a query alone still works', found() === 1);
+  chip('in').click();
+  ok('a query plus a filter that excludes it finds nothing, and says so', found() === 0 && /Nothing matches/.test($('findSum').textContent), $('findSum').textContent);
+  $('findDlg').close(); $('openFind').click();
+  ok('reopening search starts clean', chip('all').getAttribute('aria-pressed') === 'true' && /Start typing/.test($('findSum').textContent));
+  ok('and the summary still reads as one line', (chip('out').click(), /7 entries · R[\d\s  ]+ spent/.test($('findSum').textContent.replace(/\s/g, ' '))), $('findSum').textContent);
+
+  console.log('  -- the nav foot says whether this device syncs');
+  ok('without a token it says so', $('navSyncT').textContent === 'Not synced' && /Set up/.test($('navSyncS').textContent));
+  dom = await boot(Object.assign(JSON.parse(JSON.stringify(seed)), { tok: 'x', gistId: 'a'.repeat(32) }));
+  w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('with a token and a backup it says Synced', $('navSyncT').textContent === 'Synced' && !$('navSync').classList.contains('off'));
+  $('navSync').click();
+  ok('and clicking it opens Settings on the Data tab', $('setDlg').open && d.querySelector('#setTabs [data-tab="data"]').getAttribute('aria-selected') === 'true');
+
+  console.log('  -- Add as a page on a wide desktop window');
+  dom = await boot(seed, { wide: true }); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  const colB = $('logCard').parentNode;
+  $('quickAdd').click();
+  ok('Add opens a page', $('addDlg').open && $('addDlg').dataset.shown === '1');
+  ok('the same form is moved into it', $('addSlot').contains($('logCard')) && !colB.contains($('logCard')));
+  ok('and so is the Add button', $('addFoot').contains($('addBtn')));
+  ok('there is a pill for every category', d.querySelectorAll('#catPills button[data-cat]').length === d.querySelectorAll('#cat option:not([value="__new"])').length,
+     d.querySelectorAll('#catPills button[data-cat]').length + ' vs ' + d.querySelectorAll('#cat option').length);
+  d.querySelector('#catPills [data-cat="Groceries"]').click();
+  ok('a pill sets the category', $('cat').value === 'Groceries' && d.querySelector('#catPills [data-cat="Groceries"]').getAttribute('aria-pressed') === 'true');
+  $('amt').value = '384'; $('amt').dispatchEvent(new w.Event('input'));
+  ok('the button names what it will add', $('addBtn').textContent === 'Add R384 spent', $('addBtn').textContent);
+  $('note').value = 'Wool test';
+  $('addBtn').click();
+  await new Promise(r => setTimeout(r, 30));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const made = st.entries.find(e => e.note === 'Wool test');
+  ok('adding from the page saves a normal entry', made && made.amt === 384 && made.cat === 'Groceries' && made.type === 'out', JSON.stringify(made));
+  ok('the page stays open for the next one, with the amount cleared and the button reset', $('addDlg').open && $('amt').value === '' && $('addBtn').textContent === 'Add', $('addBtn').textContent);
+  $('kIn').click();
+  await new Promise(r => setTimeout(r, 0));
+  ok('Received hides the pills', $('catPills').style.display === 'none' && /Add money/.test($('addBtn').textContent));
+  $('kOut').click();
+  await new Promise(r => setTimeout(r, 0));
+  ok('and Spent brings them back', $('catPills').style.display !== 'none');
+  d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  ok('Esc closes the page', !$('addDlg').open);
+  ok('the form goes back to the dashboard', colB.contains($('logCard')) && $('logCard').parentNode === colB);
+  ok('and the Add button back in its row, labelled as before', $('addBtn').parentNode.classList.contains('amtrow') && $('addBtn').textContent === 'Add', $('addBtn').textContent);
+  $('quickIn').click();
+  ok('Money received opens the page already on Received', $('addDlg').open && $('kIn').getAttribute('aria-selected') === 'true');
+  $('openSet').click();
+  ok('another page replaces it and the form is home again', !$('addDlg').open && colB.contains($('logCard')));
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('quickAdd').click();
+  ok('on a phone or narrow window Add is still the card, not a page', !$('addDlg').open && $('addSlot').children.length === 0);
+
+  console.log('  -- Investments and Months summary cards');
+  const invSeed2 = JSON.parse(JSON.stringify(seed));
+  invSeed2.holdings = [{ id: 'h1', n: 'Fund A', kind: 'etf', sym: '', cur: 'ZAR', in: 1000, units: 0, price: 0, val: 1500, at: '2026-08-01' },
+                       { id: 'h2', n: 'Fund B', kind: 'etf', sym: '', cur: 'ZAR', in: 1000, units: 0, price: 0, val: 500, at: '2026-08-01' }];
+  invSeed2.invHist = ['2026-08-10', '2026-08-15', '2026-08-20', '2026-08-25', '2026-08-30'].map((dt, i) => ({ d: dt, w: 1800 + i * 50, i: 2000 }));
+  dom = await boot(invSeed2); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openInvest').click();
+  ok('the summary card carries the total and the gain', num($('invValue').textContent) === 2000 && /put in/.test($('invSub').textContent));
+  ok('its bars are the daily snapshots, today included', d.querySelectorAll('#invBars i').length === 6, String(d.querySelectorAll('#invBars i').length));
+  ok('the return tile is gain over what was put in', /^\+?0\.0%$/.test($('invRet').textContent) && !$('invRet').className.includes('down'), $('invRet').textContent);
+  ok('the past-month tile shows the change from the snapshots', /^\+R\S*\s?200$/.test($('invMonth').textContent.replace(/\s/g, ' ').replace('+R ', '+R')) || /200/.test($('invMonth').textContent), $('invMonth').textContent);
+  ok('each holding shows its share of the portfolio', /75\.0% of portfolio/.test($('invList').textContent) && /25\.0% of portfolio/.test($('invList').textContent), $('invList').textContent);
+  dom = await boot(twoMonths); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openHist').click();
+  ok('Months has a summary card for the year so far', $('histSum').style.display === 'block' && num($('histSumVal').textContent) === 6000 && /1 closed month$/.test($('histSumSub').textContent),
+     $('histSumVal').textContent + ' / ' + $('histSumSub').textContent);
+  ok('rows show what was saved and what came in', /saved/.test(d.querySelector('#histList .hist').textContent) && /in/.test(d.querySelector('#histList .hist .r .s').textContent));
+  dom = await boot(JSON.parse(JSON.stringify(seed))); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('openHist').click();
+  ok('with no closed month the card stays away', $('histSum').style.display === 'none');
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

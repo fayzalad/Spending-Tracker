@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-20-9">
+<meta name="slip-build" content="2026-10-20-10">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -190,11 +190,11 @@
 
   /* the hero is the one filled card: a deep gradient of the scheme's own accent, white type on it.
      Teal and dark set their own stops; every other scheme derives them from its accent. */
-  .hero{--hero-a:color-mix(in srgb,var(--accent) 52%,#000);--hero-b:color-mix(in srgb,var(--accent) 36%,#000);
+  .hero,.sumcard{--hero-a:color-mix(in srgb,var(--accent) 52%,#000);--hero-b:color-mix(in srgb,var(--accent) 36%,#000);
     background:linear-gradient(145deg,var(--hero-a),var(--hero-b));color:#fff;
     box-shadow:0 13px 25px -8px color-mix(in srgb,var(--hero-b) 55%,transparent)}
-  [data-theme="light"] .hero{--hero-a:#086F79;--hero-b:#075562}
-  [data-theme="dark"] .hero{--hero-a:#155D66;--hero-b:#123E48}
+  [data-theme="light"] .hero,[data-theme="light"] .sumcard{--hero-a:#086F79;--hero-b:#075562}
+  [data-theme="dark"] .hero,[data-theme="dark"] .sumcard{--hero-a:#155D66;--hero-b:#123E48}
   .hero .cap,.hero .subline,.hero .plabel,.hero .ppct{color:rgba(255,255,255,.82)}
   .hero .prow.on .plabel,.hero .prow.on .ppct{color:#fff}
   .hero .ptrack{background:rgba(255,255,255,.22)}
@@ -320,17 +320,26 @@
        dialogs stay as centred sheets on top of them. */
     [data-platform="desktop"] #setDlg,[data-platform="desktop"] #histDlg,[data-platform="desktop"] #findDlg,
     [data-platform="desktop"] #investDlg,[data-platform="desktop"] #subsDlg,[data-platform="desktop"] #planDlg,
-    [data-platform="desktop"] #budDlg{
+    [data-platform="desktop"] #budDlg,[data-platform="desktop"] #addDlg{
       position:fixed;inset:0 0 0 210px;margin:0;width:auto;height:auto;max-width:none;max-height:none;
       border-radius:0;box-shadow:none;border:0;background:var(--bg);color:var(--ink);z-index:40;
       padding:34px max(36px,calc((100% - 820px)/2)) 48px;
       -webkit-backdrop-filter:none;backdrop-filter:none;transform:none!important;opacity:1!important}
     [data-platform="desktop"] #setDlg .grab,[data-platform="desktop"] #histDlg .grab,[data-platform="desktop"] #findDlg .grab,
     [data-platform="desktop"] #investDlg .grab,[data-platform="desktop"] #subsDlg .grab,[data-platform="desktop"] #planDlg .grab,
-    [data-platform="desktop"] #budDlg .grab{display:none}
+    [data-platform="desktop"] #budDlg .grab,[data-platform="desktop"] #addDlg .grab{display:none}
     [data-platform="desktop"] #setDlg h2,[data-platform="desktop"] #histDlg h2,[data-platform="desktop"] #findDlg h2,
     [data-platform="desktop"] #investDlg h2,[data-platform="desktop"] #subsDlg h2,[data-platform="desktop"] #planDlg h2,
-    [data-platform="desktop"] #budDlg h2{font-size:30px;letter-spacing:-.035em}
+    [data-platform="desktop"] #budDlg h2,[data-platform="desktop"] #addDlg h2{font-size:30px;letter-spacing:-.035em}
+    /* page header on desktop: big title at the left, the close button shown as the Esc key it answers to */
+    [data-platform="desktop"] dialog.scr .dhead{display:flex;align-items:flex-start;margin:0 0 2px}
+    [data-platform="desktop"] dialog.scr .dhead h2{flex:1;text-align:left;font-size:30px}
+    [data-platform="desktop"] dialog.scr .dhead .dnav{order:3;width:auto;height:auto;padding:3px 9px;border-radius:6px;
+      font-size:11px;font-weight:600;background:var(--card);border:1px solid var(--line);color:var(--mut);box-shadow:none}
+    [data-platform="desktop"] dialog.scr .dhead + p.hint{text-align:left;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+    [data-platform="desktop"] #invList{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    [data-platform="desktop"] #invList .irow{margin:0}
+    [data-platform="desktop"] #invTiles{grid-template-columns:1fr 1fr}
   }
   .tabbar #navHome{display:none}
   .stat.tappable{cursor:pointer}
@@ -517,9 +526,41 @@
   }
   /* the hero is a filled card, so frosted glass leaves it alone — without this the glass rules above
      (same specificity, earlier) swapped its gradient for a see-through card */
-  [data-glass="on"] .hero{background:linear-gradient(145deg,var(--hero-a),var(--hero-b));
+  [data-glass="on"] .hero,[data-glass="on"] .sumcard{background:linear-gradient(145deg,var(--hero-a),var(--hero-b));
     -webkit-backdrop-filter:none;backdrop-filter:none}
   .grab{width:38px;height:4px;border-radius:3px;background:var(--line);margin:-8px auto 10px}
+  /* the main screens share one header: close at the left, the title centred, a quiet subtitle */
+  dialog.scr .dhead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin:-2px 0 2px}
+  dialog.scr .dhead h2{grid-column:2;grid-row:1;text-align:center;font-size:21px;margin:0;letter-spacing:-.03em}
+  dialog.scr .dhead .dnav{grid-column:1;grid-row:1;justify-self:start;width:40px;height:40px;font-size:20px;
+    background:var(--card);box-shadow:var(--shadow)}
+  dialog.scr .dhead + p.hint{text-align:center;margin:0 0 16px}
+  /* a filled summary card, the same teal as the home hero */
+  .sumcard{border-radius:20px;padding:20px;margin:0 0 12px;position:relative;overflow:hidden}
+  .sumcard .cap{color:rgba(255,255,255,.82)}
+  .sumcard b.num{display:block;font-size:34px;letter-spacing:-.04em;line-height:1.05;margin:7px 0 9px;color:#fff!important}
+  .sumcard .pill,.sumcard .sub{display:inline-block;background:rgba(255,255,255,.18);color:#fff;border-radius:12px;
+    padding:4px 11px;font-size:12px;font-weight:700}
+  .sumcard .bars{display:flex;align-items:flex-end;gap:6px;height:58px;margin-top:16px}
+  .sumcard .bars i{flex:1;background:rgba(255,255,255,.34);border-radius:4px 4px 2px 2px;min-height:6px}
+  .sumcard .bars i:last-child{background:#fff}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .tiles .tile{padding:14px 16px;margin:0;border-radius:16px}
+  .tiles .tile b{display:block;font-size:22px;font-weight:700;letter-spacing:-.03em;margin:6px 0 2px}
+  .tiles .tile b.up{color:var(--good)} .tiles .tile b.down{color:var(--bad)}
+  .tiles .tile small{font-size:11.5px;color:var(--mut)}
+  .cardlist .irow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+    margin-bottom:8px;box-shadow:var(--shadow)}
+  .cardlist .irow .dot{display:none}
+  .cardlist .irow .in s{font-size:15px}
+  #histList{background:none;box-shadow:none;overflow:visible}
+  #histList .hist{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;
+    padding:14px 16px;box-shadow:var(--shadow);gap:12px}
+  #histList .hist .l{font-size:15px;font-weight:600}
+  #histList .hist .r b.good{color:var(--ink)}
+  #histList .hist .acts{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+  #histList .hist .mini{padding:4px 8px;font-size:11px}
+  #histList .hist .chev{color:var(--mut);font-size:20px;flex:none;margin-left:2px}
   .dhead{display:flex;align-items:center;gap:10px;margin:-4px 0 10px}
   .dhead h2{flex:1;margin:0}
   .dnav{border:0;background:var(--sunk);color:var(--ink);border-radius:50%;
@@ -595,6 +636,121 @@
   .close{background:var(--ink);color:var(--card);border:0;border-radius:13px;padding:13px;width:100%;
     font-family:var(--sys);font-weight:700;font-size:15px;margin-top:12px}
   @media (prefers-reduced-motion:no-preference){.bar{transition:.3s cubic-bezier(.4,0,.2,1)}}
+
+  /* ===== Desktop: Windows 11 / Fluent, as in the Figma design — tighter corners, hairline borders,
+     flat white surfaces, and none of the phone's pillowy rounding. Pills (chips, badges) stay pills. ===== */
+  [data-platform="desktop"] .card,[data-platform="desktop"] ul,[data-platform="desktop"] .tiles .tile,
+  [data-platform="desktop"] .cardlist .irow,[data-platform="desktop"] #histList .hist,
+  [data-platform="desktop"] .stats{border-radius:9px}
+  [data-platform="desktop"] .card,[data-platform="desktop"] .tiles .tile,[data-platform="desktop"] .cardlist .irow,
+  [data-platform="desktop"] #histList .hist{border:1px solid var(--line);box-shadow:0 1px 2px rgba(20,40,44,.05)}
+  [data-platform="desktop"] .hero,[data-platform="desktop"] .sumcard{border-radius:10px;border:0;
+    box-shadow:0 10px 22px -10px color-mix(in srgb,var(--hero-b) 60%,transparent)}
+  [data-platform="desktop"] .banner,[data-platform="desktop"] .msg{border-radius:7px}
+  [data-platform="desktop"] .seg,[data-platform="desktop"] .kind,[data-platform="desktop"] .tabs{border-radius:8px;
+    background:var(--seg);border:0;padding:3px}
+  [data-platform="desktop"] .seg button,[data-platform="desktop"] .kind button,[data-platform="desktop"] .tabs button{border-radius:6px}
+  [data-platform="desktop"] .seg button[aria-selected="true"],[data-platform="desktop"] .kind button[aria-selected="true"],
+  [data-platform="desktop"] .tabs button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  [data-platform="desktop"] input,[data-platform="desktop"] select,[data-platform="desktop"] textarea{
+    background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+  [data-platform="desktop"] input[type=checkbox]{padding:0;border-radius:4px}
+  [data-platform="desktop"] input:focus,[data-platform="desktop"] select:focus,[data-platform="desktop"] textarea:focus{
+    border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  [data-platform="desktop"] .go,[data-platform="desktop"] .addmoney,[data-platform="desktop"] .close,
+  [data-platform="desktop"] .ghost,[data-platform="desktop"] .danger,[data-platform="desktop"] .sweep button,
+  [data-platform="desktop"] .expRow button,[data-platform="desktop"] .mini,[data-platform="desktop"] .checkline,
+  [data-platform="desktop"] .banner button{border-radius:6px}
+  [data-platform="desktop"] .ghost,[data-platform="desktop"] .expRow button,[data-platform="desktop"] .mini{
+    background:var(--card);border:1px solid var(--line)}
+  [data-platform="desktop"] .ghost:hover,[data-platform="desktop"] .expRow button:hover{background:var(--sunk)}
+  [data-platform="desktop"] .close{background:var(--accent);color:var(--on-accent,#fff)}
+  [data-platform="desktop"] .checkline{background:var(--card);border:1px solid var(--line)}
+  [data-platform="desktop"] li .dot{border-radius:8px}
+  [data-platform="desktop"] .themes button,[data-platform="desktop"] .catlist span,[data-platform="desktop"] .emojis button{border-radius:8px}
+  [data-platform="desktop"] dialog{border-radius:10px;border:1px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+  [data-platform="desktop"] .bar{border-radius:3px 3px 2px 2px}
+  /* colour-scheme cards with a round swatch and a tick, and a real on/off switch, as in the design */
+  [data-platform="desktop"] .themes{grid-template-columns:repeat(4,1fr);gap:10px}
+  [data-platform="desktop"] .themes button{background:var(--card);border:1px solid var(--line);padding:18px 10px 14px;
+    gap:11px;font-size:12px;font-weight:600;position:relative}
+  [data-platform="desktop"] .themes button[aria-pressed="true"]{border:2px solid var(--accent);padding:17px 9px 13px}
+  [data-platform="desktop"] .themes button[aria-pressed="true"]::after{content:"\2713";position:absolute;top:6px;right:10px;
+    color:var(--accent);font-size:13px;font-weight:800}
+  [data-platform="desktop"] .themes .sw{width:36px;height:36px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+  [data-platform="desktop"] .themes .sw b{display:none}
+  [data-platform="desktop"] .themes .sw i{right:auto;left:50%;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%}
+  label.checkline[for="sGlass"]{flex-direction:row-reverse;justify-content:space-between}
+  .checkline #sGlass{-webkit-appearance:none;appearance:none;width:42px;height:24px;border-radius:12px;background:var(--seg);
+    border:1px solid var(--line);position:relative;flex:none;cursor:pointer;padding:0;margin:0;transition:background .15s}
+  .checkline #sGlass::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+  .checkline #sGlass:checked{background:var(--accent);border-color:var(--accent)}
+  .checkline #sGlass:checked::after{transform:translateX(18px)}
+  .checkline #sGlass:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  [data-platform="desktop"] #syncState{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:12px 14px;color:var(--ink)}
+  /* Search: a big field with its shortcut shown, filter chips, plain hairline rows */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+  .chips button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 15px;
+    font-family:var(--sys);font-size:13px;font-weight:600;cursor:pointer}
+  .chips button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  .sfield{position:relative}
+  .sfield input{padding-left:42px}
+  .sfield::before{content:"";position:absolute;left:14px;top:50%;width:18px;height:18px;transform:translateY(-50%);opacity:.7;
+    background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E")}
+  [data-platform="desktop"] .sfield::after{content:attr(data-hint);position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    font-size:11px;font-weight:600;color:var(--mut);border:1px solid var(--line);border-radius:5px;padding:2px 7px;background:var(--sunk)}
+  [data-platform="desktop"] .sfield input{font-size:16px;padding-top:13px;padding-bottom:13px}
+  [data-platform="desktop"] #findRes{max-height:none;overflow:visible}
+  [data-platform="desktop"] #findRes ul{background:none;box-shadow:none;border:0;border-radius:0;overflow:visible}
+  [data-platform="desktop"] #findRes li{padding:11px 4px}
+  [data-platform="desktop"] #findSum{display:flex;justify-content:space-between;font-size:12.5px;margin:6px 0 4px}
+  [data-platform="desktop"] #findSum .sep{display:none}
+  [data-platform="desktop"] #findSum b{color:var(--ink);font-weight:700}
+  /* the Add page: big amount, category pills, date beside note, one wide button */
+  .flab,.catpills,#addList{display:none}
+  #addDlg .flab{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:6px 0 -2px}
+  #addDlg #logCard{background:none;border:0;box-shadow:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+  #addDlg #logCard .ch{display:none}
+  #addDlg .amtrow{display:flex;align-items:center;gap:6px;border-bottom:2px solid var(--accent);padding-bottom:4px;margin:0}
+  #addDlg #amt{font-size:46px;font-weight:700;letter-spacing:-.035em;border:0;background:none;box-shadow:none;padding:0;flex:1;min-width:0}
+  #addDlg #amt:focus{border:0;box-shadow:none}
+  #addDlg #cur{font-size:24px;font-weight:700;color:var(--accent);border:0;background:none;box-shadow:none;width:auto;padding:0 4px;flex:none;order:-1}
+  #addDlg #catRow{display:none!important}
+  #addDlg .catpills{display:block;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:14px 16px}
+  #addDlg .plab{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:0 0 8px}
+  #addDlg .pgroup + .pgroup{margin-top:12px}
+  #addDlg .prow2{display:flex;flex-wrap:wrap;gap:8px}
+  #addDlg .catpills button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;
+    font-family:var(--sys);font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+  #addDlg .catpills button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+  #addDlg .catpills .pnew{color:var(--mut);border-style:dashed}
+  #addDlg .dnrow{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  #addDlg .dnrow > :not(.dnc){grid-column:1/-1}
+  #addDlg .dnc .field{margin:0}
+  #addDlg #dayPreview:not(:empty){background:var(--accent-soft);color:var(--ink);border-radius:8px;padding:11px 14px;font-size:13px}
+  #addDlg #dayPreview:not(:empty)::before{content:"That\2019s ";}
+  #addDlg #scanBtn{display:none}
+  #addDlg #addFoot{margin-top:16px}
+  #addDlg #addFoot .go{width:100%;padding:15px;font-size:16px;border-radius:6px;display:block}
+  #addDlg #addList{display:block;margin:14px auto 0;background:none;border:0;color:var(--accent);font-family:var(--sys);
+    font-size:13px;font-weight:600;cursor:pointer}
+  /* the nav pane, as in the design: logo and name on top, Synced at the bottom */
+  .navsync{display:none}
+  @media screen and (min-width:900px){
+    [data-platform="desktop"] .tabbar::before{left:58px;top:23px}
+    [data-platform="desktop"] .tabbar::after{content:"t";position:absolute;top:18px;left:20px;width:30px;height:30px;
+      border-radius:8px;background:var(--accent);color:var(--on-accent,#fff);font-size:19px;font-weight:800;
+      display:grid;place-items:center;line-height:1}
+    [data-platform="desktop"] .tabbar{padding-top:76px}
+    [data-platform="desktop"] .navsync{display:flex;align-items:center;gap:10px;margin-top:auto;padding:10px 12px;
+      border-radius:7px;cursor:pointer;color:var(--good)}
+    [data-platform="desktop"] .navsync:hover{background:color-mix(in srgb,var(--card) 70%,transparent)}
+    [data-platform="desktop"] .navsync.off{color:var(--mut)}
+    [data-platform="desktop"] .navsync span{display:flex;flex-direction:column;line-height:1.25}
+    [data-platform="desktop"] .navsync b{font-size:13px;color:var(--ink)}
+    [data-platform="desktop"] .navsync small{font-size:11.5px;color:var(--mut)}
+  }
 </style>
 
 <div class="wrap">
@@ -736,7 +892,8 @@
       <button id="kIn" class="in" role="tab" aria-selected="false">Received</button>
       <button id="kRef" role="tab" aria-selected="false">Refund</button>
     </div>
-    <div class="field">
+    <label class="flab" for="amt">Amount</label>
+    <div class="field amtrow">
       <input id="amt" type="number" inputmode="decimal" placeholder="Amount" aria-label="Amount">
       <select id="cur" class="cursel" aria-label="Currency">
         <option value="ZAR">R</option><option value="GBP">£</option>
@@ -746,8 +903,11 @@
     </div>
     <div class="conv" id="conv"></div>
     <div class="conv" id="dayPreview" aria-live="polite"></div>
+    <label class="flab" for="cat">Category</label>
     <div class="field" id="catRow"><select id="cat" aria-label="Category"></select></div>
-    <div class="field"><input id="when" type="date" aria-label="Date"></div>
+    <div class="catpills" id="catPills"></div>
+    <div class="dnrow">
+    <div class="dnc"><label class="flab" for="when">Date</label><div class="field"><input id="when" type="date" aria-label="Date"></div></div>
     <div class="field" id="cycRow" style="display:none"><select id="cyc" aria-label="Counts toward"></select></div>
     <label class="checkline" id="startRow" style="display:none">
       <input type="checkbox" id="startToday"><span id="startTodayLbl">Start this month from today</span></label>
@@ -759,8 +919,9 @@
         <option value="GHS">₵ (GHS)</option>
       </select>
     </div>
-    <div class="field">
+    <div class="dnc"><label class="flab" for="note">Note</label><div class="field">
       <input id="note" placeholder="Note (optional)" aria-label="Note">
+    </div></div>
     </div>
     <button class="ghost" id="scanBtn" style="margin-bottom:0">Read a receipt</button>
     <input type="file" id="file" accept="image/*,application/pdf">
@@ -1032,7 +1193,19 @@
   <button id="openHist" aria-label="Months"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4"/><path d="M16 2.5v4"/></svg><span>Months</span></button>
   <button id="openInvest" aria-label="Investments"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16 9.5 10 14 13.5 20 6"/><path d="M14 6h6v6"/></svg><span>Invest</span></button>
   <button id="openSet" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.65 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg><span>Settings</span></button>
+  <div class="navsync off" id="navSync" role="button" tabindex="0" aria-label="Sync status">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 5 13.3 3.4 3.4 0 0 0 6.4 19z"/></svg>
+    <span><b id="navSyncT">Not synced</b><small id="navSyncS">Set up in Settings</small></span></div>
 </nav>
+
+<dialog id="addDlg" tabindex="-1" autofocus>
+  <h2>New entry</h2>
+  <p class="hint">Log what you spent, received or got back.</p>
+  <div id="addSlot"></div>
+  <div id="addFoot">
+    <button type="button" id="addList">Add a list of entries instead</button>
+  </div>
+</dialog>
 
 <dialog id="subsDlg" tabindex="-1" autofocus>
   <h2>Subscriptions &amp; bills</h2>
@@ -1046,13 +1219,17 @@
 <dialog id="investDlg" tabindex="-1" autofocus>
   <h2>Investments</h2>
   <p class="hint">Kept separate from your spending money — nothing here affects your allowance.</p>
-  <div class="savetop">
-    <div id="invOpen">
-      <span class="cap">Worth now</span><b class="num" id="invValue">R0</b>
-      <span class="sub" id="invSub">—</span></div>
-    <button class="ghost sm" id="invRefresh">Update prices</button>
+  <div class="sumcard" id="invOpen">
+    <span class="cap">Worth now</span><b class="num" id="invValue">R0</b>
+    <span class="pill" id="invSub">—</span>
+    <div class="bars" id="invBars" aria-hidden="true"></div>
   </div>
-  <div id="invList"></div>
+  <div class="tiles" id="invTiles">
+    <div class="tile card"><span class="cap">Past month</span><b class="num" id="invMonth">—</b><small id="invMonthSub">&nbsp;</small></div>
+    <div class="tile card"><span class="cap">Return</span><b class="num" id="invRet">—</b><small>on what you put in</small></div>
+  </div>
+  <button class="ghost sm" id="invRefresh" style="width:100%;margin:0 0 12px">Update prices</button>
+  <div id="invList" class="cardlist"></div>
   <p class="hint" id="invFoot" style="margin:12px 0 0"></p>
   <button class="ghost" id="invAdd" style="margin-top:10px">Add a holding</button>
   <button class="close" id="closeInvest">Done</button>
@@ -1068,9 +1245,16 @@
 </dialog>
 
 <dialog id="findDlg">
-  <h2>Find an entry</h2>
+  <h2>Search</h2>
   <p class="hint">Searches everything you have ever logged — category, note, amount or month.</p>
-  <div class="sp"><input id="findQ" placeholder="Uber, rent, 300, September…" autocomplete="off"></div>
+  <div class="sp sfield" id="sfield" data-hint="/"><input id="findQ" placeholder="Uber, rent, 300, September…" autocomplete="off" aria-label="Search entries"></div>
+  <div class="chips" id="findChips" role="group" aria-label="Filter">
+    <button type="button" data-f="all" aria-pressed="true">All</button>
+    <button type="button" data-f="out" aria-pressed="false">Spent</button>
+    <button type="button" data-f="in" aria-pressed="false">Received</button>
+    <button type="button" data-f="food" aria-pressed="false">Food</button>
+    <button type="button" data-f="month" aria-pressed="false">This month</button>
+  </div>
   <div class="findsum" id="findSum"></div>
   <div id="findRes"></div>
   <button class="close" id="closeFind">Done</button>
@@ -1095,6 +1279,10 @@
 <dialog id="histDlg" tabindex="-1" autofocus>
   <h2>Month by month</h2>
   <p class="hint" id="histHint">Each month runs from your allowance day to the day before the next one.</p>
+  <div class="sumcard" id="histSum" style="display:none">
+    <span class="cap" id="histSumCap">So far</span><b class="num" id="histSumVal">R0</b>
+    <span class="pill" id="histSumSub">—</span>
+  </div>
   <div class="expRow">
     <button id="csvAll">All data · CSV</button>
     <button id="pdfNow">This month · PDF</button>
@@ -1637,6 +1825,7 @@
     if($('planDlg').open)renderPlanSheet();
     renderBudLine();
     if($('budDlg').open)renderBudSheet();
+    renderNavSync();
     const sweeps=unsweptMonths();
     const sb=$('sweepBox'); sb.innerHTML='';
     // the goal is only protected until you actually move it — offer to do that now
@@ -2469,18 +2658,48 @@
     return hay.indexOf(q)>-1;
   }
 
+  // the chips under the search box narrow what it finds: one of Spent / Received, plus Food and This month
+  const find={type:'all',food:false,month:false};
+  const FOOD_DEFAULT=['Uber Eats','Mr D','Take out','Bella Mare Cafe','Eating out'];
+  const foodCats=()=>(data.potCats&&data.potCats.length)?data.potCats:FOOD_DEFAULT;
+  const findOn=()=>find.type!=='all'||find.food||find.month;
+  function passesFind(e){
+    if(find.type==='out'&&!isSpend(e))return false;
+    if(find.type==='in'&&!isIn(e))return false;
+    if(find.food&&!(isSpend(e)&&foodCats().indexOf(e.cat)>-1))return false;
+    if(find.month&&(e.cyc||cycStart(e.date))!==cycStart(today()))return false;
+    return true;
+  }
+  function paintChips(){
+    document.querySelectorAll('#findChips button').forEach(b=>{
+      const f=b.dataset.f;
+      b.setAttribute('aria-pressed',f==='all'?!findOn():f==='food'?find.food:f==='month'?find.month:find.type===f);
+    });
+  }
+  document.querySelectorAll('#findChips button').forEach(b=>{
+    b.onclick=()=>{
+      const f=b.dataset.f;
+      if(f==='all'){find.type='all';find.food=false;find.month=false}
+      else if(f==='food')find.food=!find.food;
+      else if(f==='month')find.month=!find.month;
+      else find.type=find.type===f?'all':f;
+      paintChips(); runFind();
+    };
+  });
   function runFind(){
     const q=$('findQ').value.trim().toLowerCase();
     const box=$('findRes'); box.innerHTML='';
-    if(!q){$('findSum').textContent='Start typing to search.';return}
-    const hits=data.entries.filter(e=>matches(e,q)).sort((a,b)=>a.date<b.date?1:-1);
+    if(!q&&!findOn()){$('findSum').textContent='Start typing to search.';return}
+    const hits=data.entries.filter(e=>(!q||matches(e,q))&&passesFind(e)).sort((a,b)=>a.date<b.date?1:-1);
 
     const out=hits.filter(isSpend).reduce((s,e)=>s+e.amt,0);
     const inc=hits.filter(isIn).reduce((s,e)=>s+e.amt,0);
-    $('findSum').textContent=hits.length
-      ? hits.length+(hits.length===1?' entry':' entries')+' · '+R(out)+' spent'+
-        (inc?' · '+R(inc)+' in':'')
-      : 'Nothing matches “'+$('findQ').value.trim()+'”.';
+    if(hits.length){
+      // two spans so the desktop page can put the count at the left and the total at the right;
+      // together they still read as one line
+      $('findSum').innerHTML='<span>'+hits.length+(hits.length===1?' entry':' entries')+'</span><span class="sep"> · </span>'+
+        '<b>'+R(out)+' spent'+(inc?' · '+R(inc)+' in':'')+'</b>';
+    }else $('findSum').textContent=q?'Nothing matches “'+$('findQ').value.trim()+'”.':'Nothing matches those filters.';
     if(!hits.length)return;
 
     let lastDate=null, ul=null;
@@ -3296,7 +3515,7 @@
   $('allQ').oninput=()=>{clearTimeout(allQTimer);allQTimer=setTimeout(renderAll,120)};
   $('closeAll').onclick=()=>$('allDlg').close();
 
-  $('openFind').onclick=()=>{$('findQ').value='';runFind();$('findDlg').showModal();
+  $('openFind').onclick=()=>{$('findQ').value='';find.type='all';find.food=false;find.month=false;paintChips();runFind();$('findDlg').showModal();
     setTimeout(()=>$('findQ').focus(),150)};
   $('closeFind').onclick=()=>$('findDlg').close();
   $('findQ').oninput=runFind;
@@ -3344,7 +3563,7 @@
     const t=today(), cur=cycStart(t);
     const set=[...new Set(data.entries.map(e=>e.cyc||cycStart(e.date)))].sort().reverse();
     const ul=$('histList'); ul.innerHTML='';
-    let any=false;
+    let any=false, yearKept=0, yearMonths=0;
     set.forEach(cs=>{
       if(cs>=cur) return; any=true;
       const es=inCyc(cs);
@@ -3353,24 +3572,35 @@
       const leftover=i-b-l-put;
       const met=data.goal>0&&(put+Math.max(0,leftover))>=data.goal;
       const row=document.createElement('div'); row.className='hist';
+      // "saved" is what was kept, whether it was moved into savings or just left over
+      const kept=i-b-l;
       row.innerHTML='<div><div class="l">'+cycName(cs)+'</div>'+
-        '<div class="s">In '+Rcyc(i,cs)+' · Bills '+Rcyc(b,cs)+' · Living '+Rcyc(l,cs)+
-        (put?' · Saved '+Rcyc(put,cs):'')+'</div>'+
+        '<div class="s">'+cycRange(cs)+'</div>'+
         (data.goal>0?'<span class="pill '+(met?'ok':'no')+'">'+
           (met?'Goal met':'Missed by '+Rcyc(data.goal-leftover,cs))+'</span>':'')+'</div>'+
-        '<div class="r"><b class="num" style="color:'+(leftover>=0?'var(--good)':'var(--bad)')+'">'+
-        Rcyc(leftover,cs)+'</b><div class="s">left over</div>'+
-        '<button class="mini" data-csv="'+cs+'">CSV</button>'+
-        '<button class="mini" data-pdf="'+cs+'">PDF</button></div>';
+        '<div class="r"><b class="num good" style="'+(kept<0?'color:var(--bad)':'')+'">'+
+        (kept>=0?Rcyc(kept,cs)+' saved':'Over by '+Rcyc(-kept,cs))+'</b>'+
+        '<div class="s">'+Rcyc(i,cs)+' in</div>'+
+        '<div class="acts"><button class="mini" data-csv="'+cs+'">CSV</button>'+
+        '<button class="mini" data-pdf="'+cs+'">PDF</button></div></div><span class="chev">\u203a</span>';
+      const thisYear=cycEnd(cs).slice(0,4)===today().slice(0,4);
+      if(thisYear){yearKept+=kept;yearMonths++}
       row.style.cursor='pointer';
       row.onclick=ev=>{if(ev.target.tagName!=='BUTTON')openMonth(cs)};
       row.querySelector('[data-csv]').onclick=()=>csv(cs);
       row.querySelector('[data-pdf]').onclick=()=>statement(cs);
       ul.appendChild(row);
     });
+    $('histSum').style.display=yearMonths?'block':'none';
+    if(yearMonths){
+      $('histSumCap').textContent=today().slice(0,4)+' so far';
+      $('histSumVal').textContent=R(yearKept);
+      $('histSumSub').textContent=(yearKept>=0?'saved':'over')+' across '+yearMonths+' closed month'+(yearMonths===1?'':'s');
+    }
     if(!any) ul.innerHTML='<div class="empty">Your first month is still running. It lands here when it closes.</div>';
+    document.querySelectorAll('#histDlg .histtip').forEach(x=>x.remove());   // it was added again on every open
     if(any){
-      const tip=document.createElement('div'); tip.className='findsum';
+      const tip=document.createElement('div'); tip.className='findsum histtip';
       tip.style.marginTop='10px';
       tip.textContent='Tap a month to look inside it.';
       ul.parentNode.insertBefore(tip,ul.nextSibling);
@@ -3490,7 +3720,7 @@
   $('kOut').onclick=()=>{setKind('out');render();showConv()};
   $('kIn').onclick=()=>{setKind('in');render();showConv()};
   $('kRef').onclick=()=>{setKind('refund');render();showConv()};
-  $('quickIn').onclick=()=>{setKind('in');render();showConv();$('logCard').scrollIntoView({behavior:'smooth',block:'center'});
+  $('quickIn').onclick=()=>{setKind('in');render();showConv();showLog();
     setTimeout(()=>$('amt').focus(),350)};
   $('tabWeek').onclick=()=>{scope='week';$('tabWeek').setAttribute('aria-selected','true');
     $('tabMonth').setAttribute('aria-selected','false');render()};
@@ -3520,7 +3750,7 @@
   // on a wide desktop window the main screens are pages next to the nav pane, not sheets over it:
   // opened non-modally (so the nav still works), one at a time, Esc closes. Everything else stays a sheet.
   const WIDE=matchMedia('(min-width:900px)');
-  const PAGES=['setDlg','histDlg','findDlg','investDlg','subsDlg','planDlg','budDlg'];
+  const PAGES=['setDlg','histDlg','findDlg','investDlg','subsDlg','planDlg','budDlg','addDlg'];
   const pageMode=id=>document.documentElement.getAttribute('data-platform')==='desktop'&&WIDE.matches&&
     PAGES.indexOf(id)>-1&&typeof $(id).show==='function';
   // every sheet gets a back/close bar, and a sheet opened on top of another says Back
@@ -3538,6 +3768,8 @@
     h.parentNode.insertBefore(bar,h);
     bar.appendChild(back); bar.appendChild(h); bar.appendChild(shut);
     back.onclick=shut.onclick=()=>dl.close();
+    if(PAGES.indexOf(dl.id)>-1)dl.classList.add('scr');
+    const glyph=()=>document.documentElement.getAttribute('data-platform')==='android'?'\u2190':'\u00d7';
 
     const orig=dl.showModal.bind(dl);
     dl.addEventListener('close',()=>{delete dl.dataset.modal});
@@ -3547,6 +3779,7 @@
       const stacked=[...document.querySelectorAll('dialog')].some(o=>o!==dl&&o.open);
       back.hidden=!stacked;
       shut.hidden=stacked;
+      shut.textContent=asPage?'Esc':glyph();     // on a desktop page the close button is the Esc key, named
       dl.style.transform=''; dl.style.transition=''; dl.style.opacity='';
       if(asPage){dl.show();dl.scrollTop=0}else{dl.dataset.modal='1';orig()}
       syncTabbar();
@@ -3600,7 +3833,7 @@
 
   const TABFOR={findDlg:'openFind',histDlg:'openHist',monthDlg:'openHist',
                 setDlg:'openSet',allDlg:'openFind',investDlg:'openInvest',
-                subsDlg:'navHome',planDlg:'navHome',budDlg:'navHome'};
+                subsDlg:'navHome',planDlg:'navHome',budDlg:'navHome',addDlg:'quickAdd'};
   function syncTabbar(){
     const open=[...document.querySelectorAll('dialog')].filter(x=>x.open).map(x=>x.id);
     const active=open.map(id=>TABFOR[id]).filter(Boolean).pop()
@@ -3608,7 +3841,24 @@
       || (!open.length&&document.documentElement.getAttribute('data-platform')==='desktop'&&WIDE.matches?'navHome':null);
     ['navHome','quickAdd','openFind','openHist','openInvest','openSet'].forEach(id=>
       $(id).classList.toggle('on',id===active));
+    renderNavSync();
   }
+  // the foot of the desktop nav says whether this device is syncing, and when it last did
+  let lastSyncAt=0;
+  function renderNavSync(){
+    const on=!!(data.tok&&data.gistId), el=$('navSync');
+    el.classList.toggle('off',!on);
+    $('navSyncT').textContent=on?'Synced':'Not synced';
+    if(!on){$('navSyncS').textContent='Set up in Settings';return}
+    const m=lastSyncAt?Math.floor((Date.now()-lastSyncAt)/60000):-1;
+    $('navSyncS').textContent=m<0?'Connected':m<1?'Just now':m<60?m+' min ago'
+      :new Date(lastSyncAt).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  }
+  function markSynced(){lastSyncAt=Date.now();renderNavSync()}
+  const openSync=()=>{$('openSet').click();document.querySelector('#setTabs [data-tab=data]').click()};
+  $('navSync').onclick=openSync;
+  $('navSync').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openSync()}};
+  setInterval(renderNavSync,60000);
   // Home: back to the dashboard from wherever you are
   $('navHome').onclick=()=>{
     document.querySelectorAll('dialog[open]').forEach(d=>d.close());
@@ -3628,6 +3878,11 @@
   $('amt').addEventListener('focus',syncTabbar);
   $('amt').addEventListener('blur',()=>setTimeout(syncTabbar,60));
 
+  const inApp=!!(window.chrome&&window.chrome.webview);
+  if(inApp)$('sfield').dataset.hint='Ctrl F';
+  document.addEventListener('keydown',ev=>{
+    if(inApp&&ev.ctrlKey&&!ev.altKey&&!ev.metaKey&&(ev.key==='f'||ev.key==='F')){ev.preventDefault();$('openFind').click()}
+  });
   // desktop shortcuts: N starts a new entry, / opens search — only when not typing and no sheet is open
   document.addEventListener('keydown',ev=>{
     if(document.documentElement.getAttribute('data-platform')!=='desktop')return;
@@ -3638,9 +3893,72 @@
     if(ev.key==='n'||ev.key==='N'){ev.preventDefault();$('quickAdd').click()}
     else if(ev.key==='/'){ev.preventDefault();$('openFind').click()}
   });
-  $('quickAdd').onclick=()=>{
-    PAGES.forEach(id=>{if($(id).open)$(id).close()});   // Add lives on the dashboard
+  // On a wide desktop window "Add" is a page: the same form (same fields, same code) is moved into it
+  // and moved back when it closes; elsewhere it stays the card on the dashboard.
+  const logHome=document.createComment('log'), addBtnHome=document.createComment('add');
+  $('logCard').parentNode.insertBefore(logHome,$('logCard'));
+  $('addBtn').parentNode.insertBefore(addBtnHome,$('addBtn'));
+  function paintAddBtn(){
+    if(!$('addDlg').open)return;
+    const v=Number($('amt').value), c=$('cur').value;
+    $('addBtn').textContent=v>0?'Add '+fmtMoney(v,c)+(kind==='in'?' received':kind==='refund'?' refund':' spent')
+      :(kind==='in'?'Add money':kind==='refund'?'Add refund':'Add');
+  }
+  function openAddPage(){
+    $('addSlot').appendChild($('logCard'));
+    $('addFoot').insertBefore($('addBtn'),$('addFoot').firstChild);
+    $('addDlg').showModal(); buildPills(); paintAddBtn();
+    setTimeout(()=>$('amt').focus(),80);
+  }
+  $('addDlg').addEventListener('close',()=>{
+    logHome.parentNode.insertBefore($('logCard'),logHome.nextSibling);
+    addBtnHome.parentNode.insertBefore($('addBtn'),addBtnHome.nextSibling);
+    $('addBtn').textContent=kind==='in'?'Add money':kind==='refund'?'Add refund':'Add';
+  });
+  $('addList').onclick=()=>$('impOpen').click();
+  $('addBtn').addEventListener('click',()=>setTimeout(paintAddBtn,0));
+  $('amt').addEventListener('input',paintAddBtn); $('cur').addEventListener('change',paintAddBtn);
+  // the category as pills (the select stays the source of truth: a pill just sets it)
+  function buildPills(){
+    const box=$('catPills'); box.innerHTML='';
+    [...$('cat').querySelectorAll('optgroup')].forEach(g=>{
+      if(g.label==='\u2014'){
+        [...g.children].forEach(o=>{ if(o.value!=='__new')return;
+          const b=document.createElement('button'); b.type='button'; b.className='pnew'; b.textContent='+ New category';
+          b.onclick=()=>{$('cat').value='__new';$('cat').dispatchEvent(new Event('change'))};
+          box.lastChild&&box.lastChild.lastChild&&box.lastChild.lastChild.appendChild(b);
+        });
+        return;
+      }
+      const grp=document.createElement('div'); grp.className='pgroup';
+      const lab=document.createElement('div'); lab.className='plab'; lab.textContent=g.label;
+      const row=document.createElement('div'); row.className='prow2';
+      [...g.children].forEach(o=>{
+        const b=document.createElement('button'); b.type='button'; b.dataset.cat=o.value||o.textContent;
+        b.textContent=iconOf(b.dataset.cat)+' '+o.textContent;
+        b.setAttribute('aria-pressed',$('cat').value===b.dataset.cat);
+        b.onclick=()=>{$('cat').value=b.dataset.cat;$('cat').dispatchEvent(new Event('change'));paintPills()};
+        row.appendChild(b);
+      });
+      grp.appendChild(lab); grp.appendChild(row); box.appendChild(grp);
+    });
+  }
+  function paintPills(){
+    $('catPills').querySelectorAll('button[data-cat]').forEach(b=>b.setAttribute('aria-pressed',$('cat').value===b.dataset.cat));
+  }
+  new MutationObserver(buildPills).observe($('cat'),{childList:true});
+  $('cat').addEventListener('change',paintPills);
+  // pills follow the select's row: hidden when logging money received
+  new MutationObserver(()=>{$('catPills').style.display=$('catRow').style.display==='none'?'none':''})
+    .observe($('catRow'),{attributes:true,attributeFilter:['style']});
+  const showLog=()=>{
+    if(pageMode('addDlg')){openAddPage();return}
     $('logCard').scrollIntoView({behavior:'smooth',block:'center'});
+  };
+  $('quickAdd').onclick=()=>{
+    if(pageMode('addDlg')){openAddPage();return}
+    PAGES.forEach(id=>{if($(id).open)$(id).close()});   // Add lives on the dashboard
+    showLog();
     setTimeout(()=>$('amt').focus(),350);
   };
 
@@ -3878,6 +4196,7 @@
   }
 
   function showConv(){
+    if(typeof paintAddBtn==='function')paintAddBtn();
     const c=$('cur').value, v=Number($('amt').value);
     $('conv').textContent=(c==='ZAR'||!v)?'':
       SYM[c]+v.toLocaleString('en-ZA')+' = '+R(v*data.rates[c])+' at R'+data.rates[c]+' to the '+c;
@@ -4006,6 +4325,7 @@
       data.gistId=j.id; data.lastBackup=today(); data.syncedRev=data.rev||Date.now(); S.set(KEY,data);
       st.textContent='Synced '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})+
         '. Every change from now on saves itself.';
+      markSynced();
       showBanner(); showBillBanner(); showIncBanner(); return true;
     }catch(e){
       st.textContent=e.message==='401'?'That token was rejected — check it has the gist scope.'
@@ -4025,7 +4345,7 @@
       data=mergeStores(data,d); data.tok=tok;
       data.syncedRev=data.rev||0;
       S.set(KEY,data);render();fillSet();applyTheme();showBanner();showBillBanner();showIncBanner();
-      $('syncState').textContent='Pulled the cloud copy — '+data.entries.length+' entries.';
+      $('syncState').textContent='Pulled the cloud copy — '+data.entries.length+' entries.'; markSynced();
       if(!quiet)alert('Restored '+data.entries.length+' entries.');
     }catch(e){if(!quiet)alert('Could not read the cloud copy.')}
   }
@@ -4084,7 +4404,7 @@
     if(!inc)return;
     setKind('in');render();
     $('amt').value=inc.a; $('cur').value=inc.cur||'ZAR'; showConv();
-    $('logCard').scrollIntoView({behavior:'smooth',block:'center'});
+    showLog();
     setTimeout(()=>$('amt').focus(),350);
   };
   $('incBannerX').onclick=()=>{incBannerOff=true;showIncBanner()};
@@ -4374,10 +4694,13 @@
 
   function renderInvest(){
     const list=$('invList'), hs=holds();
+    const tile=(id,sid,text,sub,cls)=>{$(id).textContent=text;$(id).className='num '+(cls||'');$(sid).textContent=sub||'\u00a0'};
     if(!hs.length){
       $('invValue').textContent=R(0); $('invValue').className='num';
       $('invSub').textContent='nothing tracked yet — tap to add one';
-      list.innerHTML='';
+      list.innerHTML=''; $('invBars').innerHTML='';
+      tile('invMonth','invMonthSub','—','');
+      $('invRet').textContent='—'; $('invRet').className='num';
       $('invFoot').textContent='Kept separate from your spending money.';
       return;
     }
@@ -4388,7 +4711,21 @@
       ? RC(put,dispCur)+' put in · '+(gain>=0?'up ':'down ')+RC(Math.abs(gain),dispCur)+
         ' ('+(gain/put*100).toFixed(1)+'%)'
       : 'tap to add another';
+    // the card's bars are the daily snapshots, newest last; two points are the least that make a trend
+    const hist=(data.invHist||[]).slice(-9), bars=$('invBars'); bars.innerHTML='';
+    if(hist.length>=2){
+      const lo=Math.min(...hist.map(p=>p.w)), hi=Math.max(...hist.map(p=>p.w)), span=Math.max(1,hi-lo);
+      hist.forEach(p=>{const i=document.createElement('i'); i.style.height=(22+78*(p.w-lo)/span)+'%'; bars.appendChild(i)});
+    }
+    const trend=investTrend();
+    if(trend)tile('invMonth','invMonthSub',(trend.change>=0?'+':'\u2212')+RC(Math.abs(trend.change),dispCur),
+      (trend.pct>=0?'+':'')+trend.pct.toFixed(1)+'% over '+trend.days+(trend.days===1?' day':' days'),trend.change>=0?'up':'down');
+    else tile('invMonth','invMonthSub','—','needs a few days of history');
+    if(put>0){$('invRet').textContent=(gain>=0?'+':'')+(gain/put*100).toFixed(1)+'%'; $('invRet').className='num '+(gain>=0?'up':'down')}
+    else{$('invRet').textContent='—'; $('invRet').className='num'}
     list.innerHTML='';
+    // a share of the whole only makes sense when everything is in one currency
+    const oneCur=new Set(hs.map(h=>h.cur||'ZAR')).size===1, whole=hs.reduce((t,h)=>t+holdValue(h),0);
     hs.slice().sort((a,b)=>holdValue(b)-holdValue(a)).forEach(h=>{
       const v=holdValue(h), g=v-(Number(h.in)||0);
       const row=document.createElement('div'); row.className='irow';
@@ -4397,7 +4734,8 @@
       row.innerHTML='<span class="dot">'+
         ({etf:'📈',stock:'🏦',crypto:'₿',cash:'💰',other:'🏷'}[h.kind]||'🏷')+'</span>'+
         '<span class="in"><s>'+h.n+'</s><em>'+
-        [h.units>0?h.units+' at '+RC(h.price,h.cur):'',h.sym||'',h.note||'']
+        [h.units>0?h.units+' at '+RC(h.price,h.cur):'',h.sym||'',h.note||'',
+         oneCur&&whole>0?(v/whole*100).toFixed(1)+'% of portfolio':'']
           .filter(Boolean).join(' · ')+'</em></span>'+
         '<span class="iv"><b>'+RC(v,h.cur)+'</b><span class="'+(g>=0?'up':'down')+'">'+
         (h.in>0?((g>=0?'+':'')+RC(g,h.cur)):'')+'</span></span>';
@@ -4598,7 +4936,7 @@
            JSON.stringify(merged.plans)!==JSON.stringify(data.plans)||
            JSON.stringify(merged.budgets)!==JSON.stringify(data.budgets)){
           data=merged; S.set(KEY,data); render();
-          $('syncState').textContent='Picked up changes from your other device.';
+          $('syncState').textContent='Picked up changes from your other device.'; markSynced();
         }
       }).catch(()=>{});
     });
@@ -4606,7 +4944,7 @@
     if(data.tok&&data.gistId){
       try{const rm=await remote();
         if(rm&&rm.entries){await pull(true);
-          $('syncState').textContent='Merged with your other device.'}
+          $('syncState').textContent='Merged with your other device.'; markSynced()}
       }catch(e){}
     }
   })();

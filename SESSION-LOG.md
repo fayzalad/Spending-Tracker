@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Figma pages and the Windows-style desktop (build `2026-10-20-10`)
+
+- **Did:** `index.html`: Fluent layer for `data-platform=desktop` (CSS block at the end); nav logo + `#navSync` status (`renderNavSync`, `markSynced`); shared `dialog.scr` header; Investments and Months summary cards (also on phones); Search filter chips + shortcut hint (Ctrl F only inside WebView2); Settings → Look scheme cards and glass switch; Add as a page (`addDlg`, moves `#logCard`/`#addBtn`, category pills built from `#cat`). Fixed the repeating Months hint. Tests: section 78 (39 checks); one found a real bug (nav sync not refreshed after data loaded).
+- **Why:** owner asked for Settings, Investments, Search and Add to match the Figma screens, then said desktop should be basically one-to-one with Figma's Windows look, not the phone's rounding.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 604 tests; the five desktop pages and the phone Investments/Months/Add card viewed in the browser pane with invented data (light and dark). NOT checked: the real Windows app and Android after this build, Settings Month/Rules/Bills/Data tabs and Subscriptions/Planned purchases/Budget pages against Figma (they take the Fluent styling but keep their old content), Add progress bar and the "Dark mode / Dynamic colour" rows from the Figma Settings.
+
 ### 2026-10-20 — Desktop screens as pages (build `2026-10-20-9`)
 
 - **Did:** on `data-platform=desktop` + `(min-width:900px)` the seven main dialogs (`PAGES`: set, hist, find, invest, subs, plan, bud) open with `show()` (non-modal) styled as full pages right of the nav pane; one at a time; Esc closes; new `#navHome` button; `syncTabbar` lights Home/the page's button from first paint. Small dialogs still use `showModal` and tag `dataset.modal`. Tests: section 77 (18 checks) plus `matchMedia`/`show` stubs in the harness (`opts.wide`).

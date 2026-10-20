@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**564 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**604 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -225,7 +225,7 @@ a content stream, an xref table and a trailer, with pagination and repeated head
 tombstones, newer `rev` wins on a conflicting edit. Two devices logging offline keep everything
 from both. The token needs only the `gist` scope and is stripped from downloaded backups.
 
-**Look (from 2026-10-20, build -7).** Light/dark are teal (Figma Make export, kept in the untracked `Polished UI for Tracker/`); hero is a filled gradient (`--hero-a/b`, also under frosted glass); `data-platform` (`ios`/`android`/`desktop`, set in a head script, `?platform=` forces one) swaps type, shapes and navigation: Material tab bar on Android, left nav pane + N and / shortcuts on desktop ≥900px. On desktop ≥900px the main dialogs (`PAGES` in the dialog wrapper) are non-modal pages beside the nav, with a Home button and Esc; small dialogs stay modal (`dataset.modal`). Check any visual change with glass ON and a non-default scheme — a glass rule once silently overrode the hero. The Android and Windows apps are thin hosts of the live page, so they restyle with it.
+**Look (from 2026-10-20, build -7).** Light/dark are teal (Figma Make export, kept in the untracked `Polished UI for Tracker/`); hero is a filled gradient (`--hero-a/b`, also under frosted glass); `data-platform` (`ios`/`android`/`desktop`, set in a head script, `?platform=` forces one) swaps type, shapes and navigation: Material tab bar on Android, left nav pane + N and / shortcuts on desktop ≥900px. Desktop (`data-platform=desktop`) is styled as Windows 11 / Fluent in one block at the end of the CSS (squarer corners, hairlines); the shared page header uses `dialog.scr`; Add is a page (`addDlg`) that temporarily hosts `#logCard` and `#addBtn` and moves them back on close — keep their ids. Search has filter chips (`find` state). On desktop ≥900px the main dialogs (`PAGES` in the dialog wrapper) are non-modal pages beside the nav, with a Home button and Esc; small dialogs stay modal (`dataset.modal`). Check any visual change with glass ON and a non-default scheme — a glass rule once silently overrode the hero. The Android and Windows apps are thin hosts of the live page, so they restyle with it.
 
 **Interface.** Bottom floating capsule bar (Add, Search, Months, Invest, Settings) that shrinks
 while scrolling down. Header collapses past 110px. Every sheet has a grab handle and a nav bar —
@@ -244,7 +244,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 564 | 355 |
+| Tests | 604 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The

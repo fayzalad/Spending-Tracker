@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**564 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**604 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,26 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-10` — the Figma pages, and a Windows-style desktop
+
+- **Desktop looks like the Figma Windows design, not the phone.** Tighter corners (9 px cards, 6 px
+  buttons), hairline borders, white flat surfaces, a nav pane with the logo tile and a **Synced** status
+  at the bottom (it opens Settings → Data; "Not synced / Set up in Settings" until a backup is connected).
+- **Investments**: a teal summary card with the total, a gain pill and bars from the daily snapshots; two
+  tiles (past month, return); holdings as cards with their share of the portfolio. Same layout on phones.
+- **Months**: a "2026 so far" summary card; rows show what was *saved* (kept: in − bills − living) and what
+  came in, with the goal badge and CSV/PDF. Same on phones. Also fixed: the "Tap a month…" hint repeated
+  every time the page was opened.
+- **Search**: a large field with its shortcut shown (/, or Ctrl F inside the Windows app), filter chips
+  (All, Spent, Received, Food, This month) that combine with the query and work on their own, and a count
+  and total line. Plain hairline rows on desktop.
+- **Add** is a page on a wide desktop window: the same form moved into it (so saving is unchanged), a large
+  amount with the currency in front, category pills grouped Living / Shopping / Bills, date beside note,
+  "That's 0.4 days of your allowance", one wide **Add R384 spent** button, and *Add a list of entries
+  instead*. It stays open for the next entry; Esc closes it. Phones keep the card on the dashboard.
+- **Settings → Look**: round-swatch scheme cards with a tick, and a real on/off switch for frosted glass.
+- Main screens on phones now share one header (close at the left, centred title and subtitle).
 
 ### `2026-10-20-9` — desktop screens are pages, not pop-ups
 
