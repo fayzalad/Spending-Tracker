@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Standalone Windows app replaces the Edge shortcut
+
+- **Did:** Built `Claude code/Spending tracker (Windows)` (WinForms + WebView2, .NET 9, local git only), installed `Tracker.exe` to `%LOCALAPPDATA%\Programs\Tracker`, repointed `Desktop\Tracker.lnk` to it and added `Start Menu\Programs\Tracker.lnk`. Storage `%LOCALAPPDATA%\Tracker\WebView2`.
+- **Why:** owner wanted a standalone app like the Android one, not an Edge window.
+- **Files:** the new folder; the two shortcuts; `%LOCALAPPDATA%\Programs\Tracker`. `%LOCALAPPDATA%\Tracker\tracker.ico` is now unused.
+- **Undo:** delete both shortcuts, `%LOCALAPPDATA%\Programs\Tracker`, `%LOCALAPPDATA%\Tracker`.
+- **Checked:** launched with `TRACKER_DEBUG=1`: loads build `2026-10-20-4`, two-column layout at 1320px, localStorage works; relaunched normally, port 9334 closed. Sync not yet connected (owner's token). The old Edge window's storage still holds the token and the stray gist link; harmless.
+
 ### 2026-10-20 — "Join another device's backup" button (build `2026-10-20-4`)
 
 - **Did:** Added `#joinGist` in Settings → Data: prompts for a gist ID, verifies it opens, confirms with its entry count, sets `rev=0`, pulls, pushes. 5 checks in section 75.
