@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-10-20-3">
+<meta name="slip-build" content="2026-10-20-4">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -761,6 +761,7 @@
       <div class="sp"><button class="ghost" id="syncNow">Sync now</button></div>
       <div class="sp"><button class="ghost" id="pullNow">Restore from cloud</button></div>
     </div>
+    <div class="sp"><button class="ghost" id="joinGist">Join another device's backup</button></div>
     <p class="hint">The token stays on this phone and is never included in the downloaded backup file.
       Create one at github.com/settings/tokens with only the <b>gist</b> scope ticked.</p>
     <label>Storage on this phone</label>
@@ -3967,6 +3968,21 @@
   };
   $('avKey').onchange=e=>{data.avKey=e.target.value.trim();save()};
   $('pullNow').onclick=()=>pull(false);
+  // the way back for a device that ended up on its own backup: check the ID opens first, then
+  // join it the same way a new device does — its settings win, entries from here are kept
+  $('joinGist').onclick=async()=>{
+    if(!data.tok){alert('Paste your GitHub token above first.');$('ghTok').focus();return}
+    const id=(prompt('Paste the gist ID shown under Cloud backup in Settings → Data on your other device.')||'').trim();
+    if(!id||id===data.gistId)return;
+    const was=data.gistId; data.gistId=id;
+    let d=null; try{d=await remote()}catch(e){}
+    if(!d||!Array.isArray(d.entries)){data.gistId=was;alert('Could not open that backup. Check the ID and try again.');return}
+    if(!confirm('Join the backup with '+d.entries.length+' entries? This device takes its settings, bills and '+
+      'budgets, and anything logged here is added to it.'))
+      {data.gistId=was;return}
+    data.rev=0; S.set(KEY,data); await pull(true); fillSet(); push(true);
+    alert('Joined. This device now has '+data.entries.length+' entries.');
+  };
   const holds=()=>data.holdings||[];
   const holdValue=h=>(h.units>0&&h.price>0)?h.units*h.price:(Number(h.val)||0);
   const investedTotal=()=>holds().reduce((s,h)=>s+(Number(h.in)||0),0);

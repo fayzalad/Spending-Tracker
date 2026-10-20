@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**525 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**530 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,12 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-4` — Join another device's backup
+
+- **New:** Settings → Data → *Join another device's backup*. Paste the other device's gist ID; it
+  checks the ID opens, shows how many entries that backup has, then joins it (its settings win,
+  anything logged here is added). The way back for a device that ended up on its own backup.
 
 ### `2026-10-20-3` — a blank gist ID no longer starts a second backup
 

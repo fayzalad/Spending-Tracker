@@ -2335,6 +2335,29 @@ const seed = {
   await new Promise(r => setTimeout(r, 100));
   ok('confirming still starts a fresh backup, as before', posted);
 
+  // a device already stuck on its own empty backup can join the real one from Settings
+  const stuck = Object.assign(JSON.parse(JSON.stringify(joinFresh)), { tok: 't', gistId: 'stray' });
+  dom = await boot(stuck); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  let patchedTo = '';
+  w.prompt = () => 'nope';
+  w.fetch = (u, o) => {
+    if (o && o.method === 'PATCH') { patchedTo = u; return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'real' }) }); }
+    if (/\/real\?/.test(u)) return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'real',
+      files: { 'slip-data.json': { content: JSON.stringify(joinCloud) } } }) });
+    return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) });
+  };
+  $('joinGist').click(); await new Promise(r => setTimeout(r, 100));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('a wrong gist id is refused and the device stays as it was', st.gistId === 'stray');
+  w.prompt = () => 'real';
+  $('joinGist').click(); await new Promise(r => setTimeout(r, 150));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('joining another backup switches to it', st.gistId === 'real');
+  ok('and takes its bills and month settings', st.bills.length === 1 && st.day === 25);
+  ok('and keeps what was logged on this device', st.entries.some(e => e.id === 'local1') &&
+     st.entries.length === seed.entries.length + 1, String(st.entries.length));
+  ok('and writes back to the backup it joined, not the stray one', /\/real$/.test(patchedTo), patchedTo);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

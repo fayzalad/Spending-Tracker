@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — "Join another device's backup" button (build `2026-10-20-4`)
+
+- **Did:** Added `#joinGist` in Settings → Data: prompts for a gist ID, verifies it opens, confirms with its entry count, sets `rev=0`, pulls, pushes. 5 checks in section 75.
+- **Why:** the desktop window had also made its own empty backup (`7fcbb9d7…`, 18:57 UTC, before the blank-ID guard went live) and the app had no way to switch backups.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 530 tests pass. Stray gists `ab73da3b…` and `7fcbb9d7…` confirmed empty (0 entries, 0 bills); not deleted. Desktop join itself is done by the owner and NOT yet verified.
+
 ### 2026-10-20 — Android joined the wrong (new, empty) backup; fixed it and the cause (build `2026-10-20-3`)
 
 - **Did:** Android app (main profile) had created a new empty "Tracker backup" gist (`ab73da3b…`, 18:53 UTC) because the gist-ID prompt was left blank. Repointed it via WebView devtools (set `gistId` to the real one, `rev=0`, reload): it now has 110 entries, 8 bills, the November budget. App: a blank/dismissed ID now asks before creating a backup; Cancel clears the token. `tools/import.js` reads the id from gitignored `imports/gist-id.txt`.
