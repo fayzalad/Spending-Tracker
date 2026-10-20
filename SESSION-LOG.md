@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Looked at the Figma Make export ("Polished UI for Tracker")
+
+- **Did:** Owner added the folder Figma produced (`Polished UI for Tracker/`, React + Vite + Tailwind, one 1,240-line `src/App.tsx`, a design showcase with iOS / Android / Windows frames and 11 screens, light and dark; invented sample data). Ran `npm install` and `vite build` inside it; fixed 5 type-literal lines in `src/App.tsx` that failed to compile (missing `;`), keeping the untouched original as `src/App.tsx.figma-original`. Built a `dist/` with relative paths and viewed it in the browser pane.
+- **Why:** the build failed as exported (`Try inserting a semicolon here`); it needed those 5 fixes to run at all.
+- **Files:** `Polished UI for Tracker/` only (new `node_modules/`, `dist/`, the edited `src/App.tsx`). Nothing in the real tracker changed. The folder is untracked and NOT committed (it contains `node_modules`).
+- **Undo:** delete `Polished UI for Tracker/node_modules`, `dist`, and restore `src/App.tsx` from `src/App.tsx.figma-original`.
+- **Checked:** builds; Home and Budget render for all three platforms at 1600px; ocean-blue/teal palette; Windows frame looked clipped at the right edge in the showcase. Not yet applied to `index.html`.
+
 ### 2026-10-20 — First statement import (Wise, 7–20 Oct)
 
 - **Did:** `node tools/import.js imports/2026-10-wise-07-20.txt --apply`: 18 card payments added to the cloud copy (5 from 7 Oct held back as already logged). Owner approved the table first.
