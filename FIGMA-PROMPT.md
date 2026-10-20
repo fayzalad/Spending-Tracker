@@ -7,9 +7,39 @@ All numbers in it are invented examples.
 
 Design a complete, polished UI for **Tracker**, a personal spending tracker for one person in
 South Africa (currency: rand, shown as `R1 234` with a thin space as the thousands separator, no
-cents on screen). It is a web app installed to the iPhone Home Screen, also used on an Android
-phone and in a desktop window. Design **both** a phone layout (390 × 844, iPhone 15) and a desktop
-layout (1440 × 900). Every screen in **light and dark** mode.
+cents on screen). Every screen in **light and dark** mode.
+
+## Three platforms, each looking at home
+
+The same app runs on three platforms, from one shared codebase and one synced data set:
+
+- **iOS** — iPhone, installed to the Home Screen. Frame: 390 × 844 (iPhone 15).
+- **Android** — a Samsung Galaxy S22 Ultra (One UI). Frame: 412 × 915.
+- **Desktop** — a standalone Windows 11 app window. Frame: 1440 × 900, resizable down to ~400 px.
+
+They **do not have to look identical**. Each should feel native to its operating system, while the
+content, the numbers, the names of things and the information hierarchy stay the same everywhere,
+so moving between devices never means relearning the app. Design one shared foundation (colour
+tokens, type scale, spacing, components) with a platform layer on top:
+
+- **iOS:** follow Apple's Human Interface Guidelines. SF Pro, large titles that collapse on
+  scroll, bottom sheets with a grab handle that drag down to dismiss, iOS-style segmented controls,
+  switches and grouped lists, a floating tab bar, swipe-back. Respect the Dynamic Island, home
+  indicator and safe areas.
+- **Android:** follow Material 3 (Material You), as it looks on Samsung One UI. Roboto, a top app
+  bar, a bottom navigation bar, Material bottom sheets and dialogs, filled/tonal buttons, Material
+  switches and chips, a floating action button for "Add" if it suits, ripple feedback. Allow for the
+  system back gesture, the status and navigation bars, and dynamic colour from the wallpaper as an
+  option.
+- **Windows desktop:** follow Fluent 2 / Windows 11. Segoe UI Variable, a left navigation pane
+  instead of a bottom tab bar, a Mica-style window background, side panels or centred dialogs
+  instead of bottom sheets, hover states, keyboard shortcuts (e.g. N = new entry, Ctrl+F = search)
+  and visible focus rings. Use the width: two or three columns, a base type size of about 18 px,
+  never a narrow phone column in empty space.
+
+Show the **same key screens on all three** side by side (at least Home, Add an entry, Budget and
+Settings), so the shared identity and the native differences are both visible. Phone sizes may
+reflow to one column; desktop must make full use of the width.
 
 ## Who it is for and the feeling
 
@@ -33,7 +63,7 @@ amber (careful), red (over). Colour must never be the only signal: pair it with 
   named lines can share a category, e.g. four subscriptions), planned vs spent per category, money
   spent outside the plan, and what is still **free**. A plan only; it does not change today's figure.
 
-## Screens to design (phone and desktop each)
+## Screens to design (iOS, Android and Windows desktop each)
 
 1. **Home.** Sticky header ("Tracker", segmented control *This week / This month*). Hero card:
    "Left this week" big number (e.g. **R1 840**), week and month progress bars with %, a row of
@@ -72,22 +102,28 @@ amber (careful), red (over). Colour must never be the only signal: pair it with 
 
 ## Navigation and components
 
-- Floating capsule tab bar at the bottom (Add, Search, Months, Invest, Settings) that shrinks
-  while scrolling; on desktop a centred bar or a left sidebar — your call, justify it.
-- Every secondary screen is a **bottom sheet** with a grab handle and a nav bar (× at top level,
-  ‹ when stacked on another sheet), drag-down to dismiss. On desktop, a centred panel ~560 px.
+- Five destinations: Add, Search, Months, Invest, Settings. iOS: floating tab bar that shrinks
+  while scrolling. Android: Material bottom navigation bar (and/or a FAB for Add). Windows: a left
+  navigation pane.
+- Secondary screens: iOS — bottom sheets with a grab handle, × at top level and ‹ when stacked,
+  drag down to dismiss. Android — Material bottom sheets / full-screen dialogs with the system back
+  gesture. Windows — a side panel or centred dialog (~560 px) that closes with Esc.
 - Convention to keep: **raised or tinted = pressable; flat outline = information only.**
 - Build a small component set: buttons (primary, ghost, danger, small), segmented control,
   inputs/selects, checkbox row, card, stat tile, progress bar (4 states), list row, chip, banner
-  (info, warning, success), sheet header, tab bar.
+  (info, warning, success), sheet header, navigation. Show each component's iOS, Android and
+  Windows variant where they differ.
 
 ## Constraints
 
-- Thumb-sized tap targets (44 px min), no sideways scrolling at 390 px, safe areas respected.
+- Touch targets of at least 44 pt (iOS) / 48 dp (Android); no sideways scrolling on either phone;
+  safe areas, notches and system bars respected. On Windows, everything also works by mouse and
+  keyboard.
 - WCAG AA contrast in both themes; numbers use tabular figures.
-- System font stack (SF Pro on iPhone, Segoe UI on Windows) — or propose one web font, but it must
-  look right offline.
+- Each platform's system font: SF Pro (iOS), Roboto (Android), Segoe UI Variable (Windows). No
+  web fonts: the app must look right offline.
 - Respect Reduce Motion and Reduce Transparency (an optional frosted-glass look must fall back to
   solid surfaces).
 - Deliver: a light and dark colour token set, a type scale, spacing scale, the component sheet, and
-  every screen above at both sizes, with a short note on the main design decisions.
+  every screen above for iOS, Android and Windows, with a short note on the main design decisions
+  and on what differs between the three platforms and why.
