@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — First statement import (Wise, 7–20 Oct)
+
+- **Did:** `node tools/import.js imports/2026-10-wise-07-20.txt --apply`: 18 card payments added to the cloud copy (5 from 7 Oct held back as already logged). Owner approved the table first.
+- **Why:** owner now sends statements for Claude to enter; savings moves, the transfer to another person and currency conversions are not their spending (rules in Claude's project memory).
+- **Files:** cloud gist only; local gitignored `imports/2026-10-wise-07-20.txt`, `imports/2026-10-20T19-15-48-{before,added}.json`.
+- **Undo:** `node tools/import.js --undo imports/2026-10-20T19-15-48-added.json --apply`
+- **Checked:** cloud re-read: 128 entries, 18 with `imp`, sum matches the dry run, `rev` unchanged. Not yet seen on the phones.
+
 ### 2026-10-20 — Desktop app had the token as its gist ID; fixed it and the cause (build `2026-10-20-5`)
 
 - **Did:** Desktop Windows app's `gistId` was the token itself (pasted into the ID prompt), so every sync 404'd ("Could not reach GitHub"). Set the real ID via the app's debug port (`TRACKER_DEBUG=1`, then relaunched without it): now 110 entries, 8 bills, November budget. App: `gistIdOk` (20–40 hex) on both ID prompts with a plain explanation. 2 new checks.
