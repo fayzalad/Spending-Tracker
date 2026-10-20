@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-20-7">
+<meta name="slip-build" content="2026-10-20-8">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -835,7 +835,7 @@
     <label class="checkline" for="sGlass"><input type="checkbox" id="sGlass">
       <span>Frosted glass surfaces</span></label>
     <p class="hint" id="glassHint">Cards, sheets and the bottom bar blur what is behind them.
-      If your iPhone has Reduce Transparency switched on, this stays off to match it.</p>
+      If your device has Reduce Transparency switched on, this stays off to match it.</p>
   </section>
 
   <section data-pane="data" hidden>
@@ -1087,9 +1087,10 @@
 <dialog id="scanDlg">
   <h2>Read a receipt</h2>
   <p class="hint">Open the photo in Photos, press and hold the text, tap <b>Select All</b> then
-    <b>Copy</b> — that is iPhone's own text recognition, and it is far better at receipts than
-    anything this app could do. Paste it below and only the numbers get kept. The photo is
-    never stored.</p>
+    <b>Copy</b> — that is your phone's own text recognition (on Android, Google Lens or the
+    <b>Copy text</b> button in Photos; on Windows, the Snipping Tool's <b>Text actions</b>), and it is
+    far better at receipts than anything this app could do. Paste it below and only the numbers get
+    kept. The photo is never stored.</p>
   <div class="sp"><textarea id="scanText" rows="6"
     placeholder="Paste the receipt text here"></textarea></div>
   <div class="sp"><button class="ghost" id="scanGo">Pull out the details</button></div>
@@ -3710,8 +3711,8 @@
     $('sGlass').checked=!!data.glass;
     const reduced=matchMedia('(prefers-reduced-transparency: reduce)').matches;
     $('glassHint').textContent=reduced
-      ? 'Your iPhone has Reduce Transparency switched on, so surfaces stay solid whatever this says.'
-      : 'Cards, sheets and the bottom bar blur what is behind them. If your iPhone has Reduce '+
+      ? 'Your device has Reduce Transparency switched on, so surfaces stay solid whatever this says.'
+      : 'Cards, sheets and the bottom bar blur what is behind them. If your device has Reduce '+
         'Transparency switched on, this stays off to match it.';
     $('rGBP').value=data.rates.GBP;$('rUSD').value=data.rates.USD;$('rGHS').value=data.rates.GHS;
     const _cs=cycStart(today());
@@ -3725,7 +3726,7 @@
     allCats.forEach(n=>{
       const on=exNow.indexOf(n)>-1;
       const w=document.createElement('span');
-      w.style.cursor='pointer'; w.style.opacity=on?'1':'.45';
+      w.style.cursor='pointer'; w.style.opacity=on?'1':'.62';
       w.innerHTML=(on?'✓ ':'')+iconOf(n)+' '+n;
       w.onclick=()=>{
         const next=exNow.slice(), i=next.indexOf(n);
@@ -3743,7 +3744,7 @@
       const on=chosen.indexOf(n)>-1;
       const w=document.createElement('span');
       w.style.cursor='pointer';
-      w.style.opacity=on?'1':'.45';
+      w.style.opacity=on?'1':'.62';
       w.innerHTML=(on?'✓ ':'')+iconOf(n)+' '+n;
       w.onclick=()=>{
         const next=chosen.slice();

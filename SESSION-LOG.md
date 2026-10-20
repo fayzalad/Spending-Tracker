@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Screen pass with the owner's real settings (build `2026-10-20-8`)
+
+- **Did:** loaded a copy of the cloud data (token stripped) into the browser pane via a gitignored `imports/real-view.json` (deleted afterwards, and the pane's localStorage cleared) and looked at Months, Settings (5 tabs), Subscriptions & bills, Search, Planned purchases and Investments at 375px (Android look, dark, glass on) and 1440px (desktop). Fixed: faint unselected chips (.45→.62 opacity), iPhone-only wording (glass hint, receipt tip).
+- **Why:** owner asked to check the remaining screens after the Figma restyle.
+- **Files:** `index.html`, `README.md`, `SESSION-LOG.md`.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 545 tests; screens above look correct. NOT checked: light mode and other colour schemes on these screens, iOS look beyond the Home, the real devices after this build. Preview quirk: after a `scale 0.5` screenshot the tab rendered magnified; a fresh tab fixed it (not an app bug; layout measurements were correct).
+
 ### 2026-10-20 — Hero lost its colour with frosted glass on (build `2026-10-20-7`)
 
 - **Did:** added `[data-glass="on"] .hero{background:linear-gradient(...)}` after the glass rules; test in section 76 (source-order check, proven to fail on `-6`). Reinstalled the Android app with matching window colours.

@@ -135,6 +135,17 @@ as spending.
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
 
+### `2026-10-20-8` — screen pass with real settings
+
+Gone through Months, Settings (all five tabs), Subscriptions & bills, Search, Planned purchases and
+Investments at phone and desktop sizes, dark, with frosted glass on. They take the new colours and
+shapes cleanly; two small fixes:
+
+- Unselected category chips (Settings → Rules) were too faint (45% opacity); now 62%, the tick still
+  marks the chosen ones.
+- Wording no longer assumes an iPhone: the frosted-glass hint says "your device", and the receipt tip
+  now covers Android (Google Lens / Photos *Copy text*) and Windows (Snipping Tool *Text actions*).
+
 ### `2026-10-20-7` — the hero keeps its colour with frosted glass on
 
 - **Fixed:** with *Frosted glass surfaces* switched on, the glass styling replaced the new filled hero
