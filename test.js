@@ -2126,6 +2126,177 @@ const seed = {
   $('planLine').click();
   ok('and the safety amount defaults to 1000', $('planBuf').value === '1000', $('planBuf').value);
 
+  console.log('\n=== 73. budget: a plan beside what was spent, never inside the money maths ===');
+  // the realistic seed's live cycle is 28 Aug – 24 Sep, named September → key 2026-09
+  const budSeed = extra => Object.assign(JSON.parse(JSON.stringify(seed)), {
+    budgets: { '2026-09': { inc: 20795, rev: 1, lines: [
+      { id: 'r', n: 'Rent', cat: 'Rent', a: 9145 },
+      { id: 'u', n: 'Food delivery', cat: 'Uber Eats', a: 600 },
+      { id: 's1', n: 'ChatGPT', cat: 'Subscriptions', a: 101 },
+      { id: 's2', n: 'Spotify', cat: 'Subscriptions', a: 38 }] } }
+  }, extra || {});
+  dom = await boot(budSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('tabMonth').click();
+  ok('a budget leaves the available figure exactly as it was', Math.abs(num($('secVal').textContent) - 9149) < 2,
+     $('secVal').textContent);
+  // planned 9145+600+139 = 9884; outside the plan: Other 1258; over: rent 202 + delivery 340
+  // free = 20795 − 9884 − 1258 − 542 = 9111
+  ok('the card shows what is still free', /9\D?111 free/.test($('budLineText').textContent), $('budLineText').textContent);
+  ok('and names the lines that went over', /over on Rent, Uber Eats/.test($('budLineText').textContent),
+     $('budLineText').textContent);
+  ok('the card is titled with the month', $('budTitle').textContent === 'Budget · September', $('budTitle').textContent);
+  ok('over plan is flagged', $('budLine').classList.contains('warn'));
+  $('budLine').click();
+  ok('tapping it opens the budget sheet', $('budDlg').open);
+  const totRow = label => [...$('budTot').querySelectorAll('tr')].find(tr => tr.children[0].textContent === label);
+  ok('planned adds up every line', totRow('Planned') && num(totRow('Planned').children[1].textContent) === 9884,
+     totRow('Planned') && totRow('Planned').children[1].textContent);
+  ok('free matches the card', num(totRow('Free').children[1].textContent) === 9111, totRow('Free').children[1].textContent);
+  ok('spending with no line is shown on its own', num(totRow('Spent outside the plan').children[1].textContent) === 1258);
+  const bLis = [...$('budList').querySelectorAll('li')];
+  ok('one row per category plus the unplanned row', bLis.length === 4, String(bLis.length));
+  ok('two subscription lines share one category row',
+     /139/.test(bLis.find(li => /Subscriptions/.test(li.textContent)).querySelector('.num').textContent));
+  ok('a category under its plan says what is left',
+     /38 left/.test(bLis.find(li => /Subscriptions/.test(li.textContent)).querySelector('.bsub').textContent));
+  ok('a category past its plan says by how much',
+     /340 over/.test(bLis.find(li => /Uber Eats/.test(li.textContent)).querySelector('.bsub').textContent));
+  ok('the unplanned row names where it went', /Other/.test(bLis[3].textContent));
+
+  $('budAdd').click();
+  ok('add a line opens its own sheet', $('budEdit').open);
+  $('budCat').value = 'Groceries'; $('budAmt').value = '1600'; $('budName').value = '';
+  $('budSaveBtn').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  let bud = st.budgets['2026-09'];
+  ok('the new line is saved, named after its category when left blank',
+     bud.lines.length === 5 && bud.lines[4].n === 'Groceries' && bud.lines[4].a === 1600, JSON.stringify(bud.lines[4]));
+  ok('the month is stamped so the merge can compare it', bud.rev > 1, String(bud.rev));
+  $('budInc').value = '21000'; $('budInc').dispatchEvent(new w.Event('change'));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('the expected income is saved', st.budgets['2026-09'].inc === 21000, String(st.budgets['2026-09'].inc));
+  ok('other months are untouched', Object.keys(st.budgets).join() === '2026-09', Object.keys(st.budgets).join());
+  [...$('budList').querySelectorAll('.blines button')].find(b => /Spotify/.test(b.textContent)).click();
+  ok('a line opens for editing', $('budEdit').open && $('budAmt').value === '38', $('budAmt').value);
+  $('budDel').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('and can be removed', !st.budgets['2026-09'].lines.some(l => l.id === 's2'));
+  ok('entries are never touched by the budget', st.entries.length === seed.entries.length);
+
+  dom = await boot(budSeed({ bills: [{ id: 'b1', n: 'iCloud', a: 199, cur: 'ZAR', cat: 'Subscriptions' },
+    { id: 'b2', n: 'Internet', a: 399, cur: 'ZAR', cat: 'Internet' }] }));
+  w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  let alerted = ''; w.alert = m => { alerted = m; };
+  $('budLine').click(); $('budFromBills').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('add my bills brings in each bill once', st.budgets['2026-09'].lines.filter(l => l.bill).map(l => l.n).join() === 'iCloud,Internet',
+     st.budgets['2026-09'].lines.map(l => l.n).join());
+  $('budFromBills').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('pressing it again adds nothing', st.budgets['2026-09'].lines.length === 6 && /already/.test(alerted), alerted);
+  $('budMonth').value = [...$('budMonth').options].find(o => /October/.test(o.textContent)).value;
+  $('budMonth').dispatchEvent(new w.Event('change'));
+  ok('another month starts empty', /No lines yet/.test($('budList').textContent));
+  $('budCopy').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('copy last month fills it from September', st.budgets['2026-10'] && st.budgets['2026-10'].lines.length === 6 &&
+     st.budgets['2026-10'].inc === 20795, JSON.stringify(st.budgets['2026-10'] || {}).slice(0, 80));
+  ok('with fresh ids, so the two months never share a line',
+     !st.budgets['2026-10'].lines.some(l => st.budgets['2026-09'].lines.some(o => o.id === l.id)));
+  $('budClear').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('clearing empties that month but keeps its stamp, so the clear syncs',
+     st.budgets['2026-10'].lines.length === 0 && st.budgets['2026-10'].rev > 0 && st.budgets['2026-09'].lines.length === 6);
+
+  const nextOnly = budSeed(); nextOnly.budgets = { '2026-10': { inc: 21000, rev: 1, lines: [{ id: 'x', n: 'Rent', cat: 'Rent', a: 9145 }] } };
+  dom = await boot(nextOnly); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('a budget made ahead for next month shows on the card', $('budTitle').textContent === 'Budget · October' &&
+     /9\D?145 planned of R21\D?000/.test($('budLineText').textContent), $('budLineText').textContent);
+  $('budLine').click();
+  ok('and the sheet opens on that month', /October/.test($('budMonth').selectedOptions[0].textContent));
+  const noBud = budSeed(); delete noBud.budgets;
+  dom = await boot(noBud); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('an older save with no budgets boots and offers one', $('budLineText').textContent === 'Set a budget for the month');
+
+  console.log('  -- budgets merge month by month');
+  m = merge({ rev: 100, deleted: {}, entries: [], budgets: { '2026-11': { rev: 5, inc: 1 }, '2026-12': { rev: 9, inc: 2 } } },
+            { rev: 200, deleted: {}, entries: [], budgets: { '2026-11': { rev: 7, inc: 3 }, '2026-12': { rev: 3, inc: 4 }, '2027-01': { rev: 1, inc: 5 } } });
+  ok('the newer edit of each month wins, whichever device is newer overall',
+     m.budgets['2026-11'].inc === 3 && m.budgets['2026-12'].inc === 2 && m.budgets['2027-01'].inc === 5, JSON.stringify(m.budgets));
+  m = merge({ rev: 100, deleted: {}, entries: [], budgets: { '2026-11': { rev: 5, inc: 1 } } },
+            { rev: 200, deleted: {}, entries: [] });
+  ok('a newer copy from a build that never had budgets does not wipe them', m.budgets['2026-11'] && m.budgets['2026-11'].inc === 1);
+  m = merge({ rev: 1, deleted: {}, entries: [] }, { rev: 2, deleted: {}, entries: [] });
+  ok('no budgets anywhere still merges', JSON.stringify(m.budgets) === '{}');
+
+  console.log('\n=== 74. adding a list of entries ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('impOpen').click();
+  ok('the sheet opens with nothing to add', $('impDlg').open && $('impGo').disabled);
+  const impLines = [
+    '# from the statement',
+    '2026-08-29, 125.50, Eating out, Mochachos, two meals',
+    '2026-08-29, 125.50, Eating out, Mochachos, two meals',
+    '29/08/2026; R1 234.50; groceries; Checkers',
+    '2026-08-30, -89, Takealot, returned cable',
+    '2026-08-31, +500, , from mum',
+    '2026-08-31, 262, Take out',
+    '2026-08-31, 40, Petrol, ',
+    '2026-02-30, 40, Transport',
+    '2026-13-01, 40, Transport',
+    '2026-09-05, 40, Transport',
+    '2026-08-31, 1,200.00, Groceries'
+  ].join('\n');
+  $('impText').value = impLines; $('impText').dispatchEvent(new w.Event('input'));
+  const iLis = [...$('impList').querySelectorAll('li')];
+  ok('every non-comment line is listed', iLis.length === 11, String(iLis.length));
+  const pickd = iLis.filter(li => li.querySelector('input').checked).length;
+  ok('only the clean, new lines are ticked', pickd === 4, String(pickd));
+  ok('an exact repeat of a line is held back', /same as line 2/.test(iLis[1].textContent), iLis[1].textContent);
+  ok('a day-first date, a rand sign and a space in the amount are understood',
+     /2026-08-29 · Groceries · Checkers/.test(iLis[2].textContent) && /1\D?235/.test(iLis[2].textContent), iLis[2].textContent);
+  ok('a minus means a refund', /refund/.test(iLis[3].textContent));
+  ok('a plus means money received', /Money in/.test(iLis[4].textContent) && /received/.test(iLis[4].textContent));
+  ok('an amount already logged within a day is held back even under another category',
+     iLis[5].className === 'dup' && /already logged/.test(iLis[5].textContent), iLis[5].textContent);
+  ok('an unknown category is refused, not guessed', /no category called "Petrol"/.test(iLis[6].textContent));
+  ok('an impossible date is refused', /date not understood/.test(iLis[7].textContent) && /date not understood/.test(iLis[8].textContent));
+  ok('a future date is refused', /future/.test(iLis[9].textContent));
+  ok('a thousands comma cannot slip through as a smaller amount', iLis[10].className === 'bad', iLis[10].textContent);
+  ok('the button counts what will be added', $('impGo').textContent === 'Add 4 entries', $('impGo').textContent);
+  // tick the held-back repeat: two identical meals on one day can be real
+  iLis[1].querySelector('input').checked = true; iLis[1].querySelector('input').dispatchEvent(new w.Event('change'));
+  ok('a held-back line can be ticked back in', $('impGo').textContent === 'Add 5 entries');
+  $('impGo').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const added = st.entries.filter(e => e.imp);
+  ok('five entries are added', added.length === 5 && st.entries.length === seed.entries.length + 5, String(added.length));
+  const byNote = n => added.find(e => e.note === n);
+  ok('a spend is stored like the log form stores one',
+     byNote('two meals') === undefined && added.filter(e => e.note === 'Mochachos, two meals').length === 2 &&
+     added[0].type === 'out' && added[0].amt === 125.5 && added[0].cyc === '2026-08-28', JSON.stringify(added[0]));
+  ok('a refund is a negative spend', byNote('returned cable').amt === -89 && byNote('returned cable').type === 'out' &&
+     byNote('returned cable').refund === true);
+  ok('money received is income in Money in', byNote('from mum').type === 'in' && byNote('from mum').cat === 'Money in' &&
+     byNote('from mum').amt === 500);
+  ok('cents are kept', byNote('Checkers').amt === 1234.5);
+  ok('every id is unique', new Set(st.entries.map(e => e.id)).size === st.entries.length);
+  $('tabMonth').click();
+  ok('the figures include them at once', Math.abs(num($('secVal').textContent) - (9149 + 500 - 125.5 * 2 - 1234.5 + 89)) < 2,
+     $('secVal').textContent);
+  ok('undo is offered', $('impUndo').style.display === 'block');
+  $('impUndo').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('undo removes exactly that import', st.entries.length === seed.entries.length && !st.entries.some(e => e.imp));
+  ok('and leaves tombstones so another device does not bring them back',
+     added.every(e => st.deleted && st.deleted[e.id]));
+  $('impText').value = JSON.stringify([{ date: '2026-08-30', amount: 75, category: 'Transport', note: 'Uber' },
+    { date: '2026-08-30', amt: -20, cat: 'Transport' }, { date: '2026-08-31', amt: 900, type: 'in' }]);
+  $('impText').dispatchEvent(new w.Event('input'));
+  ok('a JSON list is read too', $('impGo').textContent === 'Add 3 entries', $('impSum').textContent);
+  $('impText').value = '{"date":"2026-08-30"}'; $('impText').dispatchEvent(new w.Event('input'));
+  ok('JSON that is not a list is refused', /could not be read|expected a list/.test($('impList').textContent) && $('impGo').disabled);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

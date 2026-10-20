@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**456 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**516 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -103,7 +103,14 @@ data = {
 
 entry = { id, amt, cat, note, date, cyc, type, refund, man, hold, cur, orig, rate }
 plan  = { id, o, n, price, m, only, status, note, link, paid, at, rev }
+budgets = { 'YYYY-MM': { inc, rev, lines: [{ id, n, cat, a, bill }] } }
 ```
+
+A **budget** is keyed like a plan, by the month its cycle is named for, so it stays attached when
+payday moves the boundary. `inc` is the money expected that month, each line a planned amount for a
+category (`bill` links a line made from a bill). Spending is matched to lines by category; savings
+moves count against a line in the `Savings` category. Sync merges budgets **month by month**, the
+higher per-month `rev` winning. Imported entries carry `imp` (the batch time) so an import can be undone.
 
 A **plan** is one planned purchase. `o` is its order, `m` the month its pay cycle is named for
 (`'2026-11'` is the cycle ending in November), `only` the "only if the safety amount is left"
@@ -127,6 +134,24 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-1` — budget, add a list of entries, desktop layout
+
+- **Budget.** A card under savings ("Budget · November — R8 076 free · every line on track") opens a
+  sheet: the money you expect, lines per category (several lines can share one, like four
+  subscriptions), planned vs spent with a bar each, spending with no line, and what is still free.
+  Add my bills, Copy last month, Clear. It is a plan only: the daily, weekly and monthly figures
+  are unchanged, verified by test.
+- **Add a list of entries** (Settings → Data). Paste `date, amount, category, note` lines (`+` for
+  money received, `−` for a refund) or a JSON list. Every line is previewed; unknown categories,
+  impossible or future dates and thousands commas are refused, and an amount already logged within
+  a day, or a line repeated exactly, is held back unticked. One Undo for the whole import.
+- **`tools/import.js`** (desktop) drives that same sheet against the cloud copy, so entries read
+  from bank screenshots reach every device through the normal sync. See *Adding spending from the
+  desktop* in `CLAUDE.md`.
+- **Wide screens** get two columns and larger type; the phone layout is unchanged.
+- **Fixed:** every checkbox in the app showed no tick, because the global input style stripped the
+  native box. They now draw normally.
 
 ### `2026-10-06-1` — planned purchases
 

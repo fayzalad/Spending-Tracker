@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-10-06-1">
+<meta name="slip-build" content="2026-10-20-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -123,7 +123,7 @@
   .ptrack{flex:1;height:9px;border-radius:6px;background:var(--track);overflow:hidden}
   .ptrack i{display:block;height:100%;width:0;border-radius:6px;background:var(--accent);
     transition:width .3s cubic-bezier(.4,0,.2,1)}
-  .ptrack i.warn{background:var(--warn)} .ptrack i.over{background:var(--bad)}
+  .ptrack i.warn{background:var(--warn)} .ptrack i.over{background:var(--bad)} .ptrack i.good{background:var(--good)}
   .ppct{font-size:12.5px;font-weight:700;color:var(--mut);width:42px;text-align:right;flex:none}
   .prow.on .plabel,.prow.on .ppct{color:var(--ink)}
   .prow.on .ptrack{height:13px}
@@ -194,6 +194,45 @@
   .ptab td.low{color:var(--bad);font-weight:700}
   .ptab td.cond{color:var(--warn)}
   .ptab input{width:74px;padding:6px 7px;font-size:12.5px}
+  #budLine{margin-top:4px;border-top:0;padding-top:4px}
+  #budList,#impList{box-shadow:none;border:1px solid var(--line);margin:8px 0 10px}
+  #budList li{display:block}
+  .bhead{display:flex;align-items:baseline;gap:8px}
+  .bhead b{flex:1;min-width:0;font-size:14px}
+  .bhead .num{font-weight:700;font-size:14px;white-space:nowrap}
+  #budList .ptrack{display:block;height:7px;margin:7px 0 5px}
+  .bsub{font-size:12px;color:var(--mut);margin:0 0 7px}
+  .bsub.over{color:var(--bad);font-weight:700}
+  .blines{display:flex;flex-wrap:wrap;gap:6px}
+  .blines button{background:var(--sunk);color:var(--ink);border:0;border-radius:9px;padding:8px 10px;
+    font-family:var(--sys);font-size:12.5px;font-weight:600;cursor:pointer}
+  .btot{width:100%;border-collapse:collapse;font-size:13.5px;margin:2px 0 12px}
+  .btot td{padding:7px 2px;border-top:1px solid var(--line)}
+  .btot tr:first-child td{border-top:0}
+  .btot td:last-child{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .btot tr.free td{font-size:15px}
+  .btot tr.neg td:last-child{color:var(--bad)}
+  #impText{min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  #impList{max-height:46vh;overflow:auto}
+  #impList li{align-items:flex-start;gap:10px;font-size:13px}
+  #impList li input{width:20px;height:20px;flex:none;margin:1px 0 0;padding:0;accent-color:var(--accent)}
+  #impList li .im{flex:1;min-width:0}
+  #impList li em{display:block;font-style:normal;font-size:12px;color:var(--mut);margin-top:2px}
+  #impList li.dup em{color:var(--warn)} #impList li.bad em{color:var(--bad)}
+  #impList li .num{font-weight:700;white-space:nowrap}
+  #impList li.bad{opacity:.8}
+  /* on a phone the two columns are invisible to layout, so the page is exactly the single
+     column it always was; on a wide screen they become real columns */
+  .colA,.colB{display:contents}
+  @media screen and (min-width:1100px){
+    body{zoom:1.15}
+    .wrap{max-width:1180px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      column-gap:22px;align-items:start;padding:0 24px}
+    .stickytop{grid-column:1/-1;margin:0 -24px;padding-left:24px;padding-right:24px}
+    .colA,.colB{display:block;min-width:0}
+    .tabbar{left:50%;right:auto;width:520px;margin-left:-260px}
+    dialog{width:min(560px,92vw)}
+  }
   .stat.tappable{cursor:pointer}
   .stat.tappable:active{background:var(--sunk)}
   .stat:nth-child(2n){border-left:1px solid var(--line)}
@@ -253,6 +292,9 @@
     border:1px solid transparent;border-radius:13px;padding:13px 14px;width:100%;-webkit-appearance:none}
   input:focus,select:focus{outline:0;border-color:var(--accent);background:var(--card)}
   input[type=file]{display:none}
+  /* the rule above strips the native box from checkboxes too, which left every tick invisible */
+  input[type=checkbox]{-webkit-appearance:auto;appearance:auto;background:none;padding:0;border-radius:4px;
+    accent-color:var(--accent)}
   textarea{font-family:var(--sys);font-size:15px;color:var(--ink);background:var(--sunk);
     border:1px solid transparent;border-radius:13px;padding:13px 14px;width:100%;
     -webkit-appearance:none;resize:vertical;line-height:1.4}
@@ -465,6 +507,7 @@
     </div>
   </div>
 
+  <div class="colA">
   <div class="card hero">
     <span class="cap heroCap" id="scopeCap">Left this week</span>
     <div class="big num" id="bigNum" aria-live="polite">R0</div>
@@ -530,12 +573,20 @@
       <span id="planLineText">Plan a purchase</span><span class="chev">›</span></div>
   </div>
 
+  <div class="card" id="budCard">
+    <div class="ch" id="budTitle">Budget</div>
+    <div class="planline" id="budLine" role="button" tabindex="0">
+      <span id="budLineText">Set a budget for the month</span><span class="chev">›</span></div>
+  </div>
+
   <div class="card" id="dueCard" style="display:none">
     <div class="ch">Subscriptions still to pay</div>
     <div class="chsub" id="dueSub"></div>
     <ul id="dueList"></ul>
   </div>
+  </div>
 
+  <div class="colB">
   <div class="card stats">
     <div class="stat"><span class="cap">You can spend today</span><b class="num" id="safe">—</b>
       <span class="sub" id="safeSub">—</span></div>
@@ -613,6 +664,7 @@
 
   <div id="log"></div>
   <div class="empty" id="empty">Nothing logged yet. Start with what you received.</div>
+  </div>
 </div>
 
 <dialog id="setDlg" tabindex="-1" autofocus>
@@ -717,6 +769,9 @@
     <div class="sp"><button class="ghost" id="exportBtn">Download a backup</button></div>
     <div class="sp"><button class="ghost" id="importBtn">Restore from backup</button>
       <input type="file" id="impFile" accept="application/json"></div>
+    <div class="sp"><button class="ghost" id="impOpen">Add a list of entries</button>
+      <p class="hint" style="margin:8px 0 0">Paste many entries at once, for example from a bank
+        statement. You see every line before anything is added.</p></div>
     <div class="sp"><button class="ghost" id="checkUpd">Check for updates</button>
       <p class="hint" id="buildLine" style="margin:8px 0 0"></p></div>
     <p class="hint">Clearing wipes every entry on this phone — and if cloud backup is on, that
@@ -760,6 +815,52 @@
   <button class="close" id="planSaveBtn">Save</button>
   <button class="danger" id="planDel" style="margin-top:8px">Delete</button>
   <button class="ghost" id="planEditCancel" style="margin-top:8px">Cancel</button>
+</dialog>
+
+<dialog id="budDlg" tabindex="-1" autofocus>
+  <h2>Budget</h2>
+  <div class="sp"><label for="budMonth">Month</label><select id="budMonth"></select></div>
+  <div class="sp"><label for="budInc">Money you expect this month (R)</label>
+    <input id="budInc" type="number" inputmode="decimal" placeholder="e.g. 21000"></div>
+  <table class="btot" id="budTot"></table>
+  <ul id="budList"></ul>
+  <button class="ghost" id="budAdd">Add a line</button>
+  <div class="two" style="margin-top:10px">
+    <button class="ghost" id="budFromBills">Add my bills</button>
+    <button class="ghost" id="budCopy">Copy last month</button>
+  </div>
+  <p class="hint" style="margin-top:12px">A budget is a plan. It does not change what you can
+    spend today; the bills under Subscriptions &amp; bills are still held back as before.
+    Spending is matched to a line by its category.</p>
+  <button class="danger" id="budClear">Clear this month's budget</button>
+  <button class="close" id="closeBud">Done</button>
+</dialog>
+
+<dialog id="budEdit" tabindex="-1" autofocus>
+  <h2 id="budEditTitle">Budget line</h2>
+  <div class="sp"><label for="budName">What it is</label>
+    <input id="budName" placeholder="e.g. Groceries"></div>
+  <div class="sp"><label for="budCat">Category</label><select id="budCat"></select></div>
+  <div class="sp"><label for="budAmt">Planned (R)</label>
+    <input id="budAmt" type="number" inputmode="decimal"></div>
+  <button class="close" id="budSaveBtn">Save</button>
+  <button class="danger" id="budDel" style="margin-top:8px">Delete</button>
+  <button class="ghost" id="budEditCancel" style="margin-top:8px">Cancel</button>
+</dialog>
+
+<dialog id="impDlg" tabindex="-1" autofocus>
+  <h2>Add a list of entries</h2>
+  <p class="hint">One entry per line: <b>date, amount, category, note</b>. Write
+    <b>+</b> before money you received and <b>−</b> before a refund, e.g.<br>
+    <code>2026-10-09, 125.50, Eating out, Mochachos</code><br>
+    <code>2026-10-28, +21000, Money in, Salary</code><br>
+    Amounts in rand, no thousands separators. Nothing is added until you press the button.</p>
+  <div class="sp"><textarea id="impText" aria-label="Entries to add" spellcheck="false"></textarea></div>
+  <p class="hint" id="impSum" aria-live="polite"></p>
+  <ul id="impList"></ul>
+  <button class="close" id="impGo" disabled>Add entries</button>
+  <button class="ghost" id="impUndo" style="margin-top:8px;display:none">Undo that import</button>
+  <button class="ghost" id="impCancel" style="margin-top:8px">Close</button>
 </dialog>
 
 <dialog id="planBuy" tabindex="-1" autofocus>
@@ -1100,7 +1201,7 @@
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
     bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[],avKey:'',
-    homeCur:'ZAR',cycCur:{},cycRate:{},plans:[],planBuf:1000,planSave:{}};
+    homeCur:'ZAR',cycCur:{},cycRate:{},plans:[],planBuf:1000,planSave:{},budgets:{}};
   let syncTimer=null, bannerOff=false, billBannerOff=false, incBannerOff=false;
   let scope='week', kind='out';
   let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
@@ -1427,6 +1528,8 @@
     $('withdrawBtn').style.display=potList.length?'block':'none';
     renderPlanLine();
     if($('planDlg').open)renderPlanSheet();
+    renderBudLine();
+    if($('budDlg').open)renderBudSheet();
     const sweeps=unsweptMonths();
     const sb=$('sweepBox'); sb.innerHTML='';
     // the goal is only protected until you actually move it — offer to do that now
@@ -1762,6 +1865,14 @@
     out.plans=Object.keys(pm).map(k=>pm[k]).filter(p=>!tomb[p.id])
       .sort((x,y)=>(x.o||0)-(y.o||0));
     out.planSave=Object.assign({},older.planSave||{},newer.planSave||{});
+    // budgets merge month by month: each month carries its own rev, so editing November on
+    // one device and December on another keeps both
+    const bo=older.budgets||{}, bn=newer.budgets||{}, bm={};
+    Object.keys(bo).concat(Object.keys(bn)).forEach(k=>{
+      const x=bo[k], y=bn[k];
+      bm[k]=!x?y:!y?x:((y.rev||0)>=(x.rev||0)?y:x);
+    });
+    out.budgets=bm;
     return out;
   }
 
@@ -2599,6 +2710,305 @@
     $('planBuy').close(); save();
   };
 
+  // ---- Budget: a plan for a month, keyed like plans by the month its cycle is named for, so
+  // it stays attached when payday moves the boundary. It never feeds the money maths; it only
+  // sets the plan beside what was actually spent, category by category.
+  const budgets=()=>data.budgets||{};
+  const ymOf=cs=>cycEnd(cs).slice(0,7);
+  const cycPrev=cs=>cycStart(addDays(cs,-1));
+  const budHas=cs=>{const b=budgets()[ymOf(cs)];
+    return !!(b&&((b.lines&&b.lines.length)||Number(b.inc)>0))};
+  function budCycles(){
+    const now=cycStart(today()), out=[now];
+    let cs=now; for(let i=0;i<3;i++){cs=cycPrev(cs);out.unshift(cs)}
+    cs=now; for(let i=0;i<3;i++){cs=cycNext(cs);out.push(cs)}
+    return out;
+  }
+  function budCalc(cs){
+    const ym=ymOf(cs), b=budgets()[ym]||null, lines=(b&&b.lines)||[], ents=inCyc(cs);
+    // savings moves count against a Savings line; everything else by its own category
+    const spent={};
+    ents.forEach(e=>{
+      const k=(isSave(e)||isUnsave(e))?'Savings':isSpend(e)?e.cat:null;
+      if(k!==null)spent[k]=(spent[k]||0)+(isUnsave(e)?-e.amt:e.amt);
+    });
+    const plan={};
+    lines.forEach(l=>{plan[l.cat]=(plan[l.cat]||0)+(Number(l.a)||0)});
+    const cats=Object.keys(plan).map(c=>({cat:c,plan:plan[c],spent:spent[c]||0,
+      lines:lines.filter(l=>l.cat===c)})).sort((x,y)=>y.plan-x.plan);
+    const outCats=Object.keys(spent).filter(c=>!(c in plan)&&Math.abs(spent[c])>0.005)
+      .map(c=>[c,spent[c]]).sort((x,y)=>y[1]-x[1]);
+    const planned=cats.reduce((s,c)=>s+c.plan,0);
+    const outside=outCats.reduce((s,c)=>s+c[1],0);
+    const over=cats.reduce((s,c)=>s+Math.max(0,c.spent-c.plan),0);
+    const got=sum(ents,isIn), expect=b&&Number(b.inc)>0?Number(b.inc):0;
+    // the figure you typed is the one used; with none, what has actually arrived
+    const income=expect||got;
+    return {cs,ym,b,lines,cats,outCats,planned,outside,over,got,expect,income,
+      unalloc:income-planned,free:income-planned-outside-over};
+  }
+  function renderBudLine(){
+    const cs=cycStart(today()), nx=cycNext(cs);
+    let t, warn=false, name=cycName(cs);
+    if(budHas(cs)){
+      const c=budCalc(cs), overs=c.cats.filter(x=>x.spent>x.plan+1);
+      t=(c.free>=-0.005?R(c.free)+' free':R(-c.free)+' past your plan')+
+        (overs.length?' · over on '+overs.map(x=>x.cat).join(', '):c.cats.length?' · every line on track':'');
+      warn=c.free<-0.005||overs.length>0;
+    }else if(budHas(nx)){
+      const n=budCalc(nx); name=cycName(nx);
+      t=R(n.planned)+' planned of '+R(n.income)+' · '+R(n.unalloc)+' left to plan';
+    }else t='Set a budget for the month';
+    $('budTitle').textContent='Budget · '+name;
+    $('budLineText').textContent=t; $('budLine').classList.toggle('warn',warn);
+  }
+  let budCs=null;
+  function openBud(){
+    const now=cycStart(today());
+    budCs=(!budHas(now)&&budHas(cycNext(now)))?cycNext(now):now;
+    renderBudSheet(); $('budDlg').showModal();
+  }
+  $('budLine').onclick=openBud;
+  $('budLine').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBud()}};
+  function renderBudSheet(){
+    const list=budCycles(), now=cycStart(today());
+    if(list.indexOf(budCs)<0)budCs=cycStart(budCs||now);   // a boundary moved while it was open
+    if(list.indexOf(budCs)<0)budCs=now;
+    const RB=n=>Rcyc(n,budCs);
+    $('budMonth').innerHTML=list.map(cs=>'<option value="'+cs+'">'+cycName(cs)+' · '+cycRange(cs)+
+      (cs===now?' (now)':'')+'</option>').join('');
+    $('budMonth').value=budCs;
+    const c=budCalc(budCs);
+    $('budInc').value=c.expect||'';
+    const rows=[['Expected in',c.expect?RB(c.expect):'not set'],['Received so far',RB(c.got)],
+      ['Planned',RB(c.planned)],['Left to plan',RB(c.unalloc),c.unalloc<-0.005]];
+    if(Math.abs(c.outside)>0.005)rows.push(['Spent outside the plan',RB(c.outside)]);
+    if(c.over>0.005)rows.push(['Over on planned lines',RB(c.over),true]);
+    rows.push(['Free',RB(c.free),c.free<-0.005,'free']);
+    const tb=$('budTot'); tb.innerHTML='';
+    rows.forEach(r=>{const tr=document.createElement('tr');
+      tr.className=[r[2]?'neg':'',r[3]||''].join(' ').trim();
+      tr.innerHTML='<td></td><td></td>'; tr.children[0].textContent=r[0]; tr.children[1].textContent=r[1];
+      tb.appendChild(tr)});
+    const ul=$('budList'); ul.innerHTML='';
+    if(!c.cats.length){const li=document.createElement('li');
+      li.textContent='No lines yet. Add one, or start from your bills.'; ul.appendChild(li)}
+    c.cats.forEach(x=>{
+      const li=document.createElement('li'), over=x.spent>x.plan+1;
+      li.innerHTML='<div class="bhead"><b></b><span class="num"></span></div>'+
+        '<span class="ptrack"><i></i></span><div class="bsub"></div><div class="blines"></div>';
+      li.querySelector('b').textContent=iconOf(x.cat)+' '+x.cat;
+      li.querySelector('.num').textContent=RB(x.spent)+' of '+RB(x.plan);
+      const bar=li.querySelector('i'), pct=x.plan>0?Math.min(100,Math.max(0,x.spent/x.plan*100)):100;
+      // within a rand of the plan is a bill paid in full or a pot used up as meant: good, not a warning
+      const exact=x.plan>0&&Math.abs(x.plan-x.spent)<=1;
+      bar.style.width=pct+'%';
+      bar.className=over&&!exact?'over':exact?'good':pct>=85?'warn':'';
+      const sub=li.querySelector('.bsub');
+      sub.textContent=exact?'right on plan':over?RB(x.spent-x.plan)+' over':RB(x.plan-x.spent)+' left';
+      if(over&&!exact)sub.classList.add('over');
+      const lb=li.querySelector('.blines');
+      x.lines.forEach(l=>{const bt=document.createElement('button'); bt.type='button';
+        bt.textContent=l.n+' '+RB(Number(l.a)||0); bt.setAttribute('aria-label','Edit '+l.n);
+        bt.onclick=()=>openBudEdit(l); lb.appendChild(bt)});
+      ul.appendChild(li);
+    });
+    if(c.outCats.length){
+      const li=document.createElement('li');
+      li.innerHTML='<div class="bhead"><b>Not in the plan</b><span class="num"></span></div><div class="bsub"></div>';
+      li.querySelector('.num').textContent=RB(c.outside);
+      li.querySelector('.bsub').textContent=c.outCats.slice(0,6).map(o=>o[0]+' '+RB(o[1])).join(' · ')+
+        (c.outCats.length>6?' · and '+(c.outCats.length-6)+' more':'');
+      ul.appendChild(li);
+    }
+    $('budClear').style.display=budHas(budCs)?'block':'none';
+  }
+  // every edit replaces the month as a whole and stamps it, which is what the merge compares
+  function setBud(fn){
+    const ym=ymOf(budCs);
+    const b=JSON.parse(JSON.stringify(budgets()[ym]||{inc:0,lines:[]}));
+    b.lines=b.lines||[]; fn(b); b.rev=Date.now();
+    data.budgets=Object.assign({},budgets(),{[ym]:b}); save();
+  }
+  $('budMonth').onchange=e=>{budCs=e.target.value;renderBudSheet()};
+  $('budInc').onchange=e=>setBud(b=>{b.inc=Math.max(0,Math.round((Number(e.target.value)||0)*100)/100)});
+  $('closeBud').onclick=()=>$('budDlg').close();
+  $('budFromBills').onclick=()=>{
+    const have=budgets()[ymOf(budCs)], lines=(have&&have.lines)||[];
+    const add=dueBills(budCs).filter(bl=>!lines.some(l=>l.bill===bl.id||
+      (l.n.toLowerCase()===bl.n.toLowerCase()&&l.cat===bl.cat)));
+    if(!add.length){alert('Every bill due that month is already in its budget.');return}
+    setBud(b=>{add.forEach(bl=>b.lines.push({id:Date.now()+Math.random(),n:bl.n,cat:bl.cat,
+      a:Math.round(billZar(bl)*100)/100,bill:bl.id}))});
+  };
+  $('budCopy').onclick=()=>{
+    const prev=budgets()[ymOf(cycPrev(budCs))];
+    if(!prev||!((prev.lines&&prev.lines.length)||Number(prev.inc)>0)){alert('The month before has no budget to copy.');return}
+    if(budHas(budCs)&&!confirm('Replace this month’s budget with a copy of the month before?'))return;
+    setBud(b=>{b.inc=Number(prev.inc)||0;
+      b.lines=(prev.lines||[]).map(l=>Object.assign({},l,{id:Date.now()+Math.random()}))});
+  };
+  $('budClear').onclick=()=>{
+    if(!confirm('Clear the whole budget for '+cycName(budCs)+'? Your entries are not touched.'))return;
+    setBud(b=>{b.inc=0;b.lines=[]});
+  };
+  let budLineEdit=null;
+  function openBudEdit(l){
+    budLineEdit=l||null;
+    $('budEditTitle').textContent=l?'Edit line':'Add a line';
+    $('budCat').innerHTML=catOptions(false)+'<optgroup label="Savings"><option>Savings</option></optgroup>';
+    $('budName').value=l?l.n:''; $('budAmt').value=l?l.a:'';
+    if(l)$('budCat').value=l.cat;
+    if(l&&$('budCat').value!==l.cat){         // a category that has since been removed
+      const o=document.createElement('option'); o.textContent=l.cat; $('budCat').appendChild(o); $('budCat').value=l.cat}
+    $('budDel').style.display=l?'block':'none';
+    $('budEdit').showModal();
+  }
+  $('budAdd').onclick=()=>openBudEdit(null);
+  $('budEditCancel').onclick=()=>$('budEdit').close();
+  $('budSaveBtn').onclick=()=>{
+    const cat=$('budCat').value, a=Math.round((Number($('budAmt').value)||0)*100)/100;
+    const n=$('budName').value.trim()||cat;
+    if(!(a>0)){$('budAmt').focus();return}
+    const id=budLineEdit&&budLineEdit.id;
+    setBud(b=>{
+      const hit=id&&b.lines.find(x=>x.id===id);
+      if(hit)Object.assign(hit,{n,cat,a});
+      else b.lines.push({id:Date.now()+Math.random(),n,cat,a});
+    });
+    $('budEdit').close();
+  };
+  $('budDel').onclick=()=>{
+    if(!budLineEdit||!confirm('Remove '+budLineEdit.n+' from this budget?'))return;
+    const id=budLineEdit.id;
+    setBud(b=>{b.lines=b.lines.filter(x=>x.id!==id)});
+    $('budEdit').close();
+  };
+
+  // ---- Add a list of entries: many at once, each line previewed before anything is saved.
+  // tools/import.js drives this same sheet on the desktop, so there is one parser, not two.
+  const knownCats=()=>LIVING.concat(SHOP,BILLS,customs().map(c=>c.n));
+  function parseImport(text){
+    text=String(text||'').trim(); if(!text)return [];
+    let raw;
+    if(text[0]==='['||text[0]==='{'){
+      try{raw=JSON.parse(text)}catch(e){return [{n:1,err:'this looks like JSON but could not be read'}]}
+      if(!Array.isArray(raw))return [{n:1,err:'expected a list of entries'}];
+      raw=raw.map((o,i)=>({n:i+1,date:o&&o.date,amt:o&&(o.amt!==undefined?o.amt:o.amount),
+        cat:o&&(o.cat||o.category),note:o&&o.note,type:o&&o.type}));
+    }else{
+      raw=text.split(/\r?\n/).map((ln,i)=>({ln:ln.trim(),n:i+1})).filter(x=>x.ln&&x.ln[0]!=='#').map(x=>{
+        const sep=x.ln.indexOf('\t')>-1?'\t':x.ln.indexOf(';')>-1?';':x.ln.indexOf('|')>-1?'|':',';
+        const f=x.ln.split(sep).map(s=>s.trim());
+        return {n:x.n,date:f[0],amt:f[1],cat:f[2],note:f.slice(3).join(sep===','?', ':' ')};
+      });
+    }
+    const cats=knownCats(), now=today();
+    return raw.map(r=>{
+      const out={n:r.n,note:String(r.note||'').trim()};
+      let d=String(r.date||'').trim(), m=d.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);
+      if(m)d=m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');   // day first, as SA banks write it
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||isNaN(D(d))||iso(D(d))!==d){out.err='date not understood: '+(r.date||'blank');return out}
+      if(d>now){out.err='date is in the future: '+d;return out}
+      out.date=d;
+      let a=r.amt, type=r.type?String(r.type).toLowerCase():'';
+      if(typeof a==='number'){
+        if(a<0&&(!type||type==='out'))type='refund';
+        if(!type)type='out';
+        a=Math.abs(a);
+      }else{
+        const s=String(a===undefined||a===null?'':a).replace(/−/g,'-').replace(/\s|ZAR|R/gi,'');
+        if(!/^[+-]?\d+(\.\d{1,2})?$/.test(s)){out.err='amount not understood: '+(a||'blank');return out}
+        if(!type)type=s[0]==='+'?'in':s[0]==='-'?'refund':'out';
+        a=Math.abs(Number(s));
+      }
+      if(['in','out','refund'].indexOf(type)<0){out.err='type must be in, out or refund';return out}
+      if(!(a>0)||a>1e7){out.err='amount must be above zero';return out}
+      out.amt=Math.round(a*100)/100; out.type=type;
+      if(type==='in'){out.cat='Money in';return out}
+      const want=String(r.cat||'').trim().toLowerCase(), hit=cats.find(c=>c.toLowerCase()===want);
+      if(!hit){out.err=r.cat?'no category called "'+String(r.cat).trim()+'"':'category missing';return out}
+      out.cat=hit;
+      return out;
+    });
+  }
+  // a line is held back, unticked, if the same amount (to the rand) is already logged within a
+  // day of it, or if it repeats an earlier line exactly — overlapping screenshots do that
+  function markDupes(rows){
+    const seen={};
+    rows.forEach(r=>{
+      if(r.err)return;
+      const signed=r.type==='refund'?-r.amt:r.amt;
+      const hit=data.entries.find(e=>(r.type==='in'?isIn(e):isSpend(e))&&
+        Math.abs(e.amt-signed)<=1&&Math.abs(diff(e.date,r.date))<=1);
+      const key=[r.date,signed,r.cat,r.note.toLowerCase()].join('|');
+      if(hit)r.dup='looks already logged: '+hit.date+' '+(isIn(hit)?'Money in':hit.cat)+' '+
+        fmtMoney(hit.amt,'ZAR')+(hit.note?' ('+hit.note+')':'');
+      else if(seen[key])r.dup='same as line '+seen[key];
+      if(!seen[key])seen[key]=r.n;
+    });
+    return rows;
+  }
+  let impRows=[], impLast=null;
+  function renderImp(){
+    impRows=markDupes(parseImport($('impText').value));
+    const ul=$('impList'); ul.innerHTML='';
+    ul.style.display=impRows.length?'':'none';
+    impRows.forEach(r=>{
+      const li=document.createElement('li'); li.className=r.err?'bad':r.dup?'dup':'';
+      const cb=document.createElement('input'); cb.type='checkbox';
+      r.pick=!r.err&&!r.dup; cb.checked=r.pick; cb.disabled=!!r.err;
+      cb.setAttribute('aria-label','Include line '+r.n);
+      cb.onchange=()=>{r.pick=cb.checked;impSummary()};
+      const box=document.createElement('div'); box.className='im';
+      const b=document.createElement('b'), em=document.createElement('em');
+      b.textContent=r.err?'Line '+r.n:r.date+' · '+r.cat+(r.note?' · '+r.note:'');
+      em.textContent=r.err||r.dup||(r.type==='in'?'received':r.type==='refund'?'refund':'spent');
+      box.appendChild(b); box.appendChild(em);
+      const amt=document.createElement('span'); amt.className='num';
+      amt.textContent=r.err?'':(r.type==='in'?'+':r.type==='refund'?'−':'')+fmtMoney(r.amt,'ZAR');
+      li.appendChild(cb); li.appendChild(box); li.appendChild(amt); ul.appendChild(li);
+    });
+    impSummary();
+  }
+  function impSummary(){
+    const pick=impRows.filter(r=>r.pick&&!r.err), bad=impRows.filter(r=>r.err).length,
+      dup=impRows.filter(r=>r.dup&&!r.err).length;
+    const out=pick.filter(r=>r.type!=='in').reduce((s,r)=>s+(r.type==='refund'?-r.amt:r.amt),0);
+    const inn=pick.filter(r=>r.type==='in').reduce((s,r)=>s+r.amt,0);
+    $('impSum').textContent=impRows.length?pick.length+' of '+impRows.length+' lines will be added'+
+      (pick.length?': '+fmtMoney(out,'ZAR')+' spent'+(inn?', '+fmtMoney(inn,'ZAR')+' received':''):'')+'.'+
+      (dup?' '+dup+(dup===1?' looks':' look')+' already logged and '+(dup===1?'is':'are')+' unticked; tick any that are really new.':'')+
+      (bad?' '+bad+(bad===1?' line':' lines')+' could not be read and will be skipped.':''):'';
+    $('impGo').disabled=!pick.length;
+    $('impGo').textContent=pick.length?'Add '+pick.length+(pick.length===1?' entry':' entries'):'Add entries';
+  }
+  $('impText').oninput=renderImp;
+  $('impOpen').onclick=()=>{$('impUndo').style.display='none';renderImp();$('impDlg').showModal()};
+  $('impCancel').onclick=()=>$('impDlg').close();
+  $('impGo').onclick=()=>{
+    const pick=impRows.filter(r=>r.pick&&!r.err); if(!pick.length)return;
+    const batch=Date.now(), ids=[];
+    pick.forEach(r=>{
+      const id=Date.now()+Math.random(), refund=r.type==='refund'; ids.push(id);
+      // built exactly as the log form builds a rand entry
+      data.entries.push({id,amt:(refund?-1:1)*r.amt,cat:r.cat,note:r.note,date:r.date,
+        type:refund?'out':r.type,refund:refund||undefined,cyc:cycStart(r.date),imp:batch});
+    });
+    impLast=ids; save();
+    $('impText').value=''; renderImp();
+    $('impSum').textContent='Added '+ids.length+(ids.length===1?' entry.':' entries.');
+    $('impUndo').style.display='block';
+  };
+  $('impUndo').onclick=()=>{
+    if(!impLast)return;
+    const gone={}; impLast.forEach(id=>{gone[id]=1;tombstone(id)});
+    data.entries=data.entries.filter(e=>!gone[e.id]);
+    const n=impLast.length; impLast=null; save();
+    $('impUndo').style.display='none';
+    $('impSum').textContent='Removed the '+n+' entries just added.';
+  };
+
   let paying=null, splitChoice=null;
   function paySplitRefresh(){
     if(!paying){$('paySplitRow').style.display='none';return}
@@ -3432,10 +3842,12 @@
       if(data.gistId){
         const rm=await remote();
         if(rm&&rm.entries){
-          const before=data.entries.length, plansBefore=JSON.stringify(data.plans);
+          const before=data.entries.length, plansBefore=JSON.stringify(data.plans),
+            budBefore=JSON.stringify(data.budgets);
           const tok=data.tok;
           data=mergeStores(data,rm); data.tok=tok;
-          if(data.entries.length!==before||JSON.stringify(data.plans)!==plansBefore){S.set(KEY,data);render()}
+          if(data.entries.length!==before||JSON.stringify(data.plans)!==plansBefore||
+             JSON.stringify(data.budgets)!==budBefore){S.set(KEY,data);render()}
         }
       }
       let body=await payload();
@@ -3969,7 +4381,7 @@
     }
     if(s)data=Object.assign(data,s);
     data.cycCur=data.cycCur||{}; data.cycRate=data.cycRate||{}; data.homeCur=data.homeCur||'ZAR';
-    data.plans=data.plans||[]; data.planSave=data.planSave||{};
+    data.plans=data.plans||[]; data.planSave=data.planSave||{}; data.budgets=data.budgets||{};
     if(typeof data.planBuf!=='number')data.planBuf=1000;
     data.entries.forEach(e=>{if(!e.cyc)e.cyc=cycStart(e.date)});
     if(healForwardIncome())S.set(KEY,data);
@@ -4007,7 +4419,8 @@
         const tok=data.tok;
         const merged=mergeStores(data,rm); merged.tok=tok;
         if(JSON.stringify(merged.entries)!==JSON.stringify(data.entries)||
-           JSON.stringify(merged.plans)!==JSON.stringify(data.plans)){
+           JSON.stringify(merged.plans)!==JSON.stringify(data.plans)||
+           JSON.stringify(merged.budgets)!==JSON.stringify(data.budgets)){
           data=merged; S.set(KEY,data); render();
           $('syncState').textContent='Picked up changes from your other device.';
         }

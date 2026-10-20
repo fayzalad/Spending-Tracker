@@ -47,6 +47,8 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 | `manifest.json` | PWA name, icons, standalone display |
 | `icon-192.png`, `icon-512.png`, `icon-maskable.png` | Launcher icons |
 | `package.json` | Dev-only; its single dependency is jsdom for the tests |
+| `tools/import.js` | Desktop: adds entries or a month's budget to the cloud copy (see "Adding spending from the desktop") |
+| `imports/` | Gitignored. Before-copies and added-id lists from each import; real money data |
 
 ## 3. Running, testing, deploying
 
@@ -54,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**456 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**516 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -160,6 +162,19 @@ back to unmet. When a month closes with money left the card offers to bank it, f
 the month it came from; if a backdated entry later pushes that month negative, the card flags the
 shortfall and offers to pull the money back. Each pot keeps its own currency.
 
+**Budget (main tracker only).** `data.budgets['YYYY-MM']` = `{inc, rev, lines:[{id,n,cat,a,bill}]}`,
+keyed by the month the cycle is named for (like plans). A plan only: it never feeds `calc()`.
+Spent per category = `isSpend` entries in the cycle (refunds included); a `Savings` line counts
+save − unsave. Free = expected income (or, if unset, received) − planned − spending with no line
+− overspend on lines. Within R1 of a line counts as "right on plan" (green). Every edit replaces
+the whole month and stamps its `rev`; `mergeStores` keeps the higher-rev month, so two devices
+editing different months both survive. Clearing keeps the month with empty lines so it syncs.
+
+**Add a list of entries.** Settings → Data. `parseImport` + `markDupes`: refuses unknown
+categories, impossible/future dates, thousands commas; holds back (unticked) anything within R1 and
+a day of an existing entry of the same kind, or an exact repeat within the paste. Entries are built
+like the log form's rand entries plus `imp` (batch id). Undo tombstones the batch.
+
 **Planned purchases (main tracker only).** A list of big purchases funded from the vault in
 order, on the savings card (one "Next:" line) and a sheet with a month-by-month projection. Data:
 `data.plans` (`{id,o,n,price,m,only,status,note,link,paid,at,rev}`), `data.planBuf` (safety
@@ -227,7 +242,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 456 | 355 |
+| Tests | 516 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The
@@ -336,6 +351,25 @@ a stranded entry correct itself on launch. Full detail in the session log below.
 - **Accessibility unaudited.** Amber-vs-green carries meaning in places with no second signal.
 - **One 3,700-line file**, and `render()` recomputes everything on every keystroke in search.
 
+## 11b. Adding spending from the desktop (screenshots → every device)
+
+The owner sends bank-app screenshots or a statement; Claude reads them and writes one line per
+transaction (`YYYY-MM-DD, amount, Category, note`, `+` for money in, `-` for a refund, exact
+category names from `LIVING`/`SHOP`/`BILLS`/custom). Then:
+
+```bash
+node tools/import.js entries.txt            # dry run: ADD / HOLD (looks logged) / SKIP (unreadable)
+node tools/import.js entries.txt --apply    # writes, waits 12s, re-reads, retries if a phone overwrote it
+node tools/import.js --undo imports/<stamp>-added.json --apply
+```
+
+Show the owner the dry-run table and get a yes before `--apply`. The script uses `gh` (gist scope),
+finds the one gist described "Tracker backup" (or `TRACKER_GIST`), boots the real `index.html`
+offline with that data, drives the import sheet, and writes back **only the new entries** onto a
+fresh read, with `rev` unchanged — so a phone with unsynced settings still wins them, and the
+entries arrive by the normal union merge. Phones see it on next open or return to the app.
+Tested end to end (apply, re-check, undo) on a throwaway gist of invented data on 2026-10-20.
+
 ## 12. Deliberately not in git
 
 - `HANDOFF.md` — contains the Alpha Vantage key in plaintext. Both repos are public.
@@ -346,6 +380,9 @@ a stranded entry correct itself on launch. Full detail in the session log below.
 ---
 
 ## Session log
+
+**From 2026-10-20 new entries go in `SESSION-LOG.md`** (the global rule changed on 2026-10-09:
+this file is loaded into every session, so it must not keep growing). The entries below stay.
 
 Newest first. Append-only: never rewrite or delete an older entry. If a later change undoes an
 earlier one, record the undo as its own entry.
