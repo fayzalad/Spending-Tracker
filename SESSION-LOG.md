@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Figma design applied to the real tracker (build `2026-10-20-6`)
+
+- **Did:** `index.html`: (1) light/dark tokens → Figma teal palette, new `--on-accent`; (2) hero card → gradient (`--hero-a/b`, per-scheme fallback via `color-mix`); (3) `data-platform` head script (ios/android/desktop, `?platform=` override) + per-platform type, shapes, Material tab bar and segmented controls for Android; (4) desktop ≥900px: tab bar becomes a left pane, N and / shortcuts. `test.js` section 76 (12 checks; typing-guard test proven to fail without the guard). Android `themes.xml` window colours matched.
+- **Why:** owner asked to apply the Figma design, keep every feature and data, go step by step.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`, Android repo `themes.xml` (uncommitted there until rebuilt).
+- **Undo:** `git revert` the commit, bump, push. No data or storage format changed.
+- **Checked:** 544 tests pass; looked at phone (iOS look dark, Android look light) and 1440px desktop (light, dark, Budget sheet) in the browser pane; no horizontal scroll at 375px. NOT checked: the real iPhone, Samsung and Windows app; the other six colour schemes' heroes; the other screens (Months, Settings…) beyond the shared tokens.
+
 ### 2026-10-20 — Looked at the Figma Make export ("Polished UI for Tracker")
 
 - **Did:** Owner added the folder Figma produced (`Polished UI for Tracker/`, React + Vite + Tailwind, one 1,240-line `src/App.tsx`, a design showcase with iOS / Android / Windows frames and 11 screens, light and dark; invented sample data). Ran `npm install` and `vite build` inside it; fixed 5 type-literal lines in `src/App.tsx` that failed to compile (missing `;`), keeping the untouched original as `src/App.tsx.figma-original`. Built a `dist/` with relative paths and viewed it in the browser pane.

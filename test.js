@@ -15,7 +15,7 @@ const ok = (name, cond, extra) => {
 async function boot(seed, opts = {}) {
   const dom = new JSDOM(HTML, {
     runScripts: 'dangerously',
-    url: 'https://example.github.io/Spending-Tracker/',
+    url: 'https://example.github.io/Spending-Tracker/' + (opts.query || ''),
     pretendToBeVisual: true,
     beforeParse(w) {
       // freeze "today"
@@ -2376,6 +2376,37 @@ const seed = {
   st = JSON.parse(w.localStorage.getItem('slip:v4'));
   ok('first-time setup refuses a token as the gist id too, keeping the token for Join',
      !st.gistId && st.tok === 'test-token' && /your token, not the gist ID/.test(alertMsg), JSON.stringify({ g: st.gistId, a: alertMsg }));
+
+  console.log('\n=== 76. each platform gets its own look, and the desktop gets shortcuts ===');
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('with nothing to say otherwise the look is desktop', d.documentElement.getAttribute('data-platform') === 'desktop');
+  for (const p of ['ios', 'android', 'desktop']) {
+    const dp = await boot(seed, { query: '?platform=' + p });
+    ok('?platform=' + p + ' forces that look', dp.window.document.documentElement.getAttribute('data-platform') === p);
+  }
+  const dbad = await boot(seed, { query: '?platform=toaster' });
+  ok('an unknown platform falls back to desktop', dbad.window.document.documentElement.getAttribute('data-platform') === 'desktop');
+  const key = (win, k, extra) => win.document.dispatchEvent(new win.KeyboardEvent('keydown', Object.assign({ key: k, bubbles: true }, extra)));
+  key(w, '/');
+  ok('/ opens search on desktop', $('findDlg').open);
+  $('findDlg').close();
+  key(w, 'n');
+  await new Promise(r => setTimeout(r, 450));
+  ok('N goes to the new-entry amount box on desktop', d.activeElement === $('amt'));
+  $('amt').blur();
+  $('openSet').click();
+  key(w, '/');
+  ok('shortcuts do nothing while a sheet is open', !$('findDlg').open);
+  $('setDlg').close();
+  $('note').focus();
+  $('note').dispatchEvent(new w.KeyboardEvent('keydown', { key: '/', bubbles: true }));   // a real keypress is aimed at the focused box
+  ok('and nothing while you are typing', !$('findDlg').open);
+  const dm = await boot(seed, { query: '?platform=android' });
+  key(dm.window, '/');
+  ok('phones do not grab keys', !dm.window.document.getElementById('findDlg').open);
+  ok('every platform keeps the same five navigation buttons', d.querySelectorAll('#tabbar button').length === 5);
+  ok('the hero reads from the scheme tokens, so every colour scheme gets a hero',
+     /--hero-a/.test(HTML) && /\[data-theme="dark"\] \.hero/.test(HTML));
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

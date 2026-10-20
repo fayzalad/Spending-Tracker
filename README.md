@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**532 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**544 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,27 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-6` — new look, native to each platform
+
+The design from the Figma Make export, applied in stages. Only the look changed: every feature,
+every figure and all stored data work exactly as before.
+
+- **Colours.** Light and dark move from violet to teal (`#087E8B` / `#63D1DA`) with the Figma
+  greys. Contrast checked: muted text is a touch darker than the export's so it passes AA, and dark
+  mode uses dark text on its light-teal buttons (`--on-accent`). The other six colour schemes are
+  unchanged.
+- **The hero card** (this week / this month) is now a filled gradient with white type. Teal and dark
+  set their own stops; every other scheme derives its gradient from its own accent (`--hero-a/b`).
+- **Three looks, one foundation.** `data-platform` is set before first paint from the user agent
+  (`ios` / `android` / `desktop`; `?platform=android` forces one, for checking). iOS keeps the soft
+  floating tab bar and gets bordered rounded cards. Android gets Material 3: Roboto, outlined pill
+  switches with a tonal selected state, pill buttons, and a full-width bottom bar with a highlighted
+  icon. Desktop gets Segoe UI Variable, squarer 6–9 px corners and, from 900 px wide, a **left
+  navigation pane** (the same five buttons, restyled) with **N** (new entry) and **/** (search)
+  shortcuts that ignore typing and open sheets.
+- Not done from the export: the sync indicator in the left pane and the per-platform bottom-sheet vs
+  side-panel behaviour (sheets stay centred panels on desktop and bottom sheets on phones as before).
 
 ### `2026-10-20-5` — the token can't be used as the gist ID
 
