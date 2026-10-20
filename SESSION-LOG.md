@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Hero lost its colour with frosted glass on (build `2026-10-20-7`)
+
+- **Did:** added `[data-glass="on"] .hero{background:linear-gradient(...)}` after the glass rules; test in section 76 (source-order check, proven to fail on `-6`). Reinstalled the Android app with matching window colours.
+- **Why:** owner's real data has glass on; on the S22 the hero was a plain dark card. My earlier browser checks used test data with glass off.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`; Android `themes.xml` (rebuilt + installed).
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 545 tests; browser pane with glass on shows the gradient hero. Lesson: check a design change against the owner's real settings (glass, themes), not only defaults.
+
 ### 2026-10-20 — Figma design applied to the real tracker (build `2026-10-20-6`)
 
 - **Did:** `index.html`: (1) light/dark tokens → Figma teal palette, new `--on-accent`; (2) hero card → gradient (`--hero-a/b`, per-scheme fallback via `color-mix`); (3) `data-platform` head script (ios/android/desktop, `?platform=` override) + per-platform type, shapes, Material tab bar and segmented controls for Android; (4) desktop ≥900px: tab bar becomes a left pane, N and / shortcuts. `test.js` section 76 (12 checks; typing-guard test proven to fail without the guard). Android `themes.xml` window colours matched.

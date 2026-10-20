@@ -2405,6 +2405,11 @@ const seed = {
   key(dm.window, '/');
   ok('phones do not grab keys', !dm.window.document.getElementById('findDlg').open);
   ok('every platform keeps the same five navigation buttons', d.querySelectorAll('#tabbar button').length === 5);
+  // frosted glass is a user setting; its rules share the hero's specificity, so the later rule must win
+  const heroCss = HTML.slice(HTML.indexOf('<style>'), HTML.indexOf('</style>'));
+  ok('frosted glass does not turn the filled hero into a see-through card',
+     heroCss.indexOf('[data-glass="on"] .hero{') > heroCss.lastIndexOf('[data-glass="on"] .seeall{') &&
+     /\[data-glass="on"\] \.hero\{background:linear-gradient/.test(heroCss));
   ok('the hero reads from the scheme tokens, so every colour scheme gets a hero',
      /--hero-a/.test(HTML) && /\[data-theme="dark"\] \.hero/.test(HTML));
 

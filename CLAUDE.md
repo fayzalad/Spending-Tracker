@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**544 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**545 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -242,7 +242,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 544 | 355 |
+| Tests | 545 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The

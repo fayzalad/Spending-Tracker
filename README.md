@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**544 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**545 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,12 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-7` — the hero keeps its colour with frosted glass on
+
+- **Fixed:** with *Frosted glass surfaces* switched on, the glass styling replaced the new filled hero
+  with a see-through card (found on the Android phone; the browser checks had glass off). The hero now
+  keeps its gradient in glass mode.
 
 ### `2026-10-20-6` — new look, native to each platform
 
