@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Deleted the two empty stray backups
+
+- **Did:** `gh gist delete` on `ab73da3b…` and `7fcbb9d7…` (both "Tracker backup", made by the Android app and the Edge window during setup).
+- **Why:** owner asked; re-checked first: 0 entries, 0 bills, 0 budgets each, last written 18:53 / 18:58 UTC.
+- **Files:** GitHub gists only. The real backup `74315ce4…` is now the only "Tracker backup".
+- **Undo:** n/a (permanent; they held nothing).
+- **Checked:** gist list afterwards shows only the real backup, the invented-data test gist and two old Aug "Slip backup" gists.
+
 ### 2026-10-20 — Standalone Windows app replaces the Edge shortcut
 
 - **Did:** Built `Claude code/Spending tracker (Windows)` (WinForms + WebView2, .NET 9, local git only), installed `Tracker.exe` to `%LOCALAPPDATA%\Programs\Tracker`, repointed `Desktop\Tracker.lnk` to it and added `Start Menu\Programs\Tracker.lnk`. Storage `%LOCALAPPDATA%\Tracker\WebView2`.
