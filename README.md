@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**516 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**522 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,14 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-2` — joining the cloud copy is safe
+
+- **Fixed:** a new device that had changed any setting before you connected it counted as "newer"
+  than the cloud copy, so its empty bills, default allowance day and month starts overwrote the
+  real ones on every device. Joining (pasting the gist ID, or connecting with nothing logged) now
+  defers to the cloud on everything but entries, which still merge one by one. Found while setting
+  up the Android app and the desktop window; covered by test section 75.
 
 ### `2026-10-20-1` — budget, add a list of entries, desktop layout
 

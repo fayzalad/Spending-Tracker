@@ -2297,6 +2297,30 @@ const seed = {
   $('impText').value = '{"date":"2026-08-30"}'; $('impText').dispatchEvent(new w.Event('input'));
   ok('JSON that is not a list is refused', /could not be read|expected a list/.test($('impList').textContent) && $('impGo').disabled);
 
+  console.log('\n=== 75. a new device joining the cloud copy never overwrites its settings ===');
+  // the fresh device changed a setting first, so its own copy is "newer" than the cloud's
+  const joinFresh = { day: 1, goal: 0, theme: 'dark', bills: [], starts: {}, rev: Date.now() + 5000, deleted: {},
+    entries: [{ id: 'local1', amt: 50, cat: 'Transport', note: 'logged before connecting', date: '2026-08-30', type: 'out', cyc: '2026-08-25' }] };
+  const joinCloud = Object.assign(JSON.parse(JSON.stringify(seed)), { rev: 1000, deleted: {},
+    bills: [{ id: 'b1', n: 'iCloud', a: 199, cur: 'ZAR', cat: 'Subscriptions' }],
+    budgets: { '2026-09': { inc: 21000, rev: 1, lines: [] } } });
+  for (const variant of ['prompted for the id', 'id already known']) {
+    const s0 = JSON.parse(JSON.stringify(joinFresh));
+    if (variant === 'id already known') { s0.gistId = 'g1'; s0.entries = []; }
+    dom = await boot(s0); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+    w.prompt = () => 'g1';
+    w.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'g1',
+      files: { 'slip-data.json': { content: JSON.stringify(joinCloud) } } }) });
+    $('ghTok').value = 'test-token'; $('ghTok').dispatchEvent(new w.Event('change'));
+    await new Promise(r => setTimeout(r, 150));
+    st = JSON.parse(w.localStorage.getItem('slip:v4'));
+    ok('(' + variant + ') the cloud\'s bills and month settings win',
+       st.bills.length === 1 && st.day === 25 && st.starts['2026-08'] === '2026-08-28', JSON.stringify({ b: st.bills.length, day: st.day }));
+    ok('(' + variant + ') the cloud\'s budget arrives', !!(st.budgets && st.budgets['2026-09']));
+    ok('(' + variant + ') every cloud entry arrives' + (variant === 'prompted for the id' ? ', and the one logged here is kept' : ''),
+       st.entries.length === seed.entries.length + (variant === 'prompted for the id' ? 1 : 0), String(st.entries.length));
+  }
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

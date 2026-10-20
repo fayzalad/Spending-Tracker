@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**516 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**522 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -242,7 +242,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 516 | 355 |
+| Tests | 522 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The
@@ -331,6 +331,11 @@ a stranded entry correct itself on launch. Full detail in the session log below.
     (R230) and released money that was never spent.
 15. **The income row was built once and never rebuilt**, so changing the date afterwards left the
     month dropdown and the checkbox label describing the wrong day. Fixed 2026-09-24.
+16. **A joining device won the merge with blank settings.** Touching any setting before connecting
+    made the fresh copy's `rev` newer, so its empty bills and default day overwrote every device.
+    Joining now sets `data.rev=0` before the first pull. Fixed 2026-10-20 (test section 75).
+17. **`input{-webkit-appearance:none}` also hid every checkbox tick.** Checkboxes need
+    `appearance:auto`. Fixed 2026-10-20.
 
 ## 11. Known gaps and limitations
 

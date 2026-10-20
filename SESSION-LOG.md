@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Safe join for new devices (build `2026-10-20-2`); Android app rebuilt; November budget seeded
+
+- **Did:** `ghTok` change handler sets `data.rev=0` when a device joins an existing gist, so the cloud's settings win (test section 75, proven to fail without the fix). Wrote the owner's November budget (R21 000 in, 9 lines, R12 924) into the cloud copy with `tools/import.js --budget imports/2026-11-budget.json --apply`; cloud `rev` unchanged, 110 entries unchanged. Android wrapper rewritten to load the live Pages site (new working clone `Claude code/Spending tracker (Android)`), built locally, installed over the old app (same debug key, `adb install -r`).
+- **Why:** Found while preparing to connect the Android phone and desktop: a fresh device that touched a setting first would have overwritten bills/starts/goal on every device. Android app was 9+ builds behind because it bundled a copy of the page.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`; cloud gist `74315ce4…` (`budgets.2026-11`); Android repo files; phone package `com.fayzal.slip` v2.0.
+- **Undo:** code: `git revert`, bump, push. Budget: Clear it in the app, or restore `imports/2026-10-20T18-36-27-before.json`. Android: old data was empty (backup `imports/android-old-localStorage.json`); reinstall the old APK from `Android-Tracker` git history if wanted.
+- **Checked:** 522 tests pass. Android app on the S22 Ultra loads build `2026-10-20-1` from Pages (read via WebView devtools) and renders. NOT yet checked: sync on Android/desktop (needs the owner's token), the iPhone picking up the budget.
+
 ### 2026-10-20 — Budget, add-a-list import, desktop import script, desktop layout (build `2026-10-20-1`, DESKTOP)
 
 - **Did:** `index.html`: Budget card + sheets (`data.budgets`, per-month merge in `mergeStores`, adopted on push/visibility sync); Settings → Data → "Add a list of entries" (`parseImport`, `markDupes`, undo); two-column layout at ≥1100px (`.colA/.colB` are `display:contents` on phones); global checkbox fix. New `tools/import.js`; `imports/` gitignored. Section 73–74 in `test.js`.

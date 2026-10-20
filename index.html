@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-10-20-1">
+<meta name="slip-build" content="2026-10-20-2">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -3947,11 +3947,14 @@
   $('ghTok').onchange=async e=>{
     data.tok=e.target.value.trim(); S.set(KEY,data);
     if(!data.tok)return;
-    if(data.gistId&&!data.entries.length){await pull(true);return}
+    // a device joining an existing cloud copy defers to it on everything but entries: touching a
+    // setting first made this copy "newer", and its empty bills and default month would then have
+    // overwritten the real ones on every other device. Entries still merge one by one.
+    if(data.gistId&&!data.entries.length){data.rev=0;await pull(true);return}
     if(!data.gistId){
       const id=prompt('If this device is new, paste the gist ID from your other device '+
         '(⚙ shows it there). Leave blank to start a fresh cloud backup.');
-      if(id&&id.trim()){data.gistId=id.trim();S.set(KEY,data);await pull(true);return}
+      if(id&&id.trim()){data.gistId=id.trim();data.rev=0;S.set(KEY,data);await pull(true);return}
     }
     push(false);
   };
