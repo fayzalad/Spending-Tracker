@@ -225,6 +225,8 @@ a content stream, an xref table and a trailer, with pagination and repeated head
 tombstones, newer `rev` wins on a conflicting edit. Two devices logging offline keep everything
 from both. The token needs only the `gist` scope and is stripped from downloaded backups.
 
+**Look (from 2026-10-20, build -7).** Light/dark are teal (Figma Make export, kept in the untracked `Polished UI for Tracker/`); hero is a filled gradient (`--hero-a/b`, also under frosted glass); `data-platform` (`ios`/`android`/`desktop`, set in a head script, `?platform=` forces one) swaps type, shapes and navigation: Material tab bar on Android, left nav pane + N and / shortcuts on desktop ≥900px. Check any visual change with glass ON and a non-default scheme — a glass rule once silently overrode the hero. The Android and Windows apps are thin hosts of the live page, so they restyle with it.
+
 **Interface.** Bottom floating capsule bar (Add, Search, Months, Invest, Settings) that shrinks
 while scrolling down. Header collapses past 110px. Every sheet has a grab handle and a nav bar —
 × at top level, ‹ when stacked — and drags down to dismiss with velocity-aware physics, so a
