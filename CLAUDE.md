@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**522 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**525 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -242,7 +242,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 522 | 355 |
+| Tests | 525 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The
@@ -369,7 +369,7 @@ node tools/import.js --undo imports/<stamp>-added.json --apply
 ```
 
 Show the owner the dry-run table and get a yes before `--apply`. The script uses `gh` (gist scope),
-finds the one gist described "Tracker backup" (or `TRACKER_GIST`), boots the real `index.html`
+reads the gist id from gitignored `imports/gist-id.txt` (or `TRACKER_GIST`; never commit the id — a secret gist is readable by anyone holding it), boots the real `index.html`
 offline with that data, drives the import sheet, and writes back **only the new entries** onto a
 fresh read, with `rev` unchanged — so a phone with unsynced settings still wins them, and the
 entries arrive by the normal union merge. Phones see it on next open or return to the app.

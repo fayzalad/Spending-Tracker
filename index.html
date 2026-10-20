@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-10-20-2">
+<meta name="slip-build" content="2026-10-20-3">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -3955,6 +3955,13 @@
       const id=prompt('If this device is new, paste the gist ID from your other device '+
         '(⚙ shows it there). Leave blank to start a fresh cloud backup.');
       if(id&&id.trim()){data.gistId=id.trim();data.rev=0;S.set(KEY,data);await pull(true);return}
+      // a blank or dismissed box used to start a second, empty backup without a word, leaving the
+      // device connected to nothing it shares with the others
+      if(!confirm('Start a brand-new, empty cloud backup from this device?\n\nIf you already use '+
+        'Tracker on another device, press Cancel, then paste the token again and enter that '+
+        'device’s gist ID.')){
+        data.tok=''; e.target.value=''; S.set(KEY,data); return;
+      }
     }
     push(false);
   };

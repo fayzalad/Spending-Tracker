@@ -32,8 +32,12 @@ const gh = (a, input) => execFileSync('gh', a, { encoding: 'utf8', input, maxBuf
 const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// the id lives in imports/gist-id.txt (gitignored): a secret gist can be read by anyone who has
+// its id, and this repo is public, so the id must never be committed
 function findGist() {
   if (process.env.TRACKER_GIST) return process.env.TRACKER_GIST;
+  const saved = path.join(OUT, 'gist-id.txt');
+  if (fs.existsSync(saved)) return fs.readFileSync(saved, 'utf8').trim();
   const list = JSON.parse(gh(['api', 'gists', '--paginate']));
   const hits = list.filter(g => g.files[FILE] && g.description === 'Tracker backup');
   if (hits.length !== 1) throw new Error('expected exactly one "Tracker backup" gist, found ' + hits.length +

@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Android joined the wrong (new, empty) backup; fixed it and the cause (build `2026-10-20-3`)
+
+- **Did:** Android app (main profile) had created a new empty "Tracker backup" gist (`ab73da3b…`, 18:53 UTC) because the gist-ID prompt was left blank. Repointed it via WebView devtools (set `gistId` to the real one, `rev=0`, reload): it now has 110 entries, 8 bills, the November budget. App: a blank/dismissed ID now asks before creating a backup; Cancel clears the token. `tools/import.js` reads the id from gitignored `imports/gist-id.txt`.
+- **Why:** owner reported "merged with your other device but I don't see anything". The prompt's "leave blank to start fresh" path ran with no confirmation.
+- **Files:** `index.html`, `test.js` (3 checks), `tools/import.js`, `README.md`, `CLAUDE.md`; local `imports/gist-id.txt`; Android app storage.
+- **Undo:** `git revert`, bump, push. The stray empty gist `ab73da3b…` is still on the account (not deleted; owner's call).
+- **Checked:** 525 tests pass; real gist still 110 entries / 8 bills / budget after Android synced. A second copy of the app exists in Android user profile 95 (Secure Folder or dual app), unconnected and empty; left alone.
+
 ### 2026-10-20 — Safe join for new devices (build `2026-10-20-2`); Android app rebuilt; November budget seeded
 
 - **Did:** `ghTok` change handler sets `data.rev=0` when a device joins an existing gist, so the cloud's settings win (test section 75, proven to fail without the fix). Wrote the owner's November budget (9 lines; amounts only in the cloud copy and gitignored `imports/`) into the cloud copy with `tools/import.js --budget imports/2026-11-budget.json --apply`; cloud `rev` unchanged, 110 entries unchanged. Android wrapper rewritten to load the live Pages site (new working clone `Claude code/Spending tracker (Android)`), built locally, installed over the old app (same debug key, `adb install -r`).

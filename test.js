@@ -2320,6 +2320,20 @@ const seed = {
     ok('(' + variant + ') every cloud entry arrives' + (variant === 'prompted for the id' ? ', and the one logged here is kept' : ''),
        st.entries.length === seed.entries.length + (variant === 'prompted for the id' ? 1 : 0), String(st.entries.length));
   }
+  // leaving the gist id blank must not quietly start a second, empty backup
+  dom = await boot(JSON.parse(JSON.stringify(joinFresh))); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  let posted = false, asked = '';
+  w.prompt = () => ''; w.confirm = m => { asked = m; return false; };
+  w.fetch = (u, o) => { if (o && o.method === 'POST') posted = true; return Promise.reject(new Error('offline')); };
+  $('ghTok').value = 'test-token'; $('ghTok').dispatchEvent(new w.Event('change'));
+  await new Promise(r => setTimeout(r, 100));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('a blank gist id asks before starting a new backup', /brand-new, empty cloud backup/.test(asked), asked);
+  ok('and Cancel creates nothing and forgets the token', !posted && !st.tok && !st.gistId && $('ghTok').value === '');
+  w.confirm = () => true;
+  $('ghTok').value = 'test-token'; $('ghTok').dispatchEvent(new w.Event('change'));
+  await new Promise(r => setTimeout(r, 100));
+  ok('confirming still starts a fresh backup, as before', posted);
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

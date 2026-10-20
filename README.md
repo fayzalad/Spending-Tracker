@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**522 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**525 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,12 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-3` — a blank gist ID no longer starts a second backup
+
+- **Fixed:** leaving the "paste the gist ID" box blank (or dismissing it) silently created a new,
+  empty cloud backup, so the device synced with nothing. It now asks first; Cancel forgets the
+  token so you can paste it again and enter the ID. Happened on the Android phone during setup.
 
 ### `2026-10-20-2` — joining the cloud copy is safe
 
