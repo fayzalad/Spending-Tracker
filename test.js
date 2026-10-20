@@ -2306,9 +2306,9 @@ const seed = {
     budgets: { '2026-09': { inc: 20000, rev: 1, lines: [] } } });
   for (const variant of ['prompted for the id', 'id already known']) {
     const s0 = JSON.parse(JSON.stringify(joinFresh));
-    if (variant === 'id already known') { s0.gistId = 'g1'; s0.entries = []; }
+    if (variant === 'id already known') { s0.gistId = '11111111111111111111111111111111'; s0.entries = []; }
     dom = await boot(s0); w = dom.window; d = w.document; $ = id => d.getElementById(id);
-    w.prompt = () => 'g1';
+    w.prompt = () => '11111111111111111111111111111111';
     w.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'g1',
       files: { 'slip-data.json': { content: JSON.stringify(joinCloud) } } }) });
     $('ghTok').value = 'test-token'; $('ghTok').dispatchEvent(new w.Event('change'));
@@ -2339,24 +2339,43 @@ const seed = {
   const stuck = Object.assign(JSON.parse(JSON.stringify(joinFresh)), { tok: 't', gistId: 'stray' });
   dom = await boot(stuck); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   let patchedTo = '';
-  w.prompt = () => 'nope';
+  let fetched = 0, alertMsg = '';
+  w.alert = m => { alertMsg = m; };
   w.fetch = (u, o) => {
-    if (o && o.method === 'PATCH') { patchedTo = u; return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'real' }) }); }
-    if (/\/real\?/.test(u)) return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'real',
+    fetched++;
+    if (o && o.method === 'PATCH') { patchedTo = u; return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }) }); }
+    if (/\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\?/.test(u)) return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       files: { 'slip-data.json': { content: JSON.stringify(joinCloud) } } }) });
     return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) });
   };
+  // the token pasted where the ID goes: refused before anything is sent anywhere
+  w.prompt = () => 'ghp_' + 'x'.repeat(36);
   $('joinGist').click(); await new Promise(r => setTimeout(r, 100));
   st = JSON.parse(w.localStorage.getItem('slip:v4'));
-  ok('a wrong gist id is refused and the device stays as it was', st.gistId === 'stray');
-  w.prompt = () => 'real';
+  ok('a token pasted as the gist id is refused, says why, and sends nothing',
+     st.gistId === 'stray' && /your token, not the gist ID/.test(alertMsg) && fetched === 0, alertMsg);
+  w.prompt = () => 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  $('joinGist').click(); await new Promise(r => setTimeout(r, 100));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('a gist id that does not open is refused and the device stays as it was', st.gistId === 'stray');
+  w.prompt = () => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
   $('joinGist').click(); await new Promise(r => setTimeout(r, 150));
   st = JSON.parse(w.localStorage.getItem('slip:v4'));
-  ok('joining another backup switches to it', st.gistId === 'real');
+  ok('joining another backup switches to it', st.gistId === 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
   ok('and takes its bills and month settings', st.bills.length === 1 && st.day === 25);
   ok('and keeps what was logged on this device', st.entries.some(e => e.id === 'local1') &&
      st.entries.length === seed.entries.length + 1, String(st.entries.length));
-  ok('and writes back to the backup it joined, not the stray one', /\/real$/.test(patchedTo), patchedTo);
+  ok('and writes back to the backup it joined, not the stray one', /\/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa$/.test(patchedTo), patchedTo);
+
+  // the same mistake in the box that appears when the token is first pasted
+  dom = await boot(JSON.parse(JSON.stringify(joinFresh))); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  alertMsg = ''; w.alert = m => { alertMsg = m; };
+  w.prompt = () => 'ghp_' + 'x'.repeat(36);
+  $('ghTok').value = 'test-token'; $('ghTok').dispatchEvent(new w.Event('change'));
+  await new Promise(r => setTimeout(r, 100));
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('first-time setup refuses a token as the gist id too, keeping the token for Join',
+     !st.gistId && st.tok === 'test-token' && /your token, not the gist ID/.test(alertMsg), JSON.stringify({ g: st.gistId, a: alertMsg }));
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

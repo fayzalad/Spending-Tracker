@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#EFEFF4">
-<meta name="slip-build" content="2026-10-20-4">
+<meta name="slip-build" content="2026-10-20-5">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -3945,6 +3945,11 @@
     setTimeout(()=>$('amt').focus(),350);
   };
   $('incBannerX').onclick=()=>{incBannerOff=true;showIncBanner()};
+  // a gist ID is 20–40 hex characters; the token pasted into the ID box by mistake left a device
+  // "connected" to nothing and then showed the token on screen as the ID
+  const TOKEN_IN_ID='That is your token, not the gist ID. The gist ID is the mix of letters and '+
+    'numbers shown under Cloud backup on your other device. Press "Join another device’s backup" and paste it there.';
+  const gistIdOk=id=>/^[0-9a-f]{20,40}$/i.test(id);
   $('ghTok').onchange=async e=>{
     data.tok=e.target.value.trim(); S.set(KEY,data);
     if(!data.tok)return;
@@ -3955,6 +3960,7 @@
     if(!data.gistId){
       const id=prompt('If this device is new, paste the gist ID from your other device '+
         '(⚙ shows it there). Leave blank to start a fresh cloud backup.');
+      if(id&&id.trim()&&!gistIdOk(id.trim())){alert(TOKEN_IN_ID);return}
       if(id&&id.trim()){data.gistId=id.trim();data.rev=0;S.set(KEY,data);await pull(true);return}
       // a blank or dismissed box used to start a second, empty backup without a word, leaving the
       // device connected to nothing it shares with the others
@@ -3974,6 +3980,7 @@
     if(!data.tok){alert('Paste your GitHub token above first.');$('ghTok').focus();return}
     const id=(prompt('Paste the gist ID shown under Cloud backup in Settings → Data on your other device.')||'').trim();
     if(!id||id===data.gistId)return;
+    if(!gistIdOk(id)){alert(TOKEN_IN_ID);return}
     const was=data.gistId; data.gistId=id;
     let d=null; try{d=await remote()}catch(e){}
     if(!d||!Array.isArray(d.entries)){data.gistId=was;alert('Could not open that backup. Check the ID and try again.');return}

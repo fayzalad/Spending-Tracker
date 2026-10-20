@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**530 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**532 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,12 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-20-5` — the token can't be used as the gist ID
+
+- **Fixed:** pasting the token into the gist-ID box was accepted, so the device synced with nothing
+  ("Could not reach GitHub") and showed the token on screen as its "gist ID". Both boxes now accept
+  only a real gist ID (20–40 letters a–f and digits) and explain the mix-up otherwise.
 
 ### `2026-10-20-4` — Join another device's backup
 

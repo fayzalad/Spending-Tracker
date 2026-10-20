@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Desktop app had the token as its gist ID; fixed it and the cause (build `2026-10-20-5`)
+
+- **Did:** Desktop Windows app's `gistId` was the token itself (pasted into the ID prompt), so every sync 404'd ("Could not reach GitHub"). Set the real ID via the app's debug port (`TRACKER_DEBUG=1`, then relaunched without it): now 110 entries, 8 bills, November budget. App: `gistIdOk` (20–40 hex) on both ID prompts with a plain explanation. 2 new checks.
+- **Why:** owner reported "could not reach github" on the desktop.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`; desktop app storage.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 532 tests pass; the token tested valid (account fayzalad, scope `gist` only) without being written anywhere. Its value was shown in the Data tab and passed through this session's tool output (local transcript only); suggested the owner regenerate it at some point.
+
 ### 2026-10-20 — Deleted the two empty stray backups
 
 - **Did:** `gh gist delete` on `ab73da3b…` and `7fcbb9d7…` (both "Tracker backup", made by the Android app and the Edge window during setup).
