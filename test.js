@@ -2130,7 +2130,7 @@ const seed = {
   // the realistic seed's live cycle is 28 Aug – 24 Sep, named September → key 2026-09
   const budSeed = extra => Object.assign(JSON.parse(JSON.stringify(seed)), {
     budgets: { '2026-09': { inc: 20795, rev: 1, lines: [
-      { id: 'r', n: 'Rent', cat: 'Rent', a: 9145 },
+      { id: 'r', n: 'Rent', cat: 'Rent', a: 9000 },
       { id: 'u', n: 'Food delivery', cat: 'Uber Eats', a: 600 },
       { id: 's1', n: 'ChatGPT', cat: 'Subscriptions', a: 101 },
       { id: 's2', n: 'Spotify', cat: 'Subscriptions', a: 38 }] } }
@@ -2139,8 +2139,8 @@ const seed = {
   $('tabMonth').click();
   ok('a budget leaves the available figure exactly as it was', Math.abs(num($('secVal').textContent) - 9149) < 2,
      $('secVal').textContent);
-  // planned 9145+600+139 = 9884; outside the plan: Other 1258; over: rent 202 + delivery 340
-  // free = 20795 − 9884 − 1258 − 542 = 9111
+  // planned 9000+600+139 = 9739; outside the plan: Other 1258; over: rent 347 + delivery 340
+  // free = 20795 − 9739 − 1258 − 687 = 9111
   ok('the card shows what is still free', /9\D?111 free/.test($('budLineText').textContent), $('budLineText').textContent);
   ok('and names the lines that went over', /over on Rent, Uber Eats/.test($('budLineText').textContent),
      $('budLineText').textContent);
@@ -2149,7 +2149,7 @@ const seed = {
   $('budLine').click();
   ok('tapping it opens the budget sheet', $('budDlg').open);
   const totRow = label => [...$('budTot').querySelectorAll('tr')].find(tr => tr.children[0].textContent === label);
-  ok('planned adds up every line', totRow('Planned') && num(totRow('Planned').children[1].textContent) === 9884,
+  ok('planned adds up every line', totRow('Planned') && num(totRow('Planned').children[1].textContent) === 9739,
      totRow('Planned') && totRow('Planned').children[1].textContent);
   ok('free matches the card', num(totRow('Free').children[1].textContent) === 9111, totRow('Free').children[1].textContent);
   ok('spending with no line is shown on its own', num(totRow('Spent outside the plan').children[1].textContent) === 1258);
@@ -2172,9 +2172,9 @@ const seed = {
   ok('the new line is saved, named after its category when left blank',
      bud.lines.length === 5 && bud.lines[4].n === 'Groceries' && bud.lines[4].a === 1600, JSON.stringify(bud.lines[4]));
   ok('the month is stamped so the merge can compare it', bud.rev > 1, String(bud.rev));
-  $('budInc').value = '21000'; $('budInc').dispatchEvent(new w.Event('change'));
+  $('budInc').value = '20000'; $('budInc').dispatchEvent(new w.Event('change'));
   st = JSON.parse(w.localStorage.getItem('slip:v4'));
-  ok('the expected income is saved', st.budgets['2026-09'].inc === 21000, String(st.budgets['2026-09'].inc));
+  ok('the expected income is saved', st.budgets['2026-09'].inc === 20000, String(st.budgets['2026-09'].inc));
   ok('other months are untouched', Object.keys(st.budgets).join() === '2026-09', Object.keys(st.budgets).join());
   [...$('budList').querySelectorAll('.blines button')].find(b => /Spotify/.test(b.textContent)).click();
   ok('a line opens for editing', $('budEdit').open && $('budAmt').value === '38', $('budAmt').value);
@@ -2208,10 +2208,10 @@ const seed = {
   ok('clearing empties that month but keeps its stamp, so the clear syncs',
      st.budgets['2026-10'].lines.length === 0 && st.budgets['2026-10'].rev > 0 && st.budgets['2026-09'].lines.length === 6);
 
-  const nextOnly = budSeed(); nextOnly.budgets = { '2026-10': { inc: 21000, rev: 1, lines: [{ id: 'x', n: 'Rent', cat: 'Rent', a: 9145 }] } };
+  const nextOnly = budSeed(); nextOnly.budgets = { '2026-10': { inc: 20000, rev: 1, lines: [{ id: 'x', n: 'Rent', cat: 'Rent', a: 8000 }] } };
   dom = await boot(nextOnly); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   ok('a budget made ahead for next month shows on the card', $('budTitle').textContent === 'Budget · October' &&
-     /9\D?145 planned of R21\D?000/.test($('budLineText').textContent), $('budLineText').textContent);
+     /8\D?000 planned of R20\D?000/.test($('budLineText').textContent), $('budLineText').textContent);
   $('budLine').click();
   ok('and the sheet opens on that month', /October/.test($('budMonth').selectedOptions[0].textContent));
   const noBud = budSeed(); delete noBud.budgets;
@@ -2303,7 +2303,7 @@ const seed = {
     entries: [{ id: 'local1', amt: 50, cat: 'Transport', note: 'logged before connecting', date: '2026-08-30', type: 'out', cyc: '2026-08-25' }] };
   const joinCloud = Object.assign(JSON.parse(JSON.stringify(seed)), { rev: 1000, deleted: {},
     bills: [{ id: 'b1', n: 'iCloud', a: 199, cur: 'ZAR', cat: 'Subscriptions' }],
-    budgets: { '2026-09': { inc: 21000, rev: 1, lines: [] } } });
+    budgets: { '2026-09': { inc: 20000, rev: 1, lines: [] } } });
   for (const variant of ['prompted for the id', 'id already known']) {
     const s0 = JSON.parse(JSON.stringify(joinFresh));
     if (variant === 'id already known') { s0.gistId = 'g1'; s0.entries = []; }

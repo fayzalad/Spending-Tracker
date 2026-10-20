@@ -145,7 +145,7 @@ Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
 
 ### `2026-10-20-1` — budget, add a list of entries, desktop layout
 
-- **Budget.** A card under savings ("Budget · November — R8 076 free · every line on track") opens a
+- **Budget.** A card under savings ("Budget · November — R4 200 free · every line on track") opens a
   sheet: the money you expect, lines per category (several lines can share one, like four
   subscriptions), planned vs spent with a bar each, spending with no line, and what is still free.
   Add my bills, Copy last month, Clear. It is a plan only: the daily, weekly and monthly figures
