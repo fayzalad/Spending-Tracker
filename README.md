@@ -135,6 +135,10 @@ as spending.
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
 
+### `2026-10-20-11` — Add amount polish
+
+- The amount box no longer shows the number spinner (a white block in the Windows app), and its placeholder on the Add page is smaller.
+
 ### `2026-10-20-10` — the Figma pages, and a Windows-style desktop
 
 - **Desktop looks like the Figma Windows design, not the phone.** Tighter corners (9 px cards, 6 px

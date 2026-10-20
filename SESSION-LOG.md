@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-20 — Add amount polish (build `2026-10-20-11`)
+
+- **Did:** hid the number spinner on `#amt`, shrank its placeholder on the Add page. Found by capturing the real Windows app window (PowerShell CopyFromScreen → `imports/windows-app-add.png`, gitignored).
+- **Why:** the spinner drew as a white block in WebView2 on the dark theme.
+- **Files:** `index.html`, `README.md`.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 604 tests; to be re-checked in the Windows app after deploy.
+
 ### 2026-10-20 — Figma pages and the Windows-style desktop (build `2026-10-20-10`)
 
 - **Did:** `index.html`: Fluent layer for `data-platform=desktop` (CSS block at the end); nav logo + `#navSync` status (`renderNavSync`, `markSynced`); shared `dialog.scr` header; Investments and Months summary cards (also on phones); Search filter chips + shortcut hint (Ctrl F only inside WebView2); Settings → Look scheme cards and glass switch; Add as a page (`addDlg`, moves `#logCard`/`#addBtn`, category pills built from `#cat`). Fixed the repeating Months hint. Tests: section 78 (39 checks); one found a real bug (nav sync not refreshed after data loaded).

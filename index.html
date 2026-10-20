@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-20-10">
+<meta name="slip-build" content="2026-10-20-11">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -715,6 +715,10 @@
   #addDlg .amtrow{display:flex;align-items:center;gap:6px;border-bottom:2px solid var(--accent);padding-bottom:4px;margin:0}
   #addDlg #amt{font-size:46px;font-weight:700;letter-spacing:-.035em;border:0;background:none;box-shadow:none;padding:0;flex:1;min-width:0}
   #addDlg #amt:focus{border:0;box-shadow:none}
+  #addDlg #amt::placeholder{font-size:24px;font-weight:600;opacity:.55;letter-spacing:0}
+  /* no up/down spinner on the amount: Windows draws it as a white block */
+  #amt{-moz-appearance:textfield;appearance:textfield}
+  #amt::-webkit-outer-spin-button,#amt::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   #addDlg #cur{font-size:24px;font-weight:700;color:var(--accent);border:0;background:none;box-shadow:none;width:auto;padding:0 4px;flex:none;order:-1}
   #addDlg #catRow{display:none!important}
   #addDlg .catpills{display:block;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:14px 16px}
