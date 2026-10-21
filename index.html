@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-9">
+<meta name="slip-build" content="2026-10-21-10">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -4936,6 +4936,11 @@
       // two real orders on one day can look identical; a bank reference says they are different
       if(r.ref&&/^same as line/.test(r.dup||''))r.dup='';
       if(r.ref&&data.entries.some(e=>e.ref===r.ref))r.dup='already imported (same bank reference)';
+      // a charge in another currency is entered at whatever rate was in the table that day, so allow 5% for that
+      if(!r.dup&&r.state!=='skip'&&r.cur&&r.cur!=='ZAR'&&r.type!=='in'){
+        const near=data.entries.find(e=>isSpend(e)&&Math.abs(e.amt-r.amt)<=Math.max(1,r.amt*0.05)&&Math.abs(diff(e.date,r.date))<=1);
+        if(near)r.dup='looks already logged (the exchange rate differs a little): '+near.date+' '+near.cat+' '+fmtMoney(near.amt,'ZAR')+(near.note?' ('+near.note+')':'');
+      }
       r.pick=r.state==='new'&&!r.dup&&!!r.cat;
       if(r.state==='new'&&!r.cat&&!r.dup){r.state='ask';r.why='pick a category'}
     });

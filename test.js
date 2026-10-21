@@ -2791,6 +2791,18 @@ const seed = {
   const rf = st.entries.find(e => e.ref === 'CARD-2000002');
   ok('adding it records money back: a negative spend that is not income', rf && rf.amt === -80 && rf.type === 'out' && rf.refund === true, JSON.stringify(rf));
 
+  console.log('\n=== 83. a foreign-currency charge matches an entry made at a slightly different rate ===');
+  const fxSeed = JSON.parse(JSON.stringify(seed));
+  fxSeed.rates.GHS = 1.40;   // 70 x 1.40 = 98, three rand from the 101 that was entered
+  fxSeed.entries.push({ id: 95, amt: 101, cat: 'Subscriptions', note: 'Chatgpt', date: '2026-08-29', type: 'out', cyc: '2026-08-28' });
+  const fxText = ['Wise Payments Ltd.', 'GBP statement', 'Description Incoming Outgoing Amount',
+    'Card transaction of 70.00 GHS issued by Google *Chatgpt g.co/helppay# -4.54 95.35',
+    '29 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-3000001'].join('\n');
+  dom = await boot(fxSeed, { bridge: true }); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  w.__bridgeFn({ data: { type: 'files', files: [{ name: 'fx.pdf', kind: 'pdf-text', text: fxText }] } });
+  const fxRow = [...d.querySelectorAll('#rvList .rvrow:not(.bad)')][0];
+  ok('₵70 (about R99) is recognised as the R101 entry already there', fxRow && fxRow.classList.contains('dup') && /exchange rate differs/.test(fxRow.textContent), fxRow && fxRow.textContent.slice(0, 140));
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

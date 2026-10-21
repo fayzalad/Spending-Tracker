@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**672 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**673 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,10 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-21-10` — foreign-currency charges match with a small tolerance
+
+- A charge in another currency (for example ChatGPT billed in cedis) is held back as "already logged" when an entry within 5% and a day exists, because it was entered at a slightly different exchange rate.
 
 ### `2026-10-21-9` — the statement reader understands reversed charges
 
