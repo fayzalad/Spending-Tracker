@@ -2601,6 +2601,8 @@ const seed = {
   for (let i = 0; i < 10; i++) $('budPrev').click();
   ok('and stops at the first month offered', sel.selectedIndex === 0 && $('budPrev').disabled);
 
+  ok('dark schemes tell the browser so, so scrollbars and pickers are dark too',
+     HTML.includes('[data-theme="dark"],[data-theme="midnight"],[data-theme="forest"],[data-theme="grape"]{color-scheme:dark}'));
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

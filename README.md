@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**619 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**620 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,11 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-21-2` — dark scrollbars, no inner scroll in the bills list
+
+- Native scrollbars, date pickers and form controls now follow the colour scheme (dark, Midnight, Forest and Grape tell the browser they are dark) instead of staying bright white.
+- On a wide desktop window the bills list no longer scrolls inside the page.
 
 ### `2026-10-21-1` — the remaining pages in the Figma look
 

@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-21 — Dark scrollbars and no inner scroll in the bills list (build `2026-10-21-2`)
+
+- **Did:** `color-scheme` per scheme (`:root` light; dark/midnight/forest/grape dark); `#subsList` no max-height on wide desktop pages. Found by capturing the real Windows app (PowerShell CopyFromScreen → gitignored `imports/win-*.png`, deleted after).
+- **Why:** on the owner's dark green theme the page scrollbar and the bills list's own scrollbar were bright white.
+- **Files:** `index.html`, `test.js`, `README.md`.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 620 tests. The real app showed Budget (R21 000 expected, R12 924 planned, R7 876 free) and Subscriptions (8 of 8 paid, R1 739) correctly with the 129 entries.
+
 ### 2026-10-21 — The remaining pages in the Figma look (build `2026-10-21-1`)
 
 - **Did:** `index.html`: Subscriptions & bills summary card + warning (`subsCard`, `subsWarn`); Planned purchases "Next up" card (`planHero`); Budget month switcher (`budPrev/budNext`), four-button grid (`.bgrid`, Clear now disabled instead of hidden); desktop-only styling of the Settings Month/Rules/Bills/Data tabs; "this phone" → "this device"; `#planTabBox` scrolls. Tests: section 79 (15 checks).
