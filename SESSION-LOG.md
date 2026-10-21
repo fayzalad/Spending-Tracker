@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-21 — Corrected the mis-typed savings entry in the owner's data; goal wording (build `2026-10-21-4`)
+
+- **Did:** in the owner's cloud data, the 21 Oct entry "Brokeee" (GBP 138 / R3 018.06, cat Savings) changed from `type:'save'` to `'unsave'` — done through the Windows app (edit in its localStorage, `rev` bumped, reload, *Sync now*) so every device picks it up by the normal merge. Verified by diffing the cloud copy before and after: 131 entries, exactly one changed field (type), settings identical. GBP pot £276 → £0; "put away this month" R5 936 → R0. Wording: the card says "no goal held back — you took money out this month" instead of "goal is done" when cSaved < goal.
+- **Why:** owner reported the Put away card still showed savings after taking everything out; the entry was recorded as a deposit (cause: see previous entry). The owner had not corrected it themself (re-read the cloud copy first).
+- **Files:** cloud gist (one entry); `imports/before-vault-fix.json` and `imports/after-vault-fix.json` (gitignored copies); `index.html`, `README.md`.
+- **Undo:** set that entry's `type` back to `'save'` (id 1792577547058.849), or restore `imports/before-vault-fix.json` into the app's Data → Restore from backup (note: restoring merges, so edit the entry instead).
+- **Checked:** 631 tests; cloud re-read after the change. The two phones will pick the fix up the next time the app opens; not yet seen there. The inference that "Add more" was pressed is unverified.
+
 ### 2026-10-21 — Savings: a withdrawal logged as a deposit; Put in / Take out switch (build `2026-10-21-3`)
 
 - **Did:** `index.html`: `#vaultSeg` switch in the savings dialog (`setupVault` / `openVault` / `flipVault`); pots under 0.5 of a unit hidden from the totals. Tests: section 80 (11 checks). Backup of the cloud data before touching it: `imports/before-vault-fix.json` (gitignored).

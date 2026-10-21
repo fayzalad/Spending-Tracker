@@ -135,6 +135,11 @@ as spending.
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
 
+### `2026-10-21-4` — the savings card no longer says "goal is done" when money was taken out
+
+- With money taken out, the card now reads "no goal held back — you took money out this month" instead of
+  "this month's R3 500 goal is done" (which is only said when the goal was actually saved).
+
 ### `2026-10-21-3` — Put in / Take out switch for savings moves
 
 - **Fixed:** a withdrawal could end up recorded as a deposit. The green *Add more* button sits next to

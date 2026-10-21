@@ -2632,7 +2632,8 @@ const seed = {
   mv = st.entries.find(e => e.note === 'Brokeee');
   ok('taking out the whole pot is a withdrawal, not a deposit', mv && mv.type === 'unsave' && mv.cur === 'GBP' && mv.orig === 200, JSON.stringify(mv));
   ok('so the pot reads empty and the card says nothing is put away',
-     $('vaultAll').textContent === 'R0' && /nothing put away|goal is done/.test($('vaultSub').textContent), $('vaultAll').textContent + ' / ' + $('vaultSub').textContent);
+     $('vaultAll').textContent === 'R0' && /no goal held back/.test($('vaultSub').textContent) && !/goal is done/.test($('vaultSub').textContent),
+     $('vaultAll').textContent + ' / ' + $('vaultSub').textContent);
   ok('and the vault total for the month is not positive', $('vault').textContent === 'R0', $('vault').textContent);
 
   dom = await boot(gbpPotSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);

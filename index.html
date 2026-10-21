@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-3">
+<meta name="slip-build" content="2026-10-21-4">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -1906,7 +1906,10 @@
     $('vaultAll').textContent=potList.length?potList.map(k=>RC(potTotals[k],k)).join(' \u00b7 '):R(0);
     $('vaultSub').textContent=data.goal>0
       ? (c.goalLeft>0?R(c.goalLeft)+' of your '+R(data.goal)+' goal still held back from your daily rate'
-                     :'this month\u2019s '+R(data.goal)+' goal is done')
+                     :(c.cSaved>=data.goal-1
+                        ?'this month\u2019s '+R(data.goal)+' goal is done'
+                        // money taken out lowers what is still held back, so the goal is not "done" \u2014 it has been released
+                        :'no goal held back \u2014 you took money out this month'))
       : (c.cSaved>0?'moved across this month':'nothing put away this month');
     $('withdrawBtn').style.display=potList.length?'block':'none';
     renderPlanLine();
