@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**631 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**668 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -244,7 +244,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 631 | 355 |
+| Tests | 668 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The
@@ -376,6 +376,19 @@ offline with that data, drives the import sheet, and writes back **only the new 
 fresh read, with `rev` unchanged — so a phone with unsynced settings still wins them, and the
 entries arrive by the normal union merge. Phones see it on next open or return to the app.
 Tested end to end (apply, re-check, undo) on a throwaway gist of invented data on 2026-10-20.
+
+## 11c. Statement and receipt reader (Windows app only)
+
+The Windows host (`Spending tracker (Windows)/Reader.cs`, `Program.cs`) reads files and posts `{type:'files'}` to the page
+(`window.chrome.webview`, so `data-app="1"`); the page owns all parsing. PDF text → PdfPig (lines by baseline); scans and
+photos → Windows.Data.Pdf render + Windows.Media.Ocr (offline). Page side (`index.html`, "Read statements and receipts"):
+`parseWise`, `parseGeneric`, `readReceipt` → `analyse()` → review page `rvDlg` → `reviewCommit()`. Rows carry `ref` (the bank's
+transaction id) so a re-read is caught exactly; `markDupes` catches older entries by amount and date. Rules live in
+`data.stmtRules={skip:[{m,why,rev}],map:[{m,cat,note,rev}]}`, merged per rule in `mergeStores` with tombstones
+`rule:<kind>:<m>`. Matching is "description contains m"; keys come from `merchantKey`. Never commit real statements or
+personal merchants/people as defaults — the repo is public; the owner's own rules live only in their data.
+Test hook: run the app with `TRACKER_DEBUG=1` and post `{type:'readPaths',paths:[...]}` (forward slashes) to read files
+without the dialog. Not handled yet: password-protected PDFs (reported, not opened), other currencies than R/£/$/₵.
 
 ## 12. Deliberately not in git
 

@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**631 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**668 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,23 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-21-6` — read statements and receipts (Windows app only)
+
+Hand the Windows app a bank statement or a receipt and it fills in the entries for you.
+
+- **How:** *Add → Read statements or receipts…*, or *Settings → Data → Read statements and receipts*, or just
+  **drop the files on the window**. PDFs and photos (JPG, PNG) are read **on this PC only**: the app's host reads
+  the text layer of a PDF, and uses Windows' own offline OCR for scans and photos. Nothing is uploaded.
+- **What it understands:** Wise statements (card payments, with the amount the shop charged; transfers; money
+  in), a generic "date, description, amount" bank layout (Cr/Dr or minus signs), and single receipts (total,
+  date, shop).
+- **A review page, then nothing happens until you press Add.** Lines are grouped: *To add*, *Already in your
+  tracker* (held back so nothing is entered twice, including by bank reference), and *Skipped* (conversions and
+  moves between your own pots). Fix the category or note on any line; unknown shops wait for a category.
+- **It learns.** The category you choose for a shop, and "Not mine" on a line, become rules (Settings-level data,
+  synced to every device). *What it has learned from you* lists them with Forget.
+- One undo for the whole import. Phones and the browser never show any of this.
 
 ### `2026-10-21-4` — the savings card no longer says "goal is done" when money was taken out
 

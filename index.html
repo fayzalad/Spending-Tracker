@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-5">
+<meta name="slip-build" content="2026-10-21-6">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -4803,9 +4803,9 @@
         // charged in whatever the shop billed in; that figure, not the balance it came out of, is the spend
         row.orig=amtNum(mm[1]); row.cur=mm[2]; row.note=cleanMerchant(mm[3]); row.merchant=mm[3];
       }else if(/^Converted\b/.test(desc)){
-        row.state='skip'; row.why='a conversion between your own balances';
+        row.note=desc; row.state='skip'; row.why='a conversion between your own balances';
       }else if(/^Moved\b.*\b(from|to)\b/.test(desc)){
-        row.state='skip'; row.why='a move between your own balances or pots';
+        row.note=desc; row.state='skip'; row.why='a move between your own balances or pots';
       }else if((mm=desc.match(/^Sent money to (.+)$/))){
         row.merchant=mm[1]; row.note=mm[1]; row.cur=cur||'ZAR'; row.orig=Math.abs(delta);
         row.state='ask'; row.why='a transfer to '+mm[1]+' — not added unless you tick it';
@@ -4963,7 +4963,7 @@
     if(r.type==='in'){sel.style.display='none'}
     sel.onchange=()=>{r.cat=sel.value;r.userCat=true;if(r.cat&&g==='add'){r.pick=true;cb.checked=true;r.state='new';li.classList.remove('ask')}rvSummary()};
     const amt=document.createElement('span'); amt.className='rvamt num';
-    amt.textContent=(r.type==='in'?'+':r.type==='refund'?'−':'')+fmtMoney(r.amt,'ZAR')+(r.cur&&r.cur!=='ZAR'?' ('+SYM[r.cur]+r.orig+')':'');
+    amt.textContent=!r.amt?'':(r.type==='in'?'+':r.type==='refund'?'−':'')+fmtMoney(r.amt,'ZAR')+(r.cur&&r.cur!=='ZAR'?' ('+SYM[r.cur]+r.orig+')':'');
     li.appendChild(cb); li.appendChild(info); li.appendChild(sel); li.appendChild(amt);
     if(g==='add'&&r.state!=='skip'&&r.type==='out'){
       const no=document.createElement('button'); no.type='button'; no.className='rvno'; no.textContent='Not mine'; no.title='Skip this kind of line from now on';

@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-21 — Statement and receipt reader for the Windows app (builds `2026-10-21-5` / `-6`, Windows app 1.1.0)
+
+- **Did:** Windows host: `Reader.cs` (PdfPig + Windows PDF render + Windows OCR), file picker, drag-and-drop, a message bridge limited to the Tracker origin (`TRACKER_DEBUG=1` adds a `readPaths` test hook). Page: parsers, review page, rules (`data.stmtRules`, merged in sync), buttons in Add and Settings → Data (hidden outside the app). Tests: section 81 (37 checks, invented statements only; found and fixed a skipped-row bug). Installed the new exe to `%LOCALAPPDATA%\Programs\Tracker`.
+- **Why:** owner asked for a tool that reads bank statement and receipt PDFs on the desktop instead of manual entry; phones not needed.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`; `Spending tracker (Windows)/` (`Program.cs`, `Reader.cs`, `Tracker.csproj`, README).
+- **Undo:** `git revert`, bump, push; reinstall the old exe from git history of the Windows folder (`6f3f817`/`e06cf53`).
+- **Checked:** 668 tests. End to end in the real app with the owner's two real Wise PDFs (preview only, nothing added): 29 lines read, 23 recognised as already entered, 5 internal moves skipped, 1 transfer held. OCR: an invented receipt picture read as the right shop, date and total. NOT checked: statements from other banks, password-protected PDFs, multi-page scans.
+
 ### 2026-10-21 — Corrected the mis-typed savings entry in the owner's data; goal wording (build `2026-10-21-4`)
 
 - **Did:** in the owner's cloud data, the 21 Oct entry "Brokeee" (GBP 138 / R3 018.06, cat Savings) changed from `type:'save'` to `'unsave'` — done through the Windows app (edit in its localStorage, `rev` bumped, reload, *Sync now*) so every device picks it up by the normal merge. Verified by diffing the cloud copy before and after: 131 entries, exactly one changed field (type), settings identical. GBP pot £276 → £0; "put away this month" R5 936 → R0. Wording: the card says "no goal held back — you took money out this month" instead of "goal is done" when cSaved < goal.
