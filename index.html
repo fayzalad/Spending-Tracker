@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-2">
+<meta name="slip-build" content="2026-10-21-3">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -1227,6 +1227,10 @@
 
 <dialog id="vaultDlg" tabindex="-1" autofocus>
   <h2 id="vaultTitle">Savings</h2>
+  <div class="seg vseg" id="vaultSeg" role="tablist" aria-label="Direction">
+    <button type="button" id="vSegIn" role="tab" aria-selected="true">Put in</button>
+    <button type="button" id="vSegOut" role="tab" aria-selected="false">Take out</button>
+  </div>
   <p class="hint" id="vaultHint"></p>
   <div class="sp" id="vaultPotRow" style="display:none"><label for="vaultCur" id="vaultCurLbl">Currency</label>
     <select id="vaultCur">
@@ -1897,7 +1901,7 @@
     // savings \u2014 each pot keeps its own currency, so the running total is shown per pot
     // rather than blended into one (mis)leading rand figure once more than one is in use
     const potTotals=savingsTotals();
-    const potList=Object.keys(potTotals).filter(k=>Math.abs(potTotals[k])>0.01);
+    const potList=Object.keys(potTotals).filter(k=>Math.abs(potTotals[k])>=0.5);
     $('vault').textContent=R(Math.max(0,c.cSaved));
     $('vaultAll').textContent=potList.length?potList.map(k=>RC(potTotals[k],k)).join(' \u00b7 '):R(0);
     $('vaultSub').textContent=data.goal>0
@@ -2830,8 +2834,12 @@
     const converted=$('vaultConverted').checked;
     $('vaultRecvRow').style.display=(vaultMode==='unsave'&&converted)?'block':'none';
   }
-  function openVault(mode,preset,label,intoCyc){
+  function setupVault(mode,preset,label,intoCyc){
     vaultMode=mode;
+    // the switch is for hand-made moves; a sweep with a figure already worked out has one direction only
+    $('vaultSeg').style.display=(preset||intoCyc)?'none':'flex';
+    $('vSegIn').setAttribute('aria-selected',mode==='save');
+    $('vSegOut').setAttribute('aria-selected',mode==='unsave');
     if(intoCyc)$('vaultAmt').dataset.cyc=intoCyc; else delete $('vaultAmt').dataset.cyc;
     $('vaultTitle').textContent=mode==='save'?'Move money to savings':'Take from savings';
     $('vaultConverted').checked=false;
@@ -2864,8 +2872,23 @@
     $('vaultRecv').value='';
     $('vaultNote').value=label||'';
     updateVaultUI();
+  }
+  function openVault(mode,preset,label,intoCyc){
+    setupVault(mode,preset,label,intoCyc);
     $('vaultDlg').showModal();
   }
+  // opened the wrong one? flip it without losing what was typed
+  function flipVault(mode){
+    if(mode===vaultMode)return;
+    const amt=$('vaultAmt').value, note=$('vaultNote').value, cur=$('vaultCur').value;
+    setupVault(mode,'','');
+    $('vaultAmt').value=amt; $('vaultNote').value=note;
+    // keep the currency you had, but a withdrawal can only come from a pot that has money in it
+    if(mode==='save'||potCurs().indexOf(cur)>-1)$('vaultCur').value=cur;
+    updateVaultUI();
+  }
+  $('vSegIn').onclick=()=>flipVault('save');
+  $('vSegOut').onclick=()=>flipVault('unsave');
   $('vaultCur').onchange=updateVaultUI;
   $('vaultConverted').onchange=updateVaultUI;
   $('vaultCancel').onclick=()=>$('vaultDlg').close();
@@ -2906,7 +2929,7 @@
     const moves=data.entries.filter(e=>isSave(e)||isUnsave(e))
       .slice().sort((a,b)=>a.date<b.date?1:-1);
     const totals=savingsTotals();
-    const curs=Object.keys(totals).filter(c=>Math.abs(totals[c])>0.01);
+    const curs=Object.keys(totals).filter(c=>Math.abs(totals[c])>=0.5);
     $('vaultLogSum').textContent=moves.length
       ? (curs.length?curs.map(c=>RC(totals[c],c)).join(' · ')+' put away':R(0)+' put away')
       : 'Nothing moved into savings yet.';

@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**620 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**631 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,17 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-21-3` — Put in / Take out switch for savings moves
+
+- **Fixed:** a withdrawal could end up recorded as a deposit. The green *Add more* button sits next to
+  *Take some out*, and once the dialog was open there was no way to change direction, so a £138 withdrawal
+  (note "Brokeee") was logged as £138 put **in**: the £ pot went from £138 to £276 and "put away this month"
+  read R5 936 after everything had been taken out.
+- The savings dialog now has a **Put in | Take out** switch at the top. Flipping it keeps the amount, note
+  and currency (a withdrawal only offers pots that have money in them). A sweep that comes with its figure
+  already worked out (the "September leftover" buttons) has no switch.
+- A pot within half a unit of zero now reads as empty: R61 taken from R60.55 showed "−R0".
 
 ### `2026-10-21-2` — dark scrollbars, no inner scroll in the bills list
 

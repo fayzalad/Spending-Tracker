@@ -2603,6 +2603,51 @@ const seed = {
 
   ok('dark schemes tell the browser so, so scrollbars and pickers are dark too',
      HTML.includes('[data-theme="dark"],[data-theme="midnight"],[data-theme="forest"],[data-theme="grape"]{color-scheme:dark}'));
+  console.log('\n=== 80. Put in / Take out: a wrong turn is one tap to put right, and a spent pot reads as empty ===');
+  const gbpPotSeed = () => {
+    const x = JSON.parse(JSON.stringify(seed));
+    x.entries.push({ id: 91, amt: 4344, cat: 'Savings', note: '', date: '2026-08-29', type: 'save', cyc: '2026-08-28', cur: 'GBP', orig: 200, rate: 21.72 });
+    return x;
+  };
+  dom = await boot(gbpPotSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('withdrawBtn').click();
+  ok('Take some out opens on Take out', $('vaultTitle').textContent === 'Take from savings' && $('vSegOut').getAttribute('aria-selected') === 'true' && $('vaultSeg').style.display === 'flex');
+  $('vaultAmt').value = '100'; $('vaultNote').value = 'Couch';
+  $('vSegIn').click();
+  ok('flipping to Put in changes the title and keeps what was typed', $('vaultTitle').textContent === 'Move money to savings' &&
+     $('vaultAmt').value === '100' && $('vaultNote').value === 'Couch' && $('vSegIn').getAttribute('aria-selected') === 'true');
+  ok('and keeps the pound pot selected', $('vaultCur').value === 'GBP', $('vaultCur').value);
+  $('vSegOut').click();
+  ok('flipping back restores the withdrawal wording', /put away in this pot/.test($('vaultHint').textContent) && $('vaultTitle').textContent === 'Take from savings');
+  $('vaultSave').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  let mv = st.entries.find(e => e.note === 'Couch');
+  ok('confirming after a flip back saves a withdrawal', mv && mv.type === 'unsave' && mv.cur === 'GBP' && mv.orig === 100, JSON.stringify(mv));
+
+  dom = await boot(gbpPotSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('withdrawBtn').click();                       // the pot has £200 in it
+  $('vaultAmt').value = '200'; $('vaultNote').value = 'Brokeee';
+  $('vaultSave').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  mv = st.entries.find(e => e.note === 'Brokeee');
+  ok('taking out the whole pot is a withdrawal, not a deposit', mv && mv.type === 'unsave' && mv.cur === 'GBP' && mv.orig === 200, JSON.stringify(mv));
+  ok('so the pot reads empty and the card says nothing is put away',
+     $('vaultAll').textContent === 'R0' && /nothing put away|goal is done/.test($('vaultSub').textContent), $('vaultAll').textContent + ' / ' + $('vaultSub').textContent);
+  ok('and the vault total for the month is not positive', $('vault').textContent === 'R0', $('vault').textContent);
+
+  dom = await boot(gbpPotSeed()); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('withdrawBtn').click(); $('vaultDlg').close();
+  $('vaultAddMore').click();
+  ok('Add more opens on Put in', $('vaultTitle').textContent === 'Move money to savings' && $('vSegIn').getAttribute('aria-selected') === 'true');
+  $('vaultAmt').value = '50'; $('vSegOut').click();
+  ok('and can be flipped to Take out, with the balance in the hint', /£200/.test($('vaultHint').textContent.replace(/\s/g, '')) || /200/.test($('vaultHint').textContent), $('vaultHint').textContent);
+
+  const tiny = JSON.parse(JSON.stringify(seed));
+  tiny.entries.push({ id: 92, amt: 3500, cat: 'Savings', note: '', date: '2026-08-29', type: 'save', cyc: '2026-08-28' },
+                    { id: 93, amt: 3500.45, cat: 'Savings', note: '', date: '2026-08-30', type: 'unsave', cyc: '2026-08-28' });
+  dom = await boot(tiny); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('a pot 45 cents overdrawn reads R0, not −R0', $('vaultAll').textContent === 'R0', $('vaultAll').textContent);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

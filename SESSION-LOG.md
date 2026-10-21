@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-21 — Savings: a withdrawal logged as a deposit; Put in / Take out switch (build `2026-10-21-3`)
+
+- **Did:** `index.html`: `#vaultSeg` switch in the savings dialog (`setupVault` / `openVault` / `flipVault`); pots under 0.5 of a unit hidden from the totals. Tests: section 80 (11 checks). Backup of the cloud data before touching it: `imports/before-vault-fix.json` (gitignored).
+- **Why:** owner reported "put away this month" still showing R5 936 after taking all savings out. Cause found in the data: the 21 Oct entry "Brokeee" (GBP 138, R3 018.06) had `type:'save'`; `savingsTotals()` and `cSaved` were arithmetically right for what was recorded.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`. Data fix is recorded in the next entry.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 631 tests; the dialog viewed at phone size. The root cause (which button was pressed) is inferred, not observed.
+
 ### 2026-10-21 — Dark scrollbars and no inner scroll in the bills list (build `2026-10-21-2`)
 
 - **Did:** `color-scheme` per scheme (`:root` light; dark/midnight/forest/grape dark); `#subsList` no max-height on wide desktop pages. Found by capturing the real Windows app (PowerShell CopyFromScreen → gitignored `imports/win-*.png`, deleted after).
