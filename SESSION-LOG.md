@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-21 — The transfer to Jamal counts as spending (build `2026-10-21-8`)
+
+- **Did:** owner corrected my earlier rule: the £36.50 sent to Jamal Bolaji Yusuff is their own money from the savings pot, so it is spending. In the owner's data (through the Windows app): removed the skip rule `jamal` (tombstoned), added map rule `jamal → Other`, and added one entry via the reader: 2026-10-11, Other, "Jamal Bolaji Yusuff", GBP 36.50 = R800.08, ref TRANSFER-2426052736. Also earlier today: rules `pnp crp → PicknPay`, `mochachos → Eating out`, `nova tech → Tech / gadgets`. Page: a taught recipient or shop is ticked and categorised (test added).
+- **Why:** my earlier skip of that transfer (from the owner's first answer) was wrong; they clarified it.
+- **Files:** cloud gist (131 → 132 entries; `stmtRules`); `index.html`, `test.js`, `README.md`; memory note corrected.
+- **Undo:** delete that entry in the app (Search "Jamal"), and Forget the `jamal` rule under Settings → read statements → What it has learned.
+- **Checked:** 669 tests; cloud re-read: 132 entries, the entry and the four rules present. Category "Other" is my choice, not the owner's: they can change it.
+
 ### 2026-10-21 — Statement and receipt reader for the Windows app (builds `2026-10-21-5` / `-6`, Windows app 1.1.0)
 
 - **Did:** Windows host: `Reader.cs` (PdfPig + Windows PDF render + Windows OCR), file picker, drag-and-drop, a message bridge limited to the Tracker origin (`TRACKER_DEBUG=1` adds a `readPaths` test hook). Page: parsers, review page, rules (`data.stmtRules`, merged in sync), buttons in Add and Settings → Data (hidden outside the app). Tests: section 81 (37 checks, invented statements only; found and fixed a skipped-row bug). Installed the new exe to `%LOCALAPPDATA%\Programs\Tracker`.
