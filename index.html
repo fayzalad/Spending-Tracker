@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-6">
+<meta name="slip-build" content="2026-10-21-7">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -812,13 +812,18 @@
   #rvList .rvhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin:18px 0 8px}
   #rvList .rvhead b{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
   #rvList .rvhead span{font-size:12px;color:var(--mut)}
-  .rvrow{display:grid;grid-template-columns:24px 1fr 190px 130px auto;gap:12px;align-items:center;background:var(--card);
+  .rvrow{display:grid;grid-template-columns:24px minmax(0,1fr) 190px 120px auto;gap:2px 14px;align-items:center;background:var(--card);
     border:1px solid var(--line);border-radius:9px;padding:10px 14px;margin-bottom:6px}
   .rvrow.skip,.rvrow.dup{opacity:.72}
   .rvrow.ask{border-color:var(--warn)}
   .rvrow.bad{display:block;border-color:var(--bad)}
   .rvrow input[type=checkbox]{width:18px;height:18px;margin:0}
-  .rvtop{display:flex;gap:10px;align-items:center}
+  .rvinfo{display:contents}
+  .rvtop{display:flex;gap:10px;align-items:center;grid-column:2;grid-row:1;min-width:0}
+  .rvrow > input[type=checkbox]{grid-row:1/span 2;align-self:center}
+  .rvrow > .rvcat,.rvrow > .rvamt,.rvrow > .rvno{grid-row:1;align-self:center}
+  .rvinfo em{grid-column:2/-1;grid-row:2;padding:0 6px}
+  @media screen and (min-width:900px){[data-platform="desktop"] #rvDlg{padding-left:max(36px,calc((100% - 1040px)/2));padding-right:max(36px,calc((100% - 1040px)/2))}}
   .rvdate{font-size:12px;color:var(--mut);white-space:nowrap}
   #rvList .rvnote{border:1px solid transparent;background:none;box-shadow:none;padding:3px 6px;font-weight:600;font-size:14px;flex:1;min-width:0}
   #rvList .rvnote:hover{border-color:var(--line)}
@@ -828,7 +833,7 @@
   .rvno{background:none;border:0;color:var(--mut);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--sys)}
   .rvrules summary{cursor:pointer;color:var(--mut);margin:16px 0 8px;font-size:13px}
   .rvrule{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
-  @media (max-width:900px){.rvrow{grid-template-columns:24px 1fr}.rvcat,.rvamt,.rvno{grid-column:2}}
+  @media (max-width:900px){.rvrow{grid-template-columns:24px minmax(0,1fr)}.rvrow > .rvcat,.rvrow > .rvamt,.rvrow > .rvno,.rvinfo em,.rvtop{grid-column:2;grid-row:auto}.rvrow > input[type=checkbox]{grid-row:1/span 5}}
   /* the nav pane, as in the design: logo and name on top, Synced at the bottom */
   .navsync{display:none}
   @media screen and (min-width:900px){
