@@ -33,6 +33,7 @@ async function boot(seed, opts = {}) {
       w.scrollTo = () => {};
       w.Element.prototype.scrollIntoView = () => {};
       w.print = () => {};
+      if (opts.bridge) { w.__posted = []; w.chrome = { webview: { addEventListener(t, f) { w.__bridgeFn = f; }, postMessage(m) { w.__posted.push(m); } } }; }
       w.localStorage.setItem('slip:v4', JSON.stringify(seed));
       // jsdom has no dialog methods
       w.HTMLDialogElement && (w.HTMLDialogElement.prototype.showModal = function () { this.open = true; });
@@ -2648,6 +2649,117 @@ const seed = {
                     { id: 93, amt: 3500.45, cat: 'Savings', note: '', date: '2026-08-30', type: 'unsave', cyc: '2026-08-28' });
   dom = await boot(tiny); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   ok('a pot 45 cents overdrawn reads R0, not −R0', $('vaultAll').textContent === 'R0', $('vaultAll').textContent);
+
+  console.log('\n=== 81. reading statements and receipts (Windows app only) ===');
+  // invented statement in the layout the Wise PDFs have: a line "description amount balance", then a dated line
+  const wiseText = [
+    'Wise Payments Ltd.', 'GBP statement', '28 August 2026 [GMT+02:00] - 31 August 2026 [GMT+02:00]',
+    'Description Incoming Outgoing Amount',
+    'Card transaction of 120.50 ZAR issued by Fakeburger Amsterdam -5.50 40.00',
+    '29 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-1000001',
+    'Card transaction of 120.50 ZAR issued by Fakeburger Amsterdam -5.50 34.50',
+    '29 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-1000002',
+    'Card transaction of 89.00 ZAR issued by Quickmart Gqeberha -4.10 30.40',
+    '29 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-1000003',
+    'Card transaction of 45.00 ZAR issued by Uberat_eats Amsterdam -2.00 28.40',
+    '30 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-1000004',
+    'Converted 5.00 GBP to 110.00 ZAR -5.00 23.40',
+    '30 August 2026 | Transaction: BALANCE-1',
+    'Moved 10.00 GBP from Savings 10.00 33.40',
+    '30 August 2026 | Transaction: BALANCE-2',
+    'Sent money to Pat Example -20.00 13.40',
+    '30 August 2026 | Transaction: TRANSFER-1 | Reference: Test',
+    'Received money from Sam Sample 15.00 28.40',
+    '31 August 2026 | Transaction: TRANSFER-2',
+    'Card transaction of 101.00 ZAR issued by Chatgpt Subscr -4.60 23.80',
+    '31 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-1000005',
+    'Card transaction of 10.00 USD issued by Fakestore Online -7.90 15.90',
+    '31 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-1000006',
+    'Wise Payments Limited, trading as Wise, is an Authorised Electronic Money Institution'
+  ].join('\n');
+  const sendFiles = (win, files) => win.__bridgeFn({ data: { type: 'files', files } });
+  dom = await boot(seed, { bridge: true }); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('inside the Windows app the reader\'s buttons are on', d.documentElement.getAttribute('data-app') === '1');
+  ok('a plain browser or phone never gets them', await (async () => { const x = await boot(seed); return !x.window.document.documentElement.getAttribute('data-app'); })());
+  $('openSet').click(); d.querySelector('#setTabs [data-tab="data"]').click(); $('dataFiles').click();
+  ok('the button asks the app to open its file picker', JSON.stringify(w.__posted) === '[{"type":"pick"}]', JSON.stringify(w.__posted));
+  $('setDlg').close();
+  w.__bridgeFn({ data: { type: 'progress', done: 0, total: 1, name: 'statement.pdf' } });
+  ok('progress opens the review page and says what is being read', $('rvDlg').open && /Reading 1 of 1: statement\.pdf/.test($('rvSub').textContent), $('rvSub').textContent);
+  sendFiles(w, [{ name: 'statement.pdf', kind: 'pdf-text', pages: 1, text: wiseText }]);
+  const rvRows = () => [...d.querySelectorAll('#rvList .rvrow:not(.bad)')];
+  // a row's shop name is in its editable note box, so search that as well as the visible text
+  const rvRowOf = txt => rvRows().find(r => (r.textContent + ' ' + r.querySelector('.rvnote').value).toLowerCase().includes(txt.toLowerCase()));
+  ok('every transaction line is found', rvRows().length === 10, String(rvRows().length));
+  ok('two identical orders with different bank references are both kept', rvRows().filter(r => /Fakeburger/.test(r.querySelector('.rvnote').value)).length === 2);
+  ok('the rand figure is the one the shop charged, not the balance', /R121|R120/.test(rvRowOf('Fakeburger').querySelector('.rvamt').textContent.replace(/\s/g, '')), rvRowOf('Fakeburger').querySelector('.rvamt').textContent);
+  ok('a conversion and a move between pots are skipped, with the reason', d.querySelectorAll('#rvList .rvrow.skip').length === 2 &&
+     /conversion between your own balances/.test(d.querySelector('#rvList').textContent) && /pots/.test(d.querySelector('#rvList').textContent));
+  const sUber = rvRowOf('Uberat_eats') || rvRowOf('Uberat');
+  ok('Uber Eats is recognised even with the underscore, and ticked', sUber && sUber.querySelector('select').value === 'Uber Eats' && sUber.querySelector('input[type=checkbox]').checked);
+  ok('an unknown shop waits for a category and is not ticked', !rvRowOf('Quickmart').querySelector('input[type=checkbox]').checked && rvRowOf('Quickmart').querySelector('select').value === '');
+  ok('a transfer to a person is held for you, unticked', !rvRowOf('Pat Example').querySelector('input[type=checkbox]').checked && /transfer to Pat Example/.test(rvRowOf('Pat Example').textContent));
+  ok('money received is held for you too, with no category box', !rvRowOf('Sam Sample').querySelector('input[type=checkbox]').checked && rvRowOf('Sam Sample').querySelector('select').style.display === 'none');
+  ok('a foreign charge uses the tracker\'s rate table', /\$10/.test(rvRowOf('Fakestore').querySelector('.rvamt').textContent), rvRowOf('Fakestore').querySelector('.rvamt').textContent);
+  ok('a charge already in the tracker is held back as already logged', d.querySelectorAll('#rvList .rvrow.dup').length >= 1 && /already logged/.test(rvRowOf('Chatgpt').textContent), rvRowOf('Chatgpt').textContent.slice(0, 120));
+  ok('the button counts only what is ticked', $('rvAdd').textContent === 'Add 1 entry' && !$('rvAdd').disabled, $('rvAdd').textContent);
+  const sQs = rvRowOf('Quickmart').querySelector('select'); sQs.value = 'Groceries'; sQs.dispatchEvent(new w.Event('change'));
+  ok('choosing a category ticks the row', rvRowOf('Quickmart').querySelector('input[type=checkbox]').checked && $('rvAdd').textContent === 'Add 2 entries', $('rvAdd').textContent);
+  const sFk = rvRowOf('Fakestore'); sFk.querySelector('select').value = 'Tech / gadgets'; sFk.querySelector('select').dispatchEvent(new w.Event('change'));
+  const sBefore = JSON.parse(w.localStorage.getItem('slip:v4')).entries.length;
+  $('rvAdd').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const sImp = st.entries.filter(e => e.imp);
+  ok('adding saves exactly the ticked lines', st.entries.length === sBefore + 3 && sImp.length === 3, String(sImp.length));
+  const sEq = sImp.find(e => e.note === 'Quickmart Gqeberha') || sImp.find(e => e.cat === 'Groceries');
+  ok('a rand entry has the shop\'s rand figure, its category, its date and its bank reference', sEq && sEq.amt === 89 && sEq.cat === 'Groceries' && sEq.date === '2026-08-29' && sEq.ref === 'CARD-1000003' && sEq.type === 'out' && sEq.cyc === '2026-08-28', JSON.stringify(sEq));
+  const sEf = sImp.find(e => e.cur === 'USD');
+  ok('a dollar charge keeps its dollars and the rate used', sEf && sEf.orig === 10 && sEf.rate > 0 && Math.abs(sEf.amt - 10 * sEf.rate) < 0.01 && sEf.cat === 'Tech / gadgets', JSON.stringify(sEf));
+  ok('it remembers the category you chose for the shop', (st.stmtRules.map || []).some(r => r.m === 'quickmart' && r.cat === 'Groceries'), JSON.stringify(st.stmtRules));
+  ok('the added lines leave the list and undo is offered', !rvRowOf('Quickmart') && $('rvUndo').style.display === 'block');
+  $('rvUndo').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('undo takes exactly those back out, leaving tombstones', st.entries.length === sBefore && sImp.every(e => st.deleted[e.id]));
+
+  sendFiles(w, [{ name: 'statement.pdf', kind: 'pdf-text', pages: 1, text: wiseText }]);
+  ok('read again, the shop it learned is recognised without asking', rvRowOf('Quickmart').querySelector('select').value === 'Groceries' && rvRowOf('Quickmart').querySelector('input[type=checkbox]').checked);
+  const sPat = rvRowOf('Pat Example'); w.confirm = () => true; sPat.querySelector('.rvno').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('"Not mine" skips that kind of line from now on', (st.stmtRules.skip || []).some(r => r.m === 'pat example') && d.querySelectorAll('#rvList .rvrow.skip').length >= 3);
+  sendFiles(w, [{ name: 'statement.pdf', kind: 'pdf-text', pages: 1, text: wiseText }]);
+  ok('and next time it is skipped sBefore you see it as a question', /you marked it as not yours/.test(rvRowOf('Pat Example').textContent) && rvRowOf('Pat Example').classList.contains('skip'));
+  $('rvRulesCap').click();
+  const sForget = d.querySelector('#rvRules .rvrule .mini'); sForget.click();
+  ok('a rule can be forgotten', (JSON.parse(w.localStorage.getItem('slip:v4')).stmtRules.skip.length + JSON.parse(w.localStorage.getItem('slip:v4')).stmtRules.map.length) === 2, JSON.stringify(JSON.parse(w.localStorage.getItem('slip:v4')).stmtRules));
+
+  console.log('  -- another bank, a receipt, and a file it cannot read');
+  const bankText = ['Statement of account', 'Date Description Amount Balance',
+    '05/08/2026 CHECKERS HYPER GQEBERHA -245.90 10 233.00', '06/08/2026 SALARY ACME LTD 25 000.00 Cr 35 233.00',
+    '07/08/2026 FAKE FUEL STATION -600.00 34 633.00', '08 Aug 2026 NETFLIX.COM 229.00 Dr 34 404.00'].join('\n');
+  const rcText = ['Fresh Mart', '12 High Street', '2026-08-29', 'Bread  20.00', 'Milk  30.00', 'SUBTOTAL 50.00', 'VAT 7.50', 'TOTAL R 57.50'].join('\n');
+  sendFiles(w, [{ name: 'bank.pdf', kind: 'pdf-text', text: bankText }, { name: 'till.jpg', kind: 'image-ocr', text: rcText },
+                { name: 'locked.pdf', kind: 'none', text: '', error: 'This PDF is password-protected.' }]);
+  ok('a different bank layout is read from dates and amounts', d.querySelectorAll('#rvList .rvrow:not(.bad)').length === 5, String(d.querySelectorAll('#rvList .rvrow:not(.bad)').length));
+  ok('a Cr line is money in and a Dr or minus line is money out', /\+R25\S*000/.test(rvRowOf('Salary').querySelector('.rvamt').textContent.replace(/\s/g, '')) && /R229/.test(rvRowOf('Netflix').querySelector('.rvamt').textContent.replace(/\s/g, '')), rvRowOf('Salary').querySelector('.rvamt').textContent);
+  ok('Checkers is recognised as groceries', rvRowOf('Checkers').querySelector('select').value === 'Groceries');
+  const sRc = rvRowOf('Fresh Mart');
+  ok('a receipt becomes one line: its total, its date and its shop', sRc && /R58/.test(sRc.querySelector('.rvamt').textContent.replace(/\s/g, '')) && sRc.querySelector('.rvnote').value === 'Fresh Mart' && /29 Aug 2026/.test(sRc.textContent) && /receipt/.test(sRc.textContent), sRc && sRc.textContent);
+  ok('a file it cannot read is named with the reason', /locked\.pdf/.test($('rvList').textContent) && /password-protected/.test($('rvList').textContent));
+  $('rvClose').click(); ok('closing the page leaves the entries alone', !$('rvDlg').open);
+
+  console.log('  -- the learned rules merge like everything else');
+  m = merge({ rev: 1, deleted: {}, entries: [], stmtRules: { skip: [{ m: 'a', rev: 5 }], map: [{ m: 'x', cat: 'Old', rev: 5 }] } },
+            { rev: 2, deleted: {}, entries: [], stmtRules: { skip: [{ m: 'b', rev: 6 }], map: [{ m: 'x', cat: 'New', rev: 9 }] } });
+  ok('rules from both devices survive', m.stmtRules.skip.map(r => r.m).sort().join() === 'a,b');
+  ok('and the newer teaching of the same shop wins', m.stmtRules.map.length === 1 && m.stmtRules.map[0].cat === 'New');
+  m = merge({ rev: 1, deleted: {}, entries: [], stmtRules: { skip: [{ m: 'a', rev: 5 }], map: [] } },
+            { rev: 2, deleted: { 'rule:skip:a': 10 }, entries: [], stmtRules: { skip: [], map: [] } });
+  ok('a forgotten rule stays forgotten', m.stmtRules.skip.length === 0);
+  m = merge({ rev: 1, deleted: { 'rule:skip:a': 10 }, entries: [], stmtRules: { skip: [], map: [] } },
+            { rev: 2, deleted: {}, entries: [], stmtRules: { skip: [{ m: 'a', rev: 20 }], map: [] } });
+  ok('unless it was taught again afterwards', m.stmtRules.skip.length === 1);
+  m = merge({ rev: 1, deleted: {}, entries: [] }, { rev: 2, deleted: {}, entries: [] });
+  ok('data from sBefore the reader existed still merges', Array.isArray(m.stmtRules.skip) && m.stmtRules.skip.length === 0);
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

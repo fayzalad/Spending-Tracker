@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-4">
+<meta name="slip-build" content="2026-10-21-5">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -320,17 +320,17 @@
        dialogs stay as centred sheets on top of them. */
     [data-platform="desktop"] #setDlg,[data-platform="desktop"] #histDlg,[data-platform="desktop"] #findDlg,
     [data-platform="desktop"] #investDlg,[data-platform="desktop"] #subsDlg,[data-platform="desktop"] #planDlg,
-    [data-platform="desktop"] #budDlg,[data-platform="desktop"] #addDlg{
+    [data-platform="desktop"] #budDlg,[data-platform="desktop"] #addDlg,[data-platform="desktop"] #rvDlg{
       position:fixed;inset:0 0 0 210px;margin:0;width:auto;height:auto;max-width:none;max-height:none;
       border-radius:0;box-shadow:none;border:0;background:var(--bg);color:var(--ink);z-index:40;
       padding:34px max(36px,calc((100% - 820px)/2)) 48px;
       -webkit-backdrop-filter:none;backdrop-filter:none;transform:none!important;opacity:1!important}
     [data-platform="desktop"] #setDlg .grab,[data-platform="desktop"] #histDlg .grab,[data-platform="desktop"] #findDlg .grab,
     [data-platform="desktop"] #investDlg .grab,[data-platform="desktop"] #subsDlg .grab,[data-platform="desktop"] #planDlg .grab,
-    [data-platform="desktop"] #budDlg .grab,[data-platform="desktop"] #addDlg .grab{display:none}
+    [data-platform="desktop"] #budDlg .grab,[data-platform="desktop"] #addDlg .grab,[data-platform="desktop"] #rvDlg .grab{display:none}
     [data-platform="desktop"] #setDlg h2,[data-platform="desktop"] #histDlg h2,[data-platform="desktop"] #findDlg h2,
     [data-platform="desktop"] #investDlg h2,[data-platform="desktop"] #subsDlg h2,[data-platform="desktop"] #planDlg h2,
-    [data-platform="desktop"] #budDlg h2,[data-platform="desktop"] #addDlg h2{font-size:30px;letter-spacing:-.035em}
+    [data-platform="desktop"] #budDlg h2,[data-platform="desktop"] #addDlg h2,[data-platform="desktop"] #rvDlg h2{font-size:30px;letter-spacing:-.035em}
     /* page header on desktop: big title at the left, the close button shown as the Esc key it answers to */
     [data-platform="desktop"] dialog.scr .dhead{display:flex;align-items:flex-start;margin:0 0 2px}
     [data-platform="desktop"] dialog.scr .dhead h2{flex:1;text-align:left;font-size:30px}
@@ -804,6 +804,31 @@
     [data-platform="desktop"] #setDlg .rateline input{flex:1;max-width:220px}
     [data-platform="desktop"] #setDlg .gauge{border-radius:6px}
   }
+  /* ---- reading statements and receipts (shown only inside the Windows app) ---- */
+  .apponly{display:none}
+  [data-app="1"] .apponly{display:block}
+  #addDlg #addFiles{margin:14px auto 0;background:var(--accent-soft);color:var(--accent);border:0;border-radius:6px;padding:10px 18px;
+    font-family:var(--sys);font-size:13.5px;font-weight:600;cursor:pointer}
+  #rvList .rvhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin:18px 0 8px}
+  #rvList .rvhead b{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  #rvList .rvhead span{font-size:12px;color:var(--mut)}
+  .rvrow{display:grid;grid-template-columns:24px 1fr 190px 130px auto;gap:12px;align-items:center;background:var(--card);
+    border:1px solid var(--line);border-radius:9px;padding:10px 14px;margin-bottom:6px}
+  .rvrow.skip,.rvrow.dup{opacity:.72}
+  .rvrow.ask{border-color:var(--warn)}
+  .rvrow.bad{display:block;border-color:var(--bad)}
+  .rvrow input[type=checkbox]{width:18px;height:18px;margin:0}
+  .rvtop{display:flex;gap:10px;align-items:center}
+  .rvdate{font-size:12px;color:var(--mut);white-space:nowrap}
+  #rvList .rvnote{border:1px solid transparent;background:none;box-shadow:none;padding:3px 6px;font-weight:600;font-size:14px;flex:1;min-width:0}
+  #rvList .rvnote:hover{border-color:var(--line)}
+  #rvList .rvcat{padding:7px 10px;font-size:13px}
+  .rvinfo em,.rvrow.bad em{display:block;font-style:normal;font-size:11.5px;color:var(--mut);margin-top:2px}
+  .rvamt{text-align:right;font-weight:700;white-space:nowrap}
+  .rvno{background:none;border:0;color:var(--mut);font-size:12px;cursor:pointer;text-decoration:underline;font-family:var(--sys)}
+  .rvrules summary{cursor:pointer;color:var(--mut);margin:16px 0 8px;font-size:13px}
+  .rvrule{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+  @media (max-width:900px){.rvrow{grid-template-columns:24px 1fr}.rvcat,.rvamt,.rvno{grid-column:2}}
   /* the nav pane, as in the design: logo and name on top, Synced at the bottom */
   .navsync{display:none}
   @media screen and (min-width:900px){
@@ -1104,6 +1129,9 @@
     <div class="sp"><button class="ghost" id="exportBtn">Download a backup</button></div>
     <div class="sp"><button class="ghost" id="importBtn">Restore from backup</button>
       <input type="file" id="impFile" accept="application/json"></div>
+    <div class="sp apponly"><button class="ghost" id="dataFiles">Read statements and receipts</button>
+      <p class="hint" style="margin:8px 0 0">Choose PDFs or photos from your computer, or drop them on the window.
+        It reads them here, shows you what it found, and adds nothing until you say so.</p></div>
     <div class="sp"><button class="ghost" id="impOpen">Add a list of entries</button>
       <p class="hint" style="margin:8px 0 0">Paste many entries at once, for example from a bank
         statement. You see every line before anything is added.</p></div>
@@ -1281,11 +1309,24 @@
     <span><b id="navSyncT">Not synced</b><small id="navSyncS">Set up in Settings</small></span></div>
 </nav>
 
+<dialog id="rvDlg" tabindex="-1" autofocus>
+  <h2>Statements &amp; receipts</h2>
+  <p class="hint" id="rvSub"></p>
+  <div id="rvList"></div>
+  <p class="hint" id="rvSum" aria-live="polite"></p>
+  <label class="checkline"><input type="checkbox" id="rvRemember" checked><span>Remember my categories and skips for next time</span></label>
+  <button class="close" id="rvAdd" disabled>Add entries</button>
+  <button class="ghost" id="rvUndo" style="display:none;margin-top:8px">Undo that import</button>
+  <details class="rvrules"><summary id="rvRulesCap">What it has learned from you</summary><div id="rvRules"></div></details>
+  <button class="ghost" id="rvClose" style="margin-top:8px">Close</button>
+</dialog>
+
 <dialog id="addDlg" tabindex="-1" autofocus>
   <h2>New entry</h2>
   <p class="hint">Log what you spent, received or got back.</p>
   <div id="addSlot"></div>
   <div id="addFoot">
+    <button type="button" id="addFiles" class="apponly">Read statements or receipts (PDF or photo)…</button>
     <button type="button" id="addList">Add a list of entries instead</button>
   </div>
 </dialog>
@@ -1584,7 +1625,7 @@
     glass:false, holdings:[], invAt:null, invHist:[],
     lastBackup:null,gistId:null,tok:'',rev:0,syncedRev:0,starts:{},cats:[],groups:[],
     bills:[],ticks:{},potCats:[],exclude:[],deleted:{},entries:[],incomes:[],avKey:'',
-    homeCur:'ZAR',cycCur:{},cycRate:{},plans:[],planBuf:1000,planSave:{},budgets:{}};
+    homeCur:'ZAR',cycCur:{},cycRate:{},plans:[],planBuf:1000,planSave:{},budgets:{},stmtRules:{skip:[],map:[]}};
   let syncTimer=null, bannerOff=false, billBannerOff=false, incBannerOff=false;
   let scope='week', kind='out';
   let lastCalc=null;   // most recent calc() from render(), reused so typing an amount doesn't force a fresh full recompute
@@ -2260,6 +2301,17 @@
       bm[k]=!x?y:!y?x:((y.rev||0)>=(x.rev||0)?y:x);
     });
     out.budgets=bm;
+    // what the statement reader has been taught: a rule is kept by its match text, the newer one wins,
+    // and a forgotten rule stays forgotten unless it is taught again afterwards
+    const mergeRules=k=>{
+      const mp={};
+      ((older.stmtRules||{})[k]||[]).concat((newer.stmtRules||{})[k]||[]).forEach(r=>{
+        const t=tomb['rule:'+k+':'+r.m]; if(t&&(r.rev||0)<=t)return;
+        const o=mp[r.m]; if(!o||(r.rev||0)>=(o.rev||0))mp[r.m]=r;
+      });
+      return Object.keys(mp).map(m=>mp[m]);
+    };
+    out.stmtRules={skip:mergeRules('skip'),map:mergeRules('map')};
     return out;
   }
 
@@ -3882,7 +3934,7 @@
   // on a wide desktop window the main screens are pages next to the nav pane, not sheets over it:
   // opened non-modally (so the nav still works), one at a time, Esc closes. Everything else stays a sheet.
   const WIDE=matchMedia('(min-width:900px)');
-  const PAGES=['setDlg','histDlg','findDlg','investDlg','subsDlg','planDlg','budDlg','addDlg'];
+  const PAGES=['setDlg','histDlg','findDlg','investDlg','subsDlg','planDlg','budDlg','addDlg','rvDlg'];
   const pageMode=id=>document.documentElement.getAttribute('data-platform')==='desktop'&&WIDE.matches&&
     PAGES.indexOf(id)>-1&&typeof $(id).show==='function';
   // every sheet gets a back/close bar, and a sheet opened on top of another says Back
@@ -3965,7 +4017,7 @@
 
   const TABFOR={findDlg:'openFind',histDlg:'openHist',monthDlg:'openHist',
                 setDlg:'openSet',allDlg:'openFind',investDlg:'openInvest',
-                subsDlg:'navHome',planDlg:'navHome',budDlg:'navHome',addDlg:'quickAdd'};
+                subsDlg:'navHome',planDlg:'navHome',budDlg:'navHome',addDlg:'quickAdd',rvDlg:'quickAdd'};
   function syncTabbar(){
     const open=[...document.querySelectorAll('dialog')].filter(x=>x.open).map(x=>x.id);
     const active=open.map(id=>TABFOR[id]).filter(Boolean).pop()
@@ -4602,10 +4654,10 @@
 
   // Which shop maps to which category. Cheap, but it gets the common ones right.
   const SHOPHINTS=[
-    [/uber\s*eats|ubereats/i,'Uber Eats'],[/mr\s*d/i,'Mr D'],
+    [/uber[\s_]*(?:at[\s_]*)?eats|ubereats/i,'Uber Eats'],[/mr\s*d/i,'Mr D'],
     [/kfc|nando|mcdonald|steers|debonair|chicken licken|romans/i,'Take out'],
     [/bella\s*mare/i,'Bella Mare Cafe'],
-    [/checkers|woolworth|pick\s*n\s*pay|spar|shoprite|food\s*lover|makro/i,'Groceries'],
+    [/checkers|woolworth|pick\s*n\s*pay|\bpnp\b|spar|shoprite|food\s*lover|makro/i,'Groceries'],
     [/takealot/i,'Takealot'],[/amazon/i,'Amazon'],[/shein/i,'Shein'],[/temu/i,'Temu'],
     [/uber(?!\s*eats)|bolt|taxi/i,'Transport'],
     [/clicks|dis-?chem|pharmacy/i,'Health'],
@@ -4685,6 +4737,328 @@
     render();
     $('logCard').scrollIntoView({behavior:'smooth',block:'center'});
   };
+
+  // =====================================================================================
+  // Read statements and receipts (the Windows app only).
+  // The Windows host reads the files (PDF text, or Windows OCR for scans and photos) and posts their text
+  // here; this code works out what each file is, turns it into rows, lets you correct them, and adds
+  // nothing until you say so. Rows that are already in the tracker are held back, and what you tell it
+  // ("that is Uber Eats", "that one is not mine") is remembered as rules that sync with everything else.
+  // =====================================================================================
+  const bridge=window.chrome&&window.chrome.webview;
+  if(bridge)document.documentElement.setAttribute('data-app','1');
+  const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const amtNum=t=>{const n=Number(String(t).replace(/[,\s  ]/g,'').replace('−','-'));return isFinite(n)?n:NaN};
+  const pad2=n=>String(n).padStart(2,'0');
+  function stmtDate(s,yearHint){
+    s=String(s||'').trim(); let m;
+    if((m=s.match(/^(\d{4})-(\d{2})-(\d{2})/)))return m[0];
+    if((m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\.?\s+(\d{4})/))&&MON[m[2].slice(0,3).toLowerCase()])
+      return m[3]+'-'+pad2(MON[m[2].slice(0,3).toLowerCase()])+'-'+pad2(m[1]);
+    if((m=s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\.?$/))&&MON[m[2].slice(0,3).toLowerCase()]&&yearHint)
+      return yearHint+'-'+pad2(MON[m[2].slice(0,3).toLowerCase()])+'-'+pad2(m[1]);
+    if((m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/))){
+      const y=m[3].length===2?'20'+m[3]:m[3]; return y+'-'+pad2(m[2])+'-'+pad2(m[1]);   // day first, as South African banks print it
+    }
+    return '';
+  }
+  const stmtCurrency=t=>{const m=String(t).match(/^\s*([A-Z]{3})\s+statement\b/m);return m?m[1]:''};
+  // the part of a description that names the shop: its first three words
+  const cleanMerchant=s=>{
+    const w=String(s).replace(/\s+/g,' ').trim().split(' ').slice(0,3);
+    return w.map(x=>x===x.toLowerCase()||x===x.toUpperCase()&&x.length>3?x.charAt(0).toUpperCase()+x.slice(1).toLowerCase():x).join(' ');
+  };
+  // what a rule matches on: the first word if it is long enough to be distinctive, else the first two
+  const merchantKey=s=>{
+    const w=String(s).toLowerCase().replace(/[^a-z0-9_ ]+/g,' ').trim().split(/\s+/);
+    return (w[0]&&w[0].length>=4?w[0]:w.slice(0,2).join(' ')).trim();
+  };
+  // ---- the rules you teach it, kept in the data so every device has them
+  const stmtRules=()=>{data.stmtRules=data.stmtRules||{skip:[],map:[]};return data.stmtRules};
+  const matchRule=(list,text)=>{const t=String(text).toLowerCase();return (list||[]).find(r=>r.m&&t.indexOf(r.m)>-1)||null};
+  function saveRule(kind,rule){
+    const R_=stmtRules(), list=R_[kind], i=list.findIndex(x=>x.m===rule.m);
+    rule.rev=Date.now();
+    if(i>-1)list[i]=rule; else list.push(rule);
+    if(data.deleted)delete data.deleted['rule:'+kind+':'+rule.m];
+  }
+  function dropRule(kind,m){
+    const list=stmtRules()[kind], i=list.findIndex(x=>x.m===m);
+    if(i>-1)list.splice(i,1);
+    tombstone('rule:'+kind+':'+m); save();
+  }
+
+  // ---- one Wise statement: a line "description  amount  balance", then a line starting with the date
+  function parseWise(lines){
+    const cur=stmtCurrency(lines.join('\n'))||'';
+    const rows=[]; const tx=/^(.*\S)\s+(-?\d[\d,\s]*\.\d{2})\s+(\d[\d,\s]*\.\d{2})$/;
+    for(let i=0;i<lines.length-1;i++){
+      const m=lines[i].match(tx); if(!m)continue;
+      const dl=lines[i+1], date=stmtDate(dl); if(!date)continue;
+      const desc=m[1].trim(), delta=amtNum(m[2]); if(!isFinite(delta))continue;
+      const ref=(dl.match(/Transaction:\s*([A-Z]+-\d+)/)||[])[1]||'';
+      const row={date,raw:desc,ref,type:'out',state:'new',why:'',cat:'',note:'',amt:0};
+      let mm;
+      if((mm=desc.match(/^Card transaction of (\d[\d,]*\.\d{2}) ([A-Z]{3}) issued by (.+)$/))){
+        // charged in whatever the shop billed in; that figure, not the balance it came out of, is the spend
+        row.orig=amtNum(mm[1]); row.cur=mm[2]; row.note=cleanMerchant(mm[3]); row.merchant=mm[3];
+      }else if(/^Converted\b/.test(desc)){
+        row.state='skip'; row.why='a conversion between your own balances';
+      }else if(/^Moved\b.*\b(from|to)\b/.test(desc)){
+        row.state='skip'; row.why='a move between your own balances or pots';
+      }else if((mm=desc.match(/^Sent money to (.+)$/))){
+        row.merchant=mm[1]; row.note=mm[1]; row.cur=cur||'ZAR'; row.orig=Math.abs(delta);
+        row.state='ask'; row.why='a transfer to '+mm[1]+' — not added unless you tick it';
+      }else if(/^(Received|Added|Money added|Deposit|Top.?up)/i.test(desc)){
+        row.type='in'; row.merchant=desc; row.note=desc.replace(/^Received money from\s*/i,''); row.cur=cur||'ZAR'; row.orig=Math.abs(delta);
+        row.state='ask'; row.why='money in — tick it if it is yours';
+      }else{
+        row.merchant=desc; row.note=cleanMerchant(desc); row.cur=cur||'ZAR'; row.orig=Math.abs(delta);
+        row.state='ask'; row.why='not a line it knows — check it';
+        if(delta>0)row.type='in';
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // ---- any other bank: a line that starts with a date and ends with one or two amounts
+  function parseGeneric(lines,text){
+    const yearHint=((text.match(/\b(20\d{2})\b/)||[])[1])||today().slice(0,4);
+    const cur=stmtCurrency(text)||'ZAR', rows=[];
+    const dateAt=/^(\d{4}-\d{2}-\d{2}|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\.?(?:\s+\d{4})?)\s+(.*)$/;
+    const money=/-?\s?\d[\d ,]*\.\d{2}\s?(?:Cr|Dr|CR|DR)?/g;
+    lines.forEach(ln=>{
+      const d=ln.match(dateAt); if(!d)return;
+      const date=stmtDate(d[1],yearHint); if(!date)return;
+      const rest=d[2], toks=rest.match(money); if(!toks||!toks.length)return;
+      const first=toks[0], at=rest.indexOf(first);
+      const desc=rest.slice(0,at).trim(); if(desc.length<2)return;
+      const v=amtNum(first.replace(/\s?(Cr|Dr)$/i,'')); if(!isFinite(v)||v===0)return;
+      const dr=/Dr$/i.test(first.trim())||/^-/.test(first.trim()), cr=/Cr$/i.test(first.trim());
+      const row={date,raw:rest.slice(0,at+first.length).trim(),ref:'',type:cr?'in':'out',state:'new',why:'',cat:'',
+        note:cleanMerchant(desc),merchant:desc,cur,orig:Math.abs(v),amt:0};
+      if(!dr&&!cr){row.state='ask';row.why='the layout does not say whether this is money out or in — check it'}
+      rows.push(row);
+    });
+    return rows;
+  }
+
+  function looksLikeStatement(text,lines){
+    if(/Card transaction of [\d.,]+ [A-Z]{3} issued by|Wise Payments/i.test(text))return 'wise';
+    const dated=lines.filter(l=>/^(\d{4}-\d{2}-\d{2}|\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\.?(?:\s+\d{4})?)\s+.*\d[\d ,]*\.\d{2}\s*(?:Cr|Dr)?\s*$/i.test(l));
+    return dated.length>=3?'generic':'';
+  }
+
+  // ---- classify: your rules first, then the built-in shop hints
+  function classify(r){
+    const hay=(r.merchant||r.raw||'');
+    r.key=merchantKey(hay);
+    if(r.state==='skip')return r;
+    const sk=matchRule(stmtRules().skip,hay);
+    if(sk){r.state='skip';r.why=sk.why||'you told it to skip this';r.byRule=true;return r}
+    const mp=matchRule(stmtRules().map,hay);
+    if(mp){r.cat=mp.cat;if(mp.note)r.note=mp.note;r.state=r.state==='ask'&&r.type==='out'&&r.why.indexOf('transfer')<0?'new':r.state;r.viaRule=true;return r}
+    if(r.type==='out'&&r.state!=='ask'){
+      for(const [re,c] of SHOPHINTS){if(re.test(hay)){r.cat=c;r.hinted=true;break}}
+    }
+    return r;
+  }
+  // rand value of a row (a foreign figure uses today's rate table, as logging it by hand does)
+  function randOf(r){
+    if(!r.cur||r.cur==='ZAR')return Math.round(r.orig*100)/100;
+    const rate=Number(data.rates[r.cur]);
+    return rate>0?Math.round(r.orig*rate*100)/100:NaN;
+  }
+
+  let rvState={rows:[],files:[],last:null};
+  function analyse(files){
+    const rows=[], notes=[];
+    files.forEach(f=>{
+      if(f.error){notes.push({file:f.name,error:f.error});return}
+      const text=String(f.text||''), lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+      const kind=looksLikeStatement(text,lines);
+      let got=[];
+      if(kind==='wise')got=parseWise(lines);
+      else if(kind==='generic')got=parseGeneric(lines,text);
+      if(kind&&got.length){
+        got.forEach(r=>{r.file=f.name;r.source='statement';rows.push(r)});
+      }else if(kind){
+        notes.push({file:f.name,error:'It looks like a statement but no transactions could be read from it.'});
+      }else{
+        // not a statement: treat it as one receipt
+        const rc=readReceipt(text);
+        if(!rc.total){notes.push({file:f.name,error:'No amount found in it. Is it a receipt or a statement?'});return}
+        const r={file:f.name,source:'receipt',date:rc.date&&rc.date<=today()?rc.date:today(),raw:rc.who||f.name,merchant:rc.who||f.name,
+          note:rc.who?cleanMerchant(rc.who):'',type:'out',state:'new',why:'',cat:rc.cat||'',orig:rc.total,cur:'ZAR',ref:'',hinted:!!rc.cat};
+        if(!rc.date)r.why='no date on it, so today is used';
+        rows.push(r);
+      }
+    });
+    rows.forEach(r=>{classify(r)});
+    // numbers, then "already there" checks, then what is ticked to begin with
+    rows.forEach((r,i)=>{
+      r.n=i+1;
+      if(r.state==='skip'&&!r.orig){r.amt=0;return}         // an internal move or an ignored line has no figure to convert
+      r.amt=randOf(r);
+      if(!isFinite(r.amt)||!(r.amt>0)){r.state='skip';r.why='its currency ('+r.cur+') is not one the tracker holds; add it by hand'}
+    });
+    const seen={};
+    rows.forEach(r=>{
+      if(r.state==='skip')return;
+      const k=r.ref||[r.date,r.amt,(r.merchant||'').toLowerCase()].join('|');
+      if(seen[k])r.dup='also in '+seen[k]; else seen[k]=r.file;
+    });
+    markDupes(rows.map(r=>Object.assign(r,{err:r.state==='skip'?'skip':''})));
+    rows.forEach(r=>{
+      delete r.err;
+      // two real orders on one day can look identical; a bank reference says they are different
+      if(r.ref&&/^same as line/.test(r.dup||''))r.dup='';
+      if(r.ref&&data.entries.some(e=>e.ref===r.ref))r.dup='already imported (same bank reference)';
+      r.pick=r.state==='new'&&!r.dup&&!!r.cat;
+      if(r.state==='new'&&!r.cat&&!r.dup){r.state='ask';r.why='pick a category'}
+    });
+    return {rows,notes};
+  }
+
+  // ---- the review page
+  const rvRowsOf=st=>rvState.rows.filter(r=>st(r));
+  const rvGroup=r=>r.state==='skip'?'skip':r.dup?'dup':'add';
+  function rvPaint(){
+    const rows=rvState.rows, list=$('rvList'); list.innerHTML='';
+    const groups=[['add','To add','Nothing is added until you press the button.'],
+                  ['dup','Already in your tracker','Held back so nothing is entered twice. Tick one if it really is new.'],
+                  ['skip','Skipped','Not your spending. Tick one to add it anyway.']];
+    groups.forEach(([g,title,sub])=>{
+      const mine=rows.filter(r=>rvGroup(r)===g); if(!mine.length)return;
+      const h=document.createElement('div'); h.className='rvhead';
+      h.innerHTML='<b></b><span></span>'; h.firstChild.textContent=title+' ('+mine.length+')'; h.lastChild.textContent=sub;
+      list.appendChild(h);
+      mine.forEach(r=>list.appendChild(rvRow(r,g)));
+    });
+    rvState.notes.forEach(n=>{
+      const li=document.createElement('div'); li.className='rvrow bad';
+      li.innerHTML='<div class="rvinfo"><b></b><em></em></div>'; li.querySelector('b').textContent=n.file; li.querySelector('em').textContent=n.error;
+      list.appendChild(li);
+    });
+    if(!rows.length&&!rvState.notes.length)list.innerHTML='<div class="empty">Nothing read yet.</div>';
+    rvSummary();
+  }
+  function rvRow(r,g){
+    const li=document.createElement('div'); li.className='rvrow '+g+(r.state==='ask'&&g==='add'?' ask':'');
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!r.pick; cb.setAttribute('aria-label','Include '+(r.note||r.raw));
+    cb.onchange=()=>{r.pick=cb.checked;rvSummary()};
+    const info=document.createElement('div'); info.className='rvinfo';
+    const top=document.createElement('div'); top.className='rvtop';
+    const dt=document.createElement('span'); dt.className='rvdate'; dt.textContent=D(r.date).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'});
+    const note=document.createElement('input'); note.className='rvnote'; note.value=r.note||''; note.placeholder='Note'; note.setAttribute('aria-label','Note');
+    note.oninput=()=>{r.note=note.value;r.noteEdited=true};
+    top.appendChild(dt); top.appendChild(note);
+    const sub=document.createElement('em');
+    sub.textContent=(r.why?r.why+' · ':'')+(r.dup?r.dup+' · ':'')+'from '+r.file+(r.source==='receipt'?' (receipt)':'');
+    info.appendChild(top); info.appendChild(sub);
+    const sel=document.createElement('select'); sel.className='rvcat'; sel.setAttribute('aria-label','Category');
+    sel.innerHTML='<option value="">Choose…</option>'+catOptions(false);
+    sel.value=r.cat||''; if(r.cat&&sel.value!==r.cat){const o=document.createElement('option');o.textContent=r.cat;sel.appendChild(o);sel.value=r.cat}
+    if(r.type==='in'){sel.style.display='none'}
+    sel.onchange=()=>{r.cat=sel.value;r.userCat=true;if(r.cat&&g==='add'){r.pick=true;cb.checked=true;r.state='new';li.classList.remove('ask')}rvSummary()};
+    const amt=document.createElement('span'); amt.className='rvamt num';
+    amt.textContent=(r.type==='in'?'+':r.type==='refund'?'−':'')+fmtMoney(r.amt,'ZAR')+(r.cur&&r.cur!=='ZAR'?' ('+SYM[r.cur]+r.orig+')':'');
+    li.appendChild(cb); li.appendChild(info); li.appendChild(sel); li.appendChild(amt);
+    if(g==='add'&&r.state!=='skip'&&r.type==='out'){
+      const no=document.createElement('button'); no.type='button'; no.className='rvno'; no.textContent='Not mine'; no.title='Skip this kind of line from now on';
+      no.onclick=()=>{
+        if(!r.key)return;
+        if(!confirm('Skip every line like “'+(r.merchant||r.raw)+'” from now on?'))return;
+        saveRule('skip',{m:r.key,why:'you marked it as not yours'}); save();
+        rvState.rows.forEach(x=>{if(x.key===r.key&&x.type==='out'){x.state='skip';x.why='you marked it as not yours';x.pick=false}});
+        rvPaint();
+      };
+      li.appendChild(no);
+    }
+    return li;
+  }
+  function rvSummary(){
+    const pick=rvState.rows.filter(r=>r.pick&&r.state!=='bad');
+    const out=pick.filter(r=>r.type!=='in').reduce((s,r)=>s+(r.type==='refund'?-r.amt:r.amt),0);
+    const inn=pick.filter(r=>r.type==='in').reduce((s,r)=>s+r.amt,0);
+    const missing=pick.filter(r=>r.type!=='in'&&!r.cat).length;
+    $('rvSum').textContent=rvState.rows.length
+      ? pick.length+' of '+rvState.rows.length+' lines will be added'+(pick.length?': '+fmtMoney(out,'ZAR')+' spent'+(inn?', '+fmtMoney(inn,'ZAR')+' received':''):'')+'.'
+        +(missing?' '+missing+(missing===1?' still needs':' still need')+' a category.':'')
+      : '';
+    $('rvAdd').disabled=!pick.length||missing>0;
+    $('rvAdd').textContent=pick.length?'Add '+pick.length+(pick.length===1?' entry':' entries'):'Add entries';
+  }
+  function rvRules(){
+    const box=$('rvRules'); box.innerHTML='';
+    const all=[].concat(stmtRules().skip.map(r=>['skip',r]),stmtRules().map.map(r=>['map',r]));
+    $('rvRulesCap').textContent='What it has learned from you ('+all.length+')';
+    if(!all.length){box.innerHTML='<p class="hint">Nothing yet. When you choose a category or press “Not mine”, it remembers.</p>';return}
+    all.forEach(([k,r])=>{
+      const row=document.createElement('div'); row.className='rvrule';
+      row.innerHTML='<span></span><button type="button" class="mini">Forget</button>';
+      row.firstChild.textContent=(k==='skip'?'Skip “':'“')+r.m+(k==='skip'?'”':'” → '+r.cat+(r.note?' · '+r.note:''));
+      row.lastChild.onclick=()=>{dropRule(k,r.m);rvRules()};
+      box.appendChild(row);
+    });
+  }
+  function openReview(files,keepRows){
+    if(!keepRows){
+      const a=analyse(files); rvState={rows:a.rows,notes:a.notes,files:files.map(f=>f.name),last:null};
+      $('rvUndo').style.display='none';
+    }
+    $('rvSub').textContent=rvState.files.length+(rvState.files.length===1?' file':' files')+' read: '+rvState.files.join(', ');
+    rvPaint(); rvRules();
+    if(!$('rvDlg').open)$('rvDlg').showModal();
+  }
+  function reviewCommit(){
+    const pick=rvState.rows.filter(r=>r.pick&&r.state!=='bad'&&(r.type==='in'||r.cat));
+    if(!pick.length)return;
+    const batch=Date.now(), ids=[];
+    pick.forEach(r=>{
+      const refund=r.type==='refund', id=Date.now()+Math.random(); ids.push(id);
+      const e={id,amt:(refund?-1:1)*r.amt,cat:r.type==='in'?'Money in':r.cat,note:(r.note||'').trim(),date:r.date,
+        type:refund?'out':r.type,refund:refund||undefined,cyc:cycStart(r.date),imp:batch};
+      if(r.ref)e.ref=r.ref;
+      if(r.cur&&r.cur!=='ZAR'){e.cur=r.cur;e.orig=r.orig;e.rate=Number(data.rates[r.cur])||1}
+      data.entries.push(e);
+      // remember what you chose, so next month's statement needs no questions
+      if($('rvRemember').checked&&r.userCat&&r.cat&&r.key&&r.type==='out'){
+        const rule={m:r.key,cat:r.cat}; if(r.noteEdited&&r.note)rule.note=r.note;
+        saveRule('map',rule);
+      }
+    });
+    rvState.last=ids; save();
+    rvState.rows=rvState.rows.filter(r=>!pick.includes(r));
+    $('rvUndo').style.display='block';
+    openReview(null,true);
+    $('rvSum').textContent='Added '+ids.length+(ids.length===1?' entry.':' entries.')+' '+$('rvSum').textContent;
+  }
+  $('rvAdd').onclick=reviewCommit;
+  $('rvUndo').onclick=()=>{
+    if(!rvState.last)return;
+    const gone={}; rvState.last.forEach(id=>{gone[id]=1;tombstone(id)});
+    data.entries=data.entries.filter(e=>!gone[e.id]);
+    const n=rvState.last.length; rvState.last=null; save();
+    $('rvUndo').style.display='none'; $('rvSum').textContent='Removed the '+n+' entries just added. Read the files again to redo it.';
+  };
+  $('rvClose').onclick=()=>$('rvDlg').close();
+  function pickFiles(){ if(bridge)bridge.postMessage({type:'pick'}) }
+  ['addFiles','dataFiles'].forEach(id=>{const b=$(id); if(b)b.onclick=pickFiles});
+  if(bridge){
+    bridge.addEventListener('message',ev=>{
+      const m=ev.data||{};
+      if(m.type==='progress'){
+        $('rvSub').textContent='Reading '+(m.done+1)+' of '+m.total+': '+m.name+'…';
+        $('rvList').innerHTML='<div class="empty">Reading…</div>'; $('rvSum').textContent='';
+        if(!$('rvDlg').open)$('rvDlg').showModal();
+      }else if(m.type==='files'){
+        openReview(m.files||[]);
+        if(m.truncated)$('rvSub').textContent+=' (only the first 25 were read)';
+      }
+    });
+  }
 
   let editHold=null;
   function holdCurChanged(){
@@ -5027,7 +5401,7 @@
     }
     if(s)data=Object.assign(data,s);
     data.cycCur=data.cycCur||{}; data.cycRate=data.cycRate||{}; data.homeCur=data.homeCur||'ZAR';
-    data.plans=data.plans||[]; data.planSave=data.planSave||{}; data.budgets=data.budgets||{};
+    data.plans=data.plans||[]; data.planSave=data.planSave||{}; data.budgets=data.budgets||{}; data.stmtRules=data.stmtRules||{skip:[],map:[]};
     if(typeof data.planBuf!=='number')data.planBuf=1000;
     data.entries.forEach(e=>{if(!e.cyc)e.cyc=cycStart(e.date)});
     if(healForwardIncome())S.set(KEY,data);
