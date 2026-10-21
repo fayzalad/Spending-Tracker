@@ -2767,6 +2767,30 @@ const seed = {
   m = merge({ rev: 1, deleted: {}, entries: [] }, { rev: 2, deleted: {}, entries: [] });
   ok('data from sBefore the reader existed still merges', Array.isArray(m.stmtRules.skip) && m.stmtRules.skip.length === 0);
 
+  console.log('\n=== 82. a charge the bank reversed is not spending ===');
+  const revText = [
+    'Wise Payments Ltd.', 'GBP statement', '28 August 2026 [GMT+02:00] - 31 August 2026 [GMT+02:00]',
+    'Description Incoming Outgoing Amount',
+    'Card transaction of 250.00 ZAR issued by Fakeburger Amsterdam 11.50 60.00',
+    '30 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-2000001',
+    'Card transaction of 250.00 ZAR issued by Fakeburger Amsterdam -11.50 48.50',
+    '30 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-2000001',
+    'Card transaction of 80.00 ZAR issued by Quickmart Gqeberha 3.70 52.20',
+    '31 August 2026 | Card ending in 1111 | Test Person | Transaction: CARD-2000002'
+  ].join('\n');
+  dom = await boot(seed, { bridge: true }); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  w.__bridgeFn({ data: { type: 'files', files: [{ name: 'rev.pdf', kind: 'pdf-text', text: revText }] } });
+  const rv2 = [...d.querySelectorAll('#rvList .rvrow:not(.bad)')];
+  const paired = rv2.filter(r => /charged and then refunded/.test(r.textContent));
+  ok('a charge and its refund under one reference both go to Skipped', paired.length === 2 && paired.every(r => r.classList.contains('skip')), String(paired.length));
+  const lone = rv2.find(r => /Quickmart/i.test(r.querySelector('.rvnote').value));
+  ok('a refund with no matching charge is a refund, not a spend', lone && /−R80/.test(lone.querySelector('.rvamt').textContent.replace(/\s/g, '')), lone && lone.querySelector('.rvamt').textContent);
+  lone.querySelector('select').value = 'Groceries'; lone.querySelector('select').dispatchEvent(new w.Event('change'));
+  $('rvAdd').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const rf = st.entries.find(e => e.ref === 'CARD-2000002');
+  ok('adding it records money back: a negative spend that is not income', rf && rf.amt === -80 && rf.type === 'out' && rf.refund === true, JSON.stringify(rf));
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-21 — Reconciling "app says R1 040, bank says R142" (analysis; reader fix, build `2026-10-21-9`)
+
+- **Did:** read the owner's 24 Sep–21 Oct Wise statements (GBP and ZAR) through the app's reader (preview only, nothing added) and replayed their real data in jsdom (`scratchpad/whatif.js`, read-only) adding each missing item and reading the app's own "Available now": R1 040 → −R1 404 (four transfers to Aliyyah, £111.50) → R92 (£68.25 received from Papa Darfoor) → −R188 (Uber Eats R280.40, 29 Sep, never logged) → R7 (remove the Uber Eats R195.09 entry that the bank reversed). Bank balance R142.13, so about R135 is unexplained (rate differences are the likely part). Fixed the reader: positive card lines are refunds; a charge and refund with the same bank reference cancel (two such pairs were on the statement: R1 439.66 Pick N Pay, R195.09 Uber Eats).
+- **Why:** owner's tracker showed R1 040 left but the real balance was R142; they asked where the money went and for every transaction to and from Aliyyah so they can say which to ignore. **No data was changed in this entry**: which Aliyyah transfers to ignore is the owner's call.
+- **Files:** `index.html`, `test.js` (section 82), `README.md`, `CLAUDE.md`.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 672 tests; the reversed pairs confirmed in the statement text (same CARD- reference twice, +/−). The reconciliation uses the app's rate table (£1 ≈ R21.9) rather than Wise's (£1 ≈ R21.78).
+
 ### 2026-10-21 — The transfer to Jamal counts as spending (build `2026-10-21-8`)
 
 - **Did:** owner corrected my earlier rule: the £36.50 sent to Jamal Bolaji Yusuff is their own money from the savings pot, so it is spending. In the owner's data (through the Windows app): removed the skip rule `jamal` (tombstoned), added map rule `jamal → Other`, and added one entry via the reader: 2026-10-11, Other, "Jamal Bolaji Yusuff", GBP 36.50 = R800.08, ref TRANSFER-2426052736. Also earlier today: rules `pnp crp → PicknPay`, `mochachos → Eating out`, `nova tech → Tech / gadgets`. Page: a taught recipient or shop is ticked and categorised (test added).

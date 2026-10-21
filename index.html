@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-8">
+<meta name="slip-build" content="2026-10-21-9">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -4807,6 +4807,8 @@
       if((mm=desc.match(/^Card transaction of (\d[\d,]*\.\d{2}) ([A-Z]{3}) issued by (.+)$/))){
         // charged in whatever the shop billed in; that figure, not the balance it came out of, is the spend
         row.orig=amtNum(mm[1]); row.cur=mm[2]; row.note=cleanMerchant(mm[3]); row.merchant=mm[3];
+        // a card line that adds to the balance is money coming back, not money spent
+        if(delta>0)row.type='refund';
       }else if(/^Converted\b/.test(desc)){
         row.note=desc; row.state='skip'; row.why='a conversion between your own balances';
       }else if(/^Moved\b.*\b(from|to)\b/.test(desc)){
@@ -4904,6 +4906,15 @@
         if(!rc.date)r.why='no date on it, so today is used';
         rows.push(r);
       }
+    });
+    // a charge and a refund of the same amount under one bank reference cancel out: nothing was spent
+    const byRef={};
+    rows.forEach(r=>{if(r.ref)(byRef[r.ref]=byRef[r.ref]||[]).push(r)});
+    Object.keys(byRef).forEach(k=>{
+      const g=byRef[k], o=g.find(r=>r.type==='out'&&r.state!=='skip'), f=g.find(r=>r.type==='refund');
+      if(o&&f&&o.orig===f.orig&&o.cur===f.cur)[o,f].forEach(r=>{
+        r.state='skip'; r.paired=true; r.why='charged and then refunded (same bank reference): nothing was spent';
+      });
     });
     rows.forEach(r=>{classify(r)});
     // numbers, then "already there" checks, then what is ticked to begin with

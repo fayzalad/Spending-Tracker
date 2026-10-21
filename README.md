@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**669 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**672 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,13 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-21-9` — the statement reader understands reversed charges
+
+- A card line that **adds** to the balance is money coming back, so it is read as a refund, not a second purchase.
+- A charge and a refund of the same amount under the **same bank reference** (a payment the bank reversed) cancel
+  out: both go to *Skipped* ("charged and then refunded: nothing was spent"). Found on a real statement where
+  a R1,439.66 shop and a R195.09 order were each charged and then reversed.
 
 ### `2026-10-21-6` — read statements and receipts (Windows app only)
 
