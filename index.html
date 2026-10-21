@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-7">
+<meta name="slip-build" content="2026-10-21-8">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -4863,7 +4863,12 @@
     const sk=matchRule(stmtRules().skip,hay);
     if(sk){r.state='skip';r.why=sk.why||'you told it to skip this';r.byRule=true;return r}
     const mp=matchRule(stmtRules().map,hay);
-    if(mp){r.cat=mp.cat;if(mp.note)r.note=mp.note;r.state=r.state==='ask'&&r.type==='out'&&r.why.indexOf('transfer')<0?'new':r.state;r.viaRule=true;return r}
+    if(mp){
+      r.cat=mp.cat; if(mp.note)r.note=mp.note; r.viaRule=true;
+      // you taught it this shop or person, so a line from them is no longer a question
+      if(r.state==='ask'&&r.type==='out'){r.state='new';r.why=''}
+      return r;
+    }
     if(r.type==='out'&&r.state!=='ask'){
       for(const [re,c] of SHOPHINTS){if(re.test(hay)){r.cat=c;r.hinted=true;break}}
     }

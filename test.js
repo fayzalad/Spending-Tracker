@@ -2732,6 +2732,12 @@ const seed = {
   const sForget = d.querySelector('#rvRules .rvrule .mini'); sForget.click();
   ok('a rule can be forgotten', (JSON.parse(w.localStorage.getItem('slip:v4')).stmtRules.skip.length + JSON.parse(w.localStorage.getItem('slip:v4')).stmtRules.map.length) === 2, JSON.stringify(JSON.parse(w.localStorage.getItem('slip:v4')).stmtRules));
 
+
+  // a person you have taught it about is no longer a question: their transfers come with the category and are ticked
+  w.localStorage.setItem('slip:v4', JSON.stringify(Object.assign(JSON.parse(w.localStorage.getItem('slip:v4')), { stmtRules: { skip: [], map: [{ m: 'pat example', cat: 'Other', rev: 1 }] } })));
+  { const w2 = (await boot(JSON.parse(w.localStorage.getItem('slip:v4')), { bridge: true })).window; w2.__bridgeFn({ data: { type: 'files', files: [{ name: 'statement.pdf', kind: 'pdf-text', text: wiseText }] } });
+    const pr = [...w2.document.querySelectorAll('#rvList .rvrow:not(.bad)')].find(r => /pat example/i.test(r.querySelector('.rvnote').value));
+    ok('a transfer to someone you taught it about is ticked and categorised', pr && pr.querySelector('input[type=checkbox]').checked && pr.querySelector('select').value === 'Other' && !pr.classList.contains('skip') && !/not added unless/.test(pr.textContent), pr && pr.textContent.slice(0, 100)); }
   console.log('  -- another bank, a receipt, and a file it cannot read');
   const bankText = ['Statement of account', 'Date Description Amount Balance',
     '05/08/2026 CHECKERS HYPER GQEBERHA -245.90 10 233.00', '06/08/2026 SALARY ACME LTD 25 000.00 Cr 35 233.00',
