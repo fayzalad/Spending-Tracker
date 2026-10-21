@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-10-21 — The remaining pages in the Figma look (build `2026-10-21-1`)
+
+- **Did:** `index.html`: Subscriptions & bills summary card + warning (`subsCard`, `subsWarn`); Planned purchases "Next up" card (`planHero`); Budget month switcher (`budPrev/budNext`), four-button grid (`.bgrid`, Clear now disabled instead of hidden); desktop-only styling of the Settings Month/Rules/Bills/Data tabs; "this phone" → "this device"; `#planTabBox` scrolls. Tests: section 79 (15 checks).
+- **Why:** owner asked to restyle the remaining desktop pages to match the Figma look and show each.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`.
+- **Undo:** `git revert`, bump, push.
+- **Checked:** 619 tests; each page viewed at 1440px (light, invented data); Budget, Subscriptions and Plans measured at 375px (no overflow after the table fix). Bug caught on the way: a `\u2039` escape typed into HTML showed as text (use entities in markup). The preview server was stopped by the app mid-session and restarted. NOT checked: the real Windows app and Android after this build, dark theme on these pages, the iPhone.
+
 ### 2026-10-20 — Add amount polish (build `2026-10-20-11`)
 
 - **Did:** hid the number spinner on `#amt`, shrank its placeholder on the Add page. Found by capturing the real Windows app window (PowerShell CopyFromScreen → `imports/windows-app-add.png`, gitignored).

@@ -2556,6 +2556,51 @@ const seed = {
   $('openHist').click();
   ok('with no closed month the card stays away', $('histSum').style.display === 'none');
 
+  console.log('\n=== 79. Subscriptions & bills summary, the Next-up purchase card, the Budget month switcher ===');
+  const billSeed = JSON.parse(JSON.stringify(seed));
+  billSeed.bills = [{ id: 'b1', n: 'Chatgpt', a: 101, cur: 'ZAR', cat: 'Subscriptions' }, { id: 'b2', n: 'Fibre', a: 399, cur: 'ZAR', cat: 'Internet' }];
+  dom = await boot(billSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('dueStat').click();
+  ok('Paid totals what the matching entries came to', num($('subsPaid').textContent) === 101 && /1 bill/.test($('subsPaidN').textContent), $('subsPaid').textContent + ' / ' + $('subsPaidN').textContent);
+  ok('Still due is what is held back', num($('subsDue').textContent) === 399 && /1 still to come/.test($('subsDueN').textContent), $('subsDue').textContent);
+  ok('a warning says how many are not logged yet', $('subsWarn').style.display === 'flex' && /1 bill isn.t logged yet/.test($('subsWarnText').textContent), $('subsWarnText').textContent);
+  billSeed.bills = [billSeed.bills[0]];
+  dom = await boot(billSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('dueStat').click();
+  ok('with everything paid the warning goes away and nothing is held back', $('subsWarn').style.display === 'none' && /nothing held back/.test($('subsDueN').textContent));
+  dom = await boot(JSON.parse(JSON.stringify(seed))); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('dueStat').click();
+  ok('with no bills at all the summary is hidden', $('subsCard').style.display === 'none' && $('subsWarn').style.display === 'none');
+
+  const planSeed2 = JSON.parse(JSON.stringify(seed));
+  planSeed2.entries.push({ id: 90, amt: 2000, cat: 'Savings', note: '', date: '2026-08-30', type: 'save', cyc: '2026-08-28' });
+  planSeed2.plans = [{ id: 'p1', o: 1, n: 'Desk', price: 3500, m: '2026-09', only: false, status: 'planned', rev: 1 },
+                     { id: 'p2', o: 2, n: 'Bike', price: 9000, m: '2026-12', only: false, status: 'planned', rev: 1 }];
+  dom = await boot(planSeed2); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('planLine').click();
+  ok('Next up names the first purchase and its price', $('planHero').style.display === 'block' && $('planHeroName').textContent === 'Desk' && num($('planHeroPrice').textContent) === 3500,
+     $('planHeroName').textContent + ' ' + $('planHeroPrice').textContent);
+  ok('its bar is how much of the price is saved', /^57(\.\d+)?%$/.test($('planHeroBar').style.width), $('planHeroBar').style.width);
+  ok('and the line under it says what is saved', /R2.000 saved/.test($('planHeroSub').textContent.replace(/\s/g, ' ')), $('planHeroSub').textContent);
+  dom = await boot(JSON.parse(JSON.stringify(seed))); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('planLine').click();
+  ok('with nothing planned there is no Next up card', $('planHero').style.display === 'none');
+
+  const bsSeed = JSON.parse(JSON.stringify(seed));
+  bsSeed.budgets = { '2026-09': { inc: 20000, rev: 1, lines: [{ id: 'r', n: 'Rent', cat: 'Rent', a: 9000 }] } };
+  dom = await boot(bsSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('budLine').click();
+  const sel = $('budMonth'), at0 = sel.selectedIndex;
+  ok('the budget opens on the live month, with both arrows available', at0 > 0 && at0 < sel.options.length - 1 && !$('budPrev').disabled && !$('budNext').disabled);
+  ok('Clear is enabled for a month that has a budget', !$('budClear').disabled);
+  $('budNext').click();
+  ok('the next arrow moves to the following month', sel.selectedIndex === at0 + 1 && /No lines yet/.test($('budList').textContent), String(sel.selectedIndex));
+  ok('which has no budget, so Clear is switched off', $('budClear').disabled);
+  $('budPrev').click(); $('budPrev').click();
+  ok('the previous arrow walks back', sel.selectedIndex === at0 - 1);
+  for (let i = 0; i < 10; i++) $('budPrev').click();
+  ok('and stops at the first month offered', sel.selectedIndex === 0 && $('budPrev').disabled);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

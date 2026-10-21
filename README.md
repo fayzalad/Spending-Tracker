@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**604 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**619 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,20 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-10-21-1` — the remaining pages in the Figma look
+
+- **Subscriptions & bills**: a warning ("2 bills aren't logged yet. Their money is still safely held back."),
+  a **Paid / Still due** summary card, and each row says *Paid* or *Held back* beside its amount.
+- **Planned purchases**: a **Next up** card for the first purchase (name, price, how much is saved as a bar,
+  and when it is ready); rows keep their buttons on the same line on a wide window.
+- **Budget**: a month switcher (‹ October · 25 Sept – 24 Oct ›), a summary card with **Free** in green, and
+  the four actions as a grid: Add a line, Add my bills, Copy last month, Clear this month. Clear is greyed
+  out for a month with no budget.
+- **Settings (Month, Rules, Bills, Data)** on desktop: small-caps section headings, quiet descriptions,
+  categories and bills as pill chips inside a card, rates in rows, buttons at their natural width.
+- Wording: "this phone" became "this device" in Settings, the backup banner and the delete prompt.
+- The month-by-month table in Planned purchases scrolls in its own box instead of widening the sheet.
 
 ### `2026-10-20-11` — Add amount polish
 

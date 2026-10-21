@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-20-11">
+<meta name="slip-build" content="2026-10-21-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -739,6 +739,67 @@
   #addDlg #addFoot .go{width:100%;padding:15px;font-size:16px;border-radius:6px;display:block}
   #addDlg #addList{display:block;margin:14px auto 0;background:none;border:0;color:var(--accent);font-family:var(--sys);
     font-size:13px;font-weight:600;cursor:pointer}
+  /* ---- shared by phone and desktop: the new bits of Bills, Plans and Budget ---- */
+  .bsum{display:flex;gap:0;padding:0;margin:0 0 12px}
+  .bsum > div{flex:1;padding:14px 16px}
+  .bsum > div + div{border-left:1px solid var(--line)}
+  .bsum b{display:block;font-size:22px;font-weight:700;letter-spacing:-.03em;margin:6px 0 2px}
+  .bsum small{font-size:11.5px;color:var(--mut)}
+  #planTabBox{overflow-x:auto}   /* a long purchase name widens the table: let it scroll in its own box */
+  .goalhero{margin:0 0 12px}
+  .goalhero h3{margin:6px 0 2px;font-size:19px;letter-spacing:-.02em}
+  .goalhero b{display:block;font-size:24px;letter-spacing:-.03em;margin-bottom:10px}
+  .goalhero .ptrack{height:8px;margin-bottom:8px}
+  .goalhero .ptrack i.good{background:var(--good)}
+  .goalhero .sub{font-size:12.5px;color:var(--mut)}
+  .mswitch{display:flex;gap:8px;align-items:stretch}
+  .mswitch select{flex:1;text-align:center;text-align-last:center;font-weight:700}
+  .mswitch button{width:44px;padding:0;margin:0;font-size:20px;flex:none}
+  .mswitch button:disabled{opacity:.4}
+  .bgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .bgrid button{margin:0;width:100%}
+  .bgrid button:disabled{opacity:.45}
+  [data-platform="desktop"] .bsum{border-radius:9px}
+  [data-platform="desktop"] #budAdd{background:var(--accent);color:var(--on-accent,#fff);border-color:var(--accent)}
+  [data-platform="desktop"] #budFromBills{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+  [data-platform="desktop"] #budTot{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:6px 16px}
+  [data-platform="desktop"] #budTot tr.free td:last-child{color:var(--good)}
+  [data-platform="desktop"] #subsList li{padding:12px 16px}
+  [data-platform="desktop"] #subsList li .a{display:flex;flex-direction:column;align-items:flex-end;line-height:1.25}
+  [data-platform="desktop"] #subsList li .a::after{content:"Held back";font-size:11px;font-weight:600;color:var(--warn)}
+  [data-platform="desktop"] #subsList li.done .a::after{content:"Paid";color:var(--good)}
+  [data-platform="desktop"] #subsAdd{background:var(--accent);color:var(--on-accent,#fff);border-color:var(--accent)}
+  [data-platform="desktop"] #planAdd{background:var(--accent);color:var(--on-accent,#fff);border-color:var(--accent)}
+  [data-platform="desktop"] #planList{background:var(--card)}
+  /* on a wide page the name and its buttons share a row instead of stacking */
+  [data-platform="desktop"] #planList li .prow{flex-wrap:nowrap}
+  [data-platform="desktop"] #planList li .pn{flex:1 1 auto;min-width:0}
+  [data-platform="desktop"] .goalhero{padding:18px 20px}
+  /* ---- Settings tabs on desktop: small-caps section headings, quiet descriptions, chips in a card,
+     buttons at their natural width — the layout of the design's Look tab, applied to all five ---- */
+  @media screen and (min-width:900px){
+    [data-platform="desktop"] #setDlg [data-pane] > label,[data-platform="desktop"] #setDlg [data-pane] > .sp > label:first-child{
+      display:block;margin:26px 0 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+    [data-platform="desktop"] #setDlg [data-pane] > label:first-child{margin-top:6px}
+    [data-platform="desktop"] #setDlg .sp > label[for]{text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:600;color:var(--ink);margin:0 0 6px}
+    [data-platform="desktop"] #setDlg [data-pane] p.hint{font-size:13px;color:var(--mut);margin:0 0 12px;max-width:640px}
+    [data-platform="desktop"] #setDlg .catlist{display:flex;flex-wrap:wrap;gap:8px;background:var(--card);border:1px solid var(--line);
+      border-radius:9px;padding:12px 14px;margin-bottom:12px}
+    [data-platform="desktop"] #setDlg .catlist:empty{display:none}
+    [data-platform="desktop"] #setDlg .catlist span{background:var(--card);border:1px solid var(--line);border-radius:999px}
+    [data-platform="desktop"] #setDlg [data-pane] .sp > .ghost,[data-platform="desktop"] #setDlg .two .ghost,
+    [data-platform="desktop"] #setDlg [data-pane] .sp > .danger,[data-platform="desktop"] #setDlg [data-pane] > .danger{
+      width:auto;display:inline-block;padding:9px 18px;font-size:13.5px}
+    [data-platform="desktop"] #setDlg .two{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+    [data-platform="desktop"] #setDlg [data-pane="setup"] .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    [data-platform="desktop"] #setDlg .two .sp{margin:0}
+    [data-platform="desktop"] #setDlg [data-pane] .sp{margin-bottom:16px}
+    [data-platform="desktop"] #setDlg .rateline{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
+      border-radius:9px;padding:8px 14px;margin-bottom:8px}
+    [data-platform="desktop"] #setDlg .rateline span{width:80px;font-weight:600}
+    [data-platform="desktop"] #setDlg .rateline input{flex:1;max-width:220px}
+    [data-platform="desktop"] #setDlg .gauge{border-radius:6px}
+  }
   /* the nav pane, as in the design: logo and name on top, Synced at the bottom */
   .navsync{display:none}
   @media screen and (min-width:900px){
@@ -1031,9 +1092,9 @@
       <div class="sp"><button class="ghost" id="pullNow">Restore from cloud</button></div>
     </div>
     <div class="sp"><button class="ghost" id="joinGist">Join another device's backup</button></div>
-    <p class="hint">The token stays on this phone and is never included in the downloaded backup file.
+    <p class="hint">The token stays on this device and is never included in the downloaded backup file.
       Create one at github.com/settings/tokens with only the <b>gist</b> scope ticked.</p>
-    <label>Storage on this phone</label>
+    <label>Storage on this device</label>
     <div class="gauge"><i id="gaugeFill"></i></div>
     <p class="hint" id="gaugeText" style="margin:8px 0 16px"></p>
     <div class="sp"><button class="ghost" id="exportBtn">Download a backup</button></div>
@@ -1044,7 +1105,7 @@
         statement. You see every line before anything is added.</p></div>
     <div class="sp"><button class="ghost" id="checkUpd">Check for updates</button>
       <p class="hint" id="buildLine" style="margin:8px 0 0"></p></div>
-    <p class="hint">Clearing wipes every entry on this phone — and if cloud backup is on, that
+    <p class="hint">Clearing wipes every entry on this device — and if cloud backup is on, that
       wipe syncs to your other devices too.</p>
     <button class="danger" id="reset">Clear everything</button>
   </section>
@@ -1055,6 +1116,13 @@
 <dialog id="planDlg" tabindex="-1" autofocus>
   <h2>Planned purchases</h2>
   <p class="hint" id="planSum"></p>
+  <div class="goalhero card" id="planHero" style="display:none">
+    <span class="cap">Next up</span>
+    <h3 id="planHeroName"></h3>
+    <b class="num" id="planHeroPrice"></b>
+    <div class="ptrack"><i id="planHeroBar"></i></div>
+    <span class="sub" id="planHeroSub"></span>
+  </div>
   <ul id="planList"></ul>
   <button class="ghost" id="planAdd">Add a purchase</button>
   <div class="sp" style="margin-top:14px"><label for="planBuf">Keep at least this much left after any purchase (R)</label>
@@ -1089,20 +1157,23 @@
 
 <dialog id="budDlg" tabindex="-1" autofocus>
   <h2>Budget</h2>
-  <div class="sp"><label for="budMonth">Month</label><select id="budMonth"></select></div>
+  <div class="sp"><label for="budMonth">Month</label>
+    <div class="mswitch"><button type="button" class="ghost" id="budPrev" aria-label="Previous month">&lsaquo;</button>
+      <select id="budMonth"></select>
+      <button type="button" class="ghost" id="budNext" aria-label="Next month">&rsaquo;</button></div></div>
   <div class="sp"><label for="budInc">Money you expect this month (R)</label>
     <input id="budInc" type="number" inputmode="decimal" placeholder="e.g. 21000"></div>
   <table class="btot" id="budTot"></table>
   <ul id="budList"></ul>
-  <button class="ghost" id="budAdd">Add a line</button>
-  <div class="two" style="margin-top:10px">
+  <div class="bgrid">
+    <button class="ghost" id="budAdd">Add a line</button>
     <button class="ghost" id="budFromBills">Add my bills</button>
     <button class="ghost" id="budCopy">Copy last month</button>
+    <button class="danger" id="budClear">Clear this month</button>
   </div>
   <p class="hint" style="margin-top:12px">A budget is a plan. It does not change what you can
     spend today; the bills under Subscriptions &amp; bills are still held back as before.
     Spending is matched to a line by its category.</p>
-  <button class="danger" id="budClear">Clear this month's budget</button>
   <button class="close" id="closeBud">Done</button>
 </dialog>
 
@@ -1214,6 +1285,11 @@
 <dialog id="subsDlg" tabindex="-1" autofocus>
   <h2>Subscriptions &amp; bills</h2>
   <p class="hint" id="subsSum"></p>
+  <div class="msg warn" id="subsWarn" style="display:none"><span class="ic">!</span><span id="subsWarnText"></span></div>
+  <div class="bsum card" id="subsCard" style="display:none">
+    <div><span class="cap">Paid</span><b class="num" id="subsPaid">R0</b><small id="subsPaidN"></small></div>
+    <div><span class="cap">Still due</span><b class="num" id="subsDue">R0</b><small id="subsDueN"></small></div>
+  </div>
   <ul id="subsList"></ul>
   <button class="ghost" id="subsAdd" style="margin-top:10px">Add a subscription or bill</button>
   <p class="hint" id="subsFoot" style="margin-top:12px"></p>
@@ -2914,6 +2990,15 @@
     $('planSum').textContent='In savings now: '+R(pr.vault)+(data.goal>0?'. You expect to save '+R(data.goal)+
       ' a month unless you set a month below.':'. Set a savings goal in settings, or fill in the months below.');
     ul.innerHTML='';
+    const first=pr.live[0], hero=$('planHero');
+    hero.style.display=first?'block':'none';
+    if(first){
+      const i=pr.info[first.id], pct=i.price>0?Math.max(0,Math.min(100,i.saved/i.price*100)):0;
+      $('planHeroName').textContent=first.n; $('planHeroPrice').textContent=R(i.price);
+      $('planHeroBar').style.width=pct+'%'; $('planHeroBar').className=pct>=100?'good':'';
+      $('planHeroSub').textContent=i.ready===0?'you have it'
+        :R(i.saved)+' saved'+(i.readyCyc?' · ready '+shortDate(i.readyCyc.cs):' · short '+R(i.missing));
+    }
     const all=plans().slice().sort((a,b)=>(a.o||0)-(b.o||0));
     if(!all.length){const li=document.createElement('li');
       li.textContent='Nothing planned yet.'; ul.appendChild(li)}
@@ -3108,6 +3193,8 @@
     $('budMonth').innerHTML=list.map(cs=>'<option value="'+cs+'">'+cycName(cs)+' · '+cycRange(cs)+
       (cs===now?' (now)':'')+'</option>').join('');
     $('budMonth').value=budCs;
+    $('budPrev').disabled=$('budMonth').selectedIndex<=0;
+    $('budNext').disabled=$('budMonth').selectedIndex>=$('budMonth').options.length-1;
     const c=budCalc(budCs);
     $('budInc').value=c.expect||'';
     const rows=[['Expected in',c.expect?RB(c.expect):'not set'],['Received so far',RB(c.got)],
@@ -3151,7 +3238,7 @@
         (c.outCats.length>6?' · and '+(c.outCats.length-6)+' more':'');
       ul.appendChild(li);
     }
-    $('budClear').style.display=budHas(budCs)?'block':'none';
+    $('budClear').disabled=!budHas(budCs);
   }
   // every edit replaces the month as a whole and stamps it, which is what the merge compares
   function setBud(fn){
@@ -3161,6 +3248,9 @@
     data.budgets=Object.assign({},budgets(),{[ym]:b}); save();
   }
   $('budMonth').onchange=e=>{budCs=e.target.value;renderBudSheet()};
+  const stepBud=n=>{const sel=$('budMonth'),i=sel.selectedIndex+n;
+    if(i<0||i>=sel.options.length)return; sel.selectedIndex=i; budCs=sel.value; renderBudSheet()};
+  $('budPrev').onclick=()=>stepBud(-1); $('budNext').onclick=()=>stepBud(1);
   $('budInc').onchange=e=>setBud(b=>{b.inc=Math.max(0,Math.round((Number(e.target.value)||0)*100)/100)});
   $('closeBud').onclick=()=>$('budDlg').close();
   $('budFromBills').onclick=()=>{
@@ -3407,6 +3497,7 @@
     const all=dueBills(cs);
     const box=$('subsList'); box.innerHTML='';
     if(!all.length){
+      $('subsCard').style.display='none'; $('subsWarn').style.display='none';
       $('subsSum').textContent='No expected bills yet.';
       $('subsFoot').textContent='Add rent, fibre and your subscriptions in settings and they '+
         'get held back from your daily rate until you pay them.';
@@ -3414,6 +3505,13 @@
     }
     const notYet=all.filter(b=>!billPaid(b,cs));
     const done=all.filter(b=>billPaid(b,cs));
+    // the summary above the list: what has gone out, what is still held back
+    const paidSum=done.reduce((t,b)=>{const m=billMatch(b,cs);return t+(m?m.amt:billZar(b))},0);
+    $('subsCard').style.display='flex';
+    $('subsPaid').textContent=R(paidSum); $('subsPaidN').textContent=done.length+(done.length===1?' bill':' bills');
+    $('subsDue').textContent=R(c.reserve); $('subsDueN').textContent=notYet.length?notYet.length+' still to come':'nothing held back';
+    $('subsWarn').style.display=notYet.length?'flex':'none';
+    $('subsWarnText').innerHTML='<b>'+notYet.length+(notYet.length===1?' bill isn\u2019t':' bills aren\u2019t')+' logged yet.</b> Their money is still safely held back.';
     $('subsSum').textContent=done.length+' of '+all.length+' paid this month'+
       (notYet.length?' · '+R(c.reserve)+' still held back':' · nothing held back');
     const yearly=expected().filter(b=>b.every==='year'&&!dueIn(b,cs));
@@ -4042,7 +4140,7 @@
     r.readAsText(f);e.target.value='';};
   $('reset').onclick=()=>{
     const n=data.entries.length;
-    if(!confirm('Delete all '+n+' entries on this phone? This cannot be undone.'))return;
+    if(!confirm('Delete all '+n+' entries on this device? This cannot be undone.'))return;
     if(data.tok&&data.gistId&&
        !confirm('Cloud backup is on, so this wipe will sync to your other devices too. '+
                 'Still go ahead?'))return;
@@ -4370,10 +4468,10 @@
     if(days===null){
       b.className='banner';$('bannerIcon').textContent='⚠';
       $('bannerText').innerHTML='<b>Nothing is backed up yet</b>'+n+
-        ' entries live only on this phone.';
+        ' entries live only on this device.';
     }else if(days>=21){
       b.className='banner';$('bannerIcon').textContent='⚠';
-      $('bannerText').innerHTML='<b>Last backup was '+days+' days ago</b>Anything since then is only on this phone.';
+      $('bannerText').innerHTML='<b>Last backup was '+days+' days ago</b>Anything since then is only on this device.';
     }else{b.style.display='none';return}
     b.style.display='flex';
   }
