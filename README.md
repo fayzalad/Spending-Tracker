@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**673 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**680 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -46,7 +46,7 @@ that code review missed, several in the same session they were introduced.
 
 ```
 available   = money in − money spent − money moved to savings
-for living  = available − unpaid expected bills − savings goal not yet banked
+for living  = available − unpaid expected bills
 today       = (for living + spent today) ÷ days left, minus spent today
 this week   = today + one day's allowance for each remaining day of the week
 this month  = for living, exactly
@@ -116,7 +116,7 @@ A **plan** is one planned purchase. `o` is its order, `m` the month its pay cycl
 (`'2026-11'` is the cycle ending in November), `only` the "only if the safety amount is left"
 flag, `status` one of `planned` / `bought` / `skipped`. `planBuf` is the safety amount (default
 1000), `planSave` per-month overrides of expected saving (`{'2026-11': 4000}`); with no override a
-month uses `data.goal`.
+month expects nothing (there is no savings goal any more; `data.goal` is left in old data and ignored).
 
 `amt` is **always in rand**; negative means a refund. Currency is a display layer — a cycle's
 currency converts through a rate frozen at the moment it was chosen (`data.cycRate`), so a closed
@@ -134,6 +134,15 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-11-04-1` — no savings goal: you put away what you choose
+
+- The "Save each month" setting and everything built on it are gone. Nothing is held back from the daily, weekly or
+  monthly figures for savings any more; saving is done by hand on the savings card.
+- When a month ends with money left, the card offers **Put money away** (prefilled with the leftover, change it to any
+  amount; it is filed into the month that ended) or **Not this month**. Either one stops the offer for that month.
+- The "On track to save" tile is now **Likely left on <last day>**: what would be left at month end if this week's
+  pace carries on. Planned purchases only count the monthly savings you fill in.
 
 ### `2026-10-21-10` — foreign-currency charges match with a small tolerance
 

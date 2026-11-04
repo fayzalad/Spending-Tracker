@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**673 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**680 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -77,7 +77,7 @@ reloads.
 
 ```
 available   = money in − money spent − money moved to savings
-for living  = available − unpaid expected bills − savings goal not yet banked
+for living  = available − unpaid expected bills
 today       = (for living + spent today) ÷ days left, minus spent today
 this week   = today + one day's allowance for each remaining day of the week
 this month  = for living, exactly
@@ -155,11 +155,12 @@ foreign currency and are converted at that day's rate, then **never re-converted
 the same amount and category within 20 seconds asks before logging twice. Typing an amount
 previews its cost in days of allowance.
 
-**Savings.** The **goal** holds money back from the daily rate; the **vault** is money actually
-moved. Money already banked counts toward the goal so it is not held back twice. A deliberate
-withdrawal permanently lowers what is still protected this cycle rather than snapping the goal
-back to unmet. When a month closes with money left the card offers to bank it, filed back into
-the month it came from; if a backdated entry later pushes that month negative, the card flags the
+**Savings.** Saving is by hand only (from build 2026-11-04-1 the monthly **goal** is gone; nothing is
+held back from the daily rate, and old `data.goal` values are ignored). The **vault** is money actually
+moved. When a month closes with money left the card offers **Put money away** (any amount, filed back into
+the month it came from, dated its last day) or **Not this month** (`data.sweepSkip[cs]`, unioned in
+`mergeStores`); either stops the offer for that month. The "Likely left on <end>" tile projects month-end
+money at this week's pace; if a backdated entry later pushes that month negative, the card flags the
 shortfall and offers to pull the money back. Each pot keeps its own currency.
 
 **Budget (main tracker only).** `data.budgets['YYYY-MM']` = `{inc, rev, lines:[{id,n,cat,a,bill}]}`,
@@ -178,7 +179,7 @@ like the log form's rand entries plus `imp` (batch id). Undo tombstones the batc
 **Planned purchases (main tracker only).** A list of big purchases funded from the vault in
 order, on the savings card (one "Next:" line) and a sheet with a month-by-month projection. Data:
 `data.plans` (`{id,o,n,price,m,only,status,note,link,paid,at,rev}`), `data.planBuf` (safety
-amount, default 1000), `data.planSave` (per-month expected saving; falls back to `data.goal`).
+amount, default 1000), `data.planSave` (per-month expected saving; a month left empty expects 0).
 `m` is the month the target cycle is **named for** (`'2026-11'` = 25 Oct – 24 Nov); one in the
 past means "now". Only the **rand pot** counts: plans are in rand and Bought it can only withdraw
 rand. Funding is in order (an item's saved/missing is the vault minus the items above it);
@@ -244,7 +245,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 673 | 355 |
+| Tests | 680 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The

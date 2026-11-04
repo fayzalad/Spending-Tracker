@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-10-21-10">
+<meta name="slip-build" content="2026-11-04-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -233,6 +233,11 @@
   .sweep span{flex:1}
   .sweep button{background:var(--good-soft);color:var(--good);border:0;border-radius:11px;
     padding:10px 13px;font-family:var(--sys);font-size:13px;font-weight:700;flex:none}
+  /* a finished month's leftover: the sentence on top, its two choices side by side under it */
+  .sweep.choice{flex-wrap:wrap}
+  .sweep.choice span{flex:1 1 100%}
+  .sweep.choice button{flex:1 1 0;width:auto;margin:0}
+  .sweep.choice button.ghost{background:transparent;color:var(--mut);box-shadow:inset 0 0 0 1px var(--line)}
   .planline{margin-top:14px;border-top:1px solid var(--line);padding-top:13px;display:flex;
     align-items:center;gap:10px;font-size:13px;line-height:1.35;cursor:pointer}
   .planline span:first-child{flex:1}
@@ -953,7 +958,7 @@
       <span class="sub" id="potSub">—</span></div>
     <div class="stat"><span class="cap" id="secCap">Left this month</span><b class="num" id="secVal">—</b>
       <span class="sub" id="secSub">—</span></div>
-    <div class="stat"><span class="cap">On track to save</span><b class="num" id="save">—</b>
+    <div class="stat"><span class="cap" id="saveCap">Likely left</span><b class="num" id="save">—</b>
       <span class="sub" id="saveSub">—</span></div>
     <div class="stat tappable" id="dueStat"><span class="cap">Subscriptions still due ›</span>
       <b class="num" id="due">—</b>
@@ -1044,7 +1049,6 @@
   <section data-pane="setup">
     <div class="two">
       <div class="sp"><label for="sDay">Allowance day</label><input id="sDay" type="number" min="1" max="28" inputmode="numeric"></div>
-      <div class="sp"><label for="sGoal">Save each month</label><input id="sGoal" type="number" inputmode="decimal"></div>
     </div>
     <p class="hint">Money added before the allowance day counts toward the month you're in.
       On or after it, it starts the next one — you can override that per entry.</p>
@@ -1842,11 +1846,6 @@
     const avail=carry+cIn-cBill-cLive-cSaved;
     const daysLeft=Math.max(1,diff(t,ce)+1);
     const reserve=reserveFor(cs);
-    // whatever you've already moved into savings counts toward the goal — and a deliberate
-    // withdrawal permanently lowers what's still being protected this cycle, rather than
-    // snapping the goal straight back to "unmet" and re-reserving money you just decided to spend
-    const cWithdrawn=sum(es,isUnsave);
-    const goalLeft=Math.max(0,Math.max(0,data.goal-cWithdrawn)-Math.max(0,cSaved));
     // pace so far this month, and when the money would run out at that pace
     const elapsedDays=Math.max(1,diff(cs,t)+1);
     // a trailing week, so one heavy day early on doesn't read as your normal rate
@@ -1854,10 +1853,10 @@
     const paceFrom=addDays(t,-(paceWin-1));
     const paceSpend=sum(data.entries,e=>isLiving(e)&&e.date>=paceFrom&&e.date>=cs&&e.date<=t);
     const pace=paceSpend/paceWin;
-    const spendable=Math.max(0,avail-goalLeft-reserve);
+    const spendable=Math.max(0,avail-reserve);
     const runDays=pace>0?Math.floor(spendable/pace):null;
     // what is left for day-to-day, divided by the days still to come (today included)
-    const livingLeft=Math.max(0,avail-goalLeft-reserve);
+    const livingLeft=Math.max(0,avail-reserve);
     const spentToday=sum(data.entries,e=>isLiving(e)&&e.date===t);
     const startOfDay=livingLeft+spentToday;      // what you woke up with
     const baseDaily=startOfDay/daysLeft;         // today's allowance
@@ -1893,7 +1892,7 @@
     return {t,cs,ce,cIn,cBill,cLive,carry,avail,daysLeft,ws,we,wLive,wIn,wBill,weekLeft,monthLeft,
             wDaysLeft,wBudget,mBudget,mDaysLeft,eats,cSaved,
             foodShare,lastOrder,sinceOrder,orderCount:orders.length,
-            reserve,pace,spendable,runDays,elapsedDays,paceWin,goalLeft,
+            reserve,pace,spendable,runDays,elapsedDays,paceWin,
             livingLeft,baseDaily,todayLeft,spentToday,tomorrowDaily};
   }
 
@@ -1950,13 +1949,7 @@
     const potList=Object.keys(potTotals).filter(k=>Math.abs(potTotals[k])>=0.5);
     $('vault').textContent=R(Math.max(0,c.cSaved));
     $('vaultAll').textContent=potList.length?potList.map(k=>RC(potTotals[k],k)).join(' \u00b7 '):R(0);
-    $('vaultSub').textContent=data.goal>0
-      ? (c.goalLeft>0?R(c.goalLeft)+' of your '+R(data.goal)+' goal still held back from your daily rate'
-                     :(c.cSaved>=data.goal-1
-                        ?'this month\u2019s '+R(data.goal)+' goal is done'
-                        // money taken out lowers what is still held back, so the goal is not "done" \u2014 it has been released
-                        :'no goal held back \u2014 you took money out this month'))
-      : (c.cSaved>0?'moved across this month':'nothing put away this month');
+    $('vaultSub').textContent=c.cSaved>0?'moved across this month':'nothing put away this month';
     $('withdrawBtn').style.display=potList.length?'block':'none';
     renderPlanLine();
     if($('planDlg').open)renderPlanSheet();
@@ -1965,16 +1958,6 @@
     renderNavSync();
     const sweeps=unsweptMonths();
     const sb=$('sweepBox'); sb.innerHTML='';
-    // the goal is only protected until you actually move it — offer to do that now
-    if(data.goal>0&&c.goalLeft>0.5&&c.avail-c.reserve>=c.goalLeft-0.5){
-      const row=document.createElement('div'); row.className='sweep';
-      row.innerHTML='<span>Your '+R(data.goal)+' goal is being held back from your daily '+
-        'spending, but it is still sitting in your account. Move it across so it is really saved.</span>';
-      const b=document.createElement('button');
-      b.textContent='Put '+R(c.goalLeft)+' away';
-      b.onclick=()=>openVault('save',Math.round(c.goalLeft*100)/100,cycName(c.cs)+' goal');
-      row.appendChild(b); sb.appendChild(row);
-    }
     // a backdated entry can push an already-swept month into the red
     const shortfalls=[...new Set(data.entries.map(e=>e.cyc||cycStart(e.date)))]
       .filter(cs=>cs<c.cs&&leftoverOf(cs)<-0.5).sort();
@@ -1993,11 +1976,14 @@
       const left=leftoverOf(cs);
       const row=document.createElement('div'); row.className='sweep';
       row.innerHTML='<span>'+cycName(cs)+' finished with <b>'+R(left)+
-        '</b> left over. Put it away so it does not get spent this month.</span>';
+        '</b> left over. Put away as much of it as you like.</span>';
       const b=document.createElement('button');
-      b.textContent='Save '+R(left);
+      b.textContent='Put money away';
       b.onclick=()=>openVault('save',Math.round(left*100)/100,cycName(cs)+' leftover',cs);
-      row.appendChild(b); sb.appendChild(row);
+      row.classList.add('choice');
+      const skip=document.createElement('button'); skip.className='ghost'; skip.textContent='Not this month';
+      skip.onclick=()=>{data.sweepSkip=Object.assign({},data.sweepSkip,{[cs]:1});save()};
+      row.appendChild(b); row.appendChild(skip); sb.appendChild(row);
     });
     if(!sweeps.length&&!potList.length){
       const row=document.createElement('div'); row.className='sweep';
@@ -2091,18 +2077,17 @@
     $('secVal').textContent=R(isW?c.mBudget-c.cLive:c.avail);
     $('secVal').className='num '+((isW?c.mBudget-c.cLive:c.avail)<0?'bad':'');
     $('secSub').textContent=[cycName(c.cs)+' · '+cycRange(c.cs),
-      data.goal>0?'holding '+R(c.goalLeft)+' for savings':null,
       c.reserve>0?R(c.reserve)+' for bills':null].filter(Boolean).join(' · ');
 
-    const projected=Math.max(0,c.avail-c.reserve-c.livingLeft);
-    const onTrack=Math.max(0,c.cSaved)+projected;
-    $('save').textContent=R(onTrack);
-    $('save').className='num '+(data.goal>0?(onTrack>=data.goal-1?'good':'warn'):'');
-    $('saveSub').textContent=data.goal>0
-      ?(onTrack>=data.goal-1
-        ? (c.cSaved>0?R(c.cSaved)+' already put away':'goal of '+R(data.goal)+' is safe')
-        : R(data.goal-onTrack)+' short of your goal')
-      :'set a goal in settings';
+    // what would be left when the month ends if this week's pace carries on: roughly what
+    // there will be to put away then
+    const likely=c.avail-c.reserve-c.pace*(c.daysLeft-1);
+    $('saveCap').textContent='Likely left on '+D(c.ce).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+    $('save').textContent=likely<0?'\u2212'+R(-likely):R(likely);
+    $('save').className='num '+(likely<0?'bad':'good');
+    $('saveSub').textContent=c.pace>0
+      ?(likely<0?'short at '+R(c.pace)+' a day, your pace this week':'at '+R(c.pace)+' a day, your pace this week')
+      :'if nothing more is spent';
 
     const m=$('msg'), mt=$('msgText'), ic=m.querySelector('.ic');
     const inToday=sum(data.entries,e=>isIn(e)&&e.date===c.t);
@@ -2288,6 +2273,7 @@
       .filter(e=>!tomb[e.id])
       .sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0);
     out.deleted=tomb;
+    out.sweepSkip=Object.assign({},older.sweepSkip||{},newer.sweepSkip||{});
     // planned purchases merge item by item too: union by id, a deletion wins, the newer edit wins
     const pm={};
     (older.plans||[]).forEach(p=>{pm[p.id]=p});
@@ -2715,16 +2701,10 @@
     });
     y-=34;
 
-    if(put>0||data.goal>0){
+    if(put>0){
       nl(20);
       txt('Moved to savings',L,{size:10}); rt(Rcyc(put,cs),{size:10,bold:true});
       nl(14);
-      if(data.goal>0){
-        txt(put>=data.goal?'Savings goal of '+Rcyc(data.goal,cs)+' was met.'
-          :'Savings goal of '+Rcyc(data.goal,cs)+' was missed by '+Rcyc(data.goal-put,cs)+'.',
-          L,{size:9,fill:MUTE});
-        nl(10);
-      }
     }
 
     if(catRows.length){
@@ -2874,10 +2854,13 @@
     const es=inCyc(cs);
     return sum(es,isIn)-sum(es,isBill)-sum(es,isLiving)-sum(es,isSave)+sum(es,isUnsave);
   }
+  // a finished month offers its leftover until you put some away from it (the put-away is dated
+  // on its last day) or say "not this month" — any amount counts, there is no goal to reach
   function unsweptMonths(){
     const cur=cycStart(today());
     return [...new Set(data.entries.map(e=>e.cyc||cycStart(e.date)))]
-      .filter(cs=>cs<cur&&leftoverOf(cs)>0.5).sort();
+      .filter(cs=>cs<cur&&leftoverOf(cs)>0.5&&!(data.sweepSkip&&data.sweepSkip[cs])&&
+        !inCyc(cs).some(e=>isSave(e)&&e.date>=cycEnd(cs))).sort();
   }
 
   let vaultMode='save', lastPotCur='ZAR';
@@ -3018,7 +3001,7 @@
   function planProject(){
     const N=36, cyc=planCycles(N), buf=Number(data.planBuf)||0, vault=planVault();
     const exp=ym=>{const v=data.planSave&&data.planSave[ym];
-      return (v===undefined||v===null||v==='')?(Number(data.goal)||0):(Number(v)||0)};
+      return Number(v)||0};
     const saved0=sum(inCyc(cyc[0].cs),isSave)-sum(inCyc(cyc[0].cs),isUnsave);
     const contrib=cyc.map((c,k)=>k===0?Math.max(0,exp(c.ym)-saved0):exp(c.ym));
     const live=plans().filter(p=>p.status==='planned').slice().sort((a,b)=>(a.o||0)-(b.o||0));
@@ -3074,8 +3057,7 @@
 
   function renderPlanSheet(){
     const pr=planProject(), ul=$('planList');
-    $('planSum').textContent='In savings now: '+R(pr.vault)+(data.goal>0?'. You expect to save '+R(data.goal)+
-      ' a month unless you set a month below.':'. Set a savings goal in settings, or fill in the months below.');
+    $('planSum').textContent='In savings now: '+R(pr.vault)+'. Fill in below what you expect to put away each month.';
     ul.innerHTML='';
     const first=pr.live[0], hero=$('planHero');
     hero.style.display=first?'block':'none';
@@ -3109,7 +3091,7 @@
     $('planBuf').value=data.planBuf;
     const box=$('planTabBox'); box.innerHTML='';
     if(!pr.rows.length){$('planTabHint').textContent='Add a purchase to see the plan month by month.';return}
-    $('planTabHint').textContent='Each row is a pay cycle. Leave "You save" empty to use your goal. Skipped means a conditional item would leave less than your safety amount.';
+    $('planTabHint').textContent='Each row is a pay cycle. Fill in "You save" with what you expect to put away that month. Skipped means a conditional item would leave less than your safety amount.';
     const t=document.createElement('table'); t.className='ptab';
     t.innerHTML='<tr><th>Month</th><th>Start</th><th>Buy</th><th>Left</th><th>You save</th></tr>';
     pr.rows.forEach(r=>{
@@ -3121,7 +3103,7 @@
       tr.querySelector('b').textContent=r.c.name;
       const bt=tr.children[2]; bt.textContent=buys; if(r.items.some(x=>x.skipped))bt.className='cond';
       const inp=document.createElement('input'); inp.type='number'; inp.inputMode='decimal';
-      inp.placeholder=String(Number(data.goal)||0); inp.setAttribute('aria-label','Expected saving, '+r.c.name);
+      inp.placeholder='0'; inp.setAttribute('aria-label','Expected saving, '+r.c.name);
       const cur=data.planSave&&data.planSave[r.c.ym]; inp.value=(cur===undefined||cur===null)?'':cur;
       inp.onchange=()=>{
         data.planSave=data.planSave||{};
@@ -3759,14 +3741,12 @@
       const i=sum(es,isIn), b=sum(es,isBill), l=sum(es,isLiving);
       const put=sum(es,isSave)-sum(es,isUnsave);
       const leftover=i-b-l-put;
-      const met=data.goal>0&&(put+Math.max(0,leftover))>=data.goal;
       const row=document.createElement('div'); row.className='hist';
       // "saved" is what was kept, whether it was moved into savings or just left over
       const kept=i-b-l;
       row.innerHTML='<div><div class="l">'+cycName(cs)+'</div>'+
         '<div class="s">'+cycRange(cs)+'</div>'+
-        (data.goal>0?'<span class="pill '+(met?'ok':'no')+'">'+
-          (met?'Goal met':'Missed by '+Rcyc(data.goal-leftover,cs))+'</span>':'')+'</div>'+
+'</div>'+
         '<div class="r"><b class="num good" style="'+(kept<0?'color:var(--bad)':'')+'">'+
         (kept>=0?Rcyc(kept,cs)+' saved':'Over by '+Rcyc(-kept,cs))+'</b>'+
         '<div class="s">'+Rcyc(i,cs)+' in</div>'+
@@ -3918,10 +3898,9 @@
 
   function commitSettings(){
     const d=Math.max(1,Math.min(28,Number($('sDay').value)||data.day));
-    const g=Number($('sGoal').value)||0, st=$('sStart').value;
+    const st=$('sStart').value;
     let changed=false;
     if(d!==data.day){data.day=d;changed=true}
-    if(g!==data.goal){data.goal=g;changed=true}
     ['GBP','USD','GHS'].forEach(k=>{const v=Number($('r'+k).value);
       if(v&&v!==data.rates[k]){data.rates[k]=v;data.ratesAt=today();changed=true}});
     // read before any anchor change below, since setAnchor's refile() repopulates this
@@ -4187,7 +4166,6 @@
   $('sGlass').onchange=e=>{data.glass=e.target.checked;applyTheme();save()};
   $('sStart').onchange=e=>{if(e.target.value)setAnchor(e.target.value)};
   $('resetStart').onclick=()=>{clearAnchor(cycStart(today()))};
-  $('sGoal').onchange=e=>{data.goal=Number(e.target.value)||0;save()};
 
   $('exportBtn').onclick=async()=>{
     const blob=new Blob([JSON.stringify(Object.assign({slipFormat:4,slipBuild:BUILD},data))],
@@ -4261,7 +4239,7 @@
   }
 
   function fillSet(){
-    $('sDay').value=data.day;$('sGoal').value=data.goal;buildThemes();
+    $('sDay').value=data.day;buildThemes();
     $('sGlass').checked=!!data.glass;
     const reduced=matchMedia('(prefers-reduced-transparency: reduce)').matches;
     $('glassHint').textContent=reduced
@@ -4937,8 +4915,8 @@
       if(r.ref&&/^same as line/.test(r.dup||''))r.dup='';
       if(r.ref&&data.entries.some(e=>e.ref===r.ref))r.dup='already imported (same bank reference)';
       // a charge in another currency is entered at whatever rate was in the table that day, so allow 5% for that
-      if(!r.dup&&r.state!=='skip'&&r.cur&&r.cur!=='ZAR'&&r.type!=='in'){
-        const near=data.entries.find(e=>isSpend(e)&&Math.abs(e.amt-r.amt)<=Math.max(1,r.amt*0.05)&&Math.abs(diff(e.date,r.date))<=1);
+      if(!r.dup&&r.state!=='skip'&&r.cur&&r.cur!=='ZAR'){
+        const near=data.entries.find(e=>(r.type==='in'?isIn(e):isSpend(e))&&Math.abs(e.amt-r.amt)<=Math.max(1,r.amt*0.05)&&Math.abs(diff(e.date,r.date))<=1);
         if(near)r.dup='looks already logged (the exchange rate differs a little): '+near.date+' '+near.cat+' '+fmtMoney(near.amt,'ZAR')+(near.note?' ('+near.note+')':'');
       }
       r.pick=r.state==='new'&&!r.dup&&!!r.cat;

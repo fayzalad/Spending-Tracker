@@ -88,10 +88,11 @@ const seed = {
   ok('cell names what it holds', $('billCap').textContent === 'Rent & water',
      $('billCap').textContent);
   ok('subs now count as living', num($('outVal').textContent) === 2299, $('outVal').textContent);
-  // R5 649 for day-to-day + R101 already spent today = R5 750 over 25 days = R230,
-  // less the R101 subscription paid today = R129 left for the rest of today
+  // nothing is held back for savings (that goal is gone; saving is by hand), so R9 149 for
+  // day-to-day + R101 already spent today = R9 250 over 25 days = R370, less the R101
+  // subscription paid today = R269 left for the rest of today
   const safe = num($('safe').textContent);
-  ok("today's allowance nets off what's gone", Math.abs(safe - 129) < 3, 'got ' + safe);
+  ok("today's allowance nets off what's gone", Math.abs(safe - 269) < 3, 'got ' + safe);
   ok('sub names the subscription spend',
      /101 of today/.test($('safeSub').textContent), $('safeSub').textContent);
   ok('month range shows 28 Aug', $('secSub').textContent.includes('28 Aug'), $('secSub').textContent);
@@ -297,8 +298,8 @@ const seed = {
   ok('offers to put last month away', flat($('sweepBox').textContent).includes('6 000'),
      $('sweepBox').textContent.slice(0, 120));
   const beforeSafe = num($('safe').textContent);
-  const sweepBtn = [...d.querySelectorAll('#sweepBox button')].find(b => /Save R/.test(b.textContent));
-  ok('offers a Save button for the leftover', !!sweepBtn,
+  const sweepBtn = [...d.querySelectorAll('#sweepBox button')].find(b => /Put money away/.test(b.textContent));
+  ok('offers a put-away button for the leftover', !!sweepBtn,
      [...d.querySelectorAll('#sweepBox button')].map(b => b.textContent).join(' / '));
   sweepBtn.click();
   ok('sweep sheet prefilled with the leftover', Number($('vaultAmt').value) === 6000, $('vaultAmt').value);
@@ -445,7 +446,7 @@ const seed = {
   console.log('\n=== 18. savings are visible and explorable ===');
   dom = await boot(twoMonths); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   $('tabMonth').click();
-  [...d.querySelectorAll('#sweepBox button')].find(b => /Save R/.test(b.textContent)).click();
+  [...d.querySelectorAll('#sweepBox button')].find(b => /Put money away/.test(b.textContent)).click();
   $('vaultSave').click();
   await new Promise(r => setTimeout(r, 60));
   ok('summary row shows nothing for an untouched month', $('saveCell').style.display === 'none',
@@ -490,53 +491,66 @@ const seed = {
   ok('no receipt dialog', !d.getElementById('rcptDlg'));
   ok('CSV header drops the column', !HTML_HAS_RECEIPT);
 
-  console.log('\n=== 21. the goal and the savings tray agree ===');
-  const goalSeed = JSON.parse(JSON.stringify(seed));   // R20 795 in, R3 500 goal, nothing saved
+  console.log('\n=== 21. no savings goal: nothing is held back, you put away what you choose ===');
+  // an old copy still carries goal: 3500; the app must ignore it
+  const goalSeed = JSON.parse(JSON.stringify(seed));   // R20 795 in, old R3 500 goal, nothing saved
   dom = await boot(goalSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   $('tabMonth').click();
-  ok('card explains what is still held back',
-     /3 500 of your R3 500 goal still held back/.test($('vaultSub').textContent.replace(/\s/g, ' ')),
-     $('vaultSub').textContent);
-  ok('offers to move it across',
-     /Put R3 500 away/.test($('sweepBox').textContent.replace(/\s/g, ' ')),
-     $('sweepBox').textContent.slice(0, 140));
+  ok('the setting is gone', !$('sGoal'));
+  ok('the card mentions no goal', !/goal/i.test($('vaultSub').textContent + $('sweepBox').textContent),
+     $('vaultSub').textContent + ' / ' + $('sweepBox').textContent.slice(0, 140));
+  ok('the old goal is not held back from available', !/for savings/.test($('secSub').textContent),
+     $('secSub').textContent);
+  ok('the tile reads what is likely left at month end', /^Likely left on 24 Sept?/.test($('saveCap').textContent),
+     $('saveCap').textContent);
+  ok('and names the pace it assumes', /a day, your pace this week/.test($('saveSub').textContent),
+     $('saveSub').textContent);
   const dailyBefore = num($('safe').textContent);
-  const onTrackBefore = num($('save').textContent);
-
-  [...d.querySelectorAll('#sweepBox button')].find(b => /Put R/.test(b.textContent)).click();
-  ok('prefilled with the whole goal', Number($('vaultAmt').value) === 3500, $('vaultAmt').value);
+  [...d.querySelectorAll('#sweepBox button')].find(b => /Put money away|Add more/.test(b.textContent)).click();
+  ok('the amount is left for you to choose', $('vaultAmt').value === '', $('vaultAmt').value);
+  $('vaultAmt').value = '1250';
   $('vaultSave').click();
   await new Promise(r => setTimeout(r, 60));
-
-  ok('savings now holds it', num($('vault').textContent) === 3500, $('vault').textContent);
-  ok('daily rate is unchanged — no double counting',
-     Math.abs(num($('safe').textContent) - dailyBefore) <= 1,
+  ok('savings now holds what you chose', num($('vault').textContent) === 1250, $('vault').textContent);
+  ok('and the card says so', /moved across this month/.test($('vaultSub').textContent), $('vaultSub').textContent);
+  ok('putting money away lowers the daily rate', num($('safe').textContent) < dailyBefore - 10,
      dailyBefore + ' → ' + num($('safe').textContent));
-  ok('on-track figure still reads the goal',
-     Math.abs(num($('save').textContent) - onTrackBefore) <= 1,
-     onTrackBefore + ' → ' + num($('save').textContent));
-  ok('card now shows this month banked', num($('vault').textContent) === 3500,
-     $('vault').textContent);
-  ok('and says the goal is done', /goal is done/.test($('vaultSub').textContent),
-     $('vaultSub').textContent);
-  ok('offer disappears once met',
-     !/Put R/.test($('sweepBox').textContent), $('sweepBox').textContent.slice(0, 120));
-  ok('goal reads as met', /already put away/.test($('saveSub').textContent), $('saveSub').textContent);
 
-  console.log("\n=== 21b. withdrawing a met goal actually frees the money, doesn't re-reserve it ===");
-  const safeWithGoalMet = num($('safe').textContent);
+  console.log("\n=== 21b. taking it back out frees it again ===");
+  const safeSaved = num($('safe').textContent);
   $('withdrawBtn').click();
-  $('vaultAmt').value = '3500';
+  $('vaultAmt').value = '1250';
   $('vaultSave').click();
   await new Promise(r => setTimeout(r, 60));
-  ok('the goal no longer nudges to be saved again',
-     !/held back from your daily rate/.test($('vaultSub').textContent), $('vaultSub').textContent);
-  // £3500 spread over the ~25 days left in the cycle, not the full amount in one day
-  ok("withdrawing it actually raises what's spendable, instead of the goal re-reserving the same amount",
-     num($('safe').textContent) > safeWithGoalMet + 100,
-     safeWithGoalMet + ' → ' + num($('safe').textContent));
-  ok('the sweep offer to save the goal does not reappear',
-     !/Put R/.test($('sweepBox').textContent), $('sweepBox').textContent.slice(0, 120));
+  ok("withdrawing raises what's spendable", Math.abs(num($('safe').textContent) - dailyBefore) <= 1,
+     safeSaved + ' → ' + num($('safe').textContent) + ' (was ' + dailyBefore + ')');
+
+  console.log("\n=== 21c. a finished month's leftover: any amount, or not this month ===");
+  dom = await boot(JSON.parse(JSON.stringify(twoMonths)));
+  w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('tabMonth').click();
+  const sweepFlat = () => $('sweepBox').textContent.replace(/\s/g, ' ');
+  ok('the leftover is offered', /finished with R6 000 left over/.test(sweepFlat()), sweepFlat().slice(0, 140));
+  [...d.querySelectorAll('#sweepBox button')].find(b => /Put money away/.test(b.textContent)).click();
+  ok('prefilled with the leftover', Number($('vaultAmt').value) === 6000, $('vaultAmt').value);
+  $('vaultAmt').value = '1500';
+  $('vaultSave').click();
+  await new Promise(r => setTimeout(r, 60));
+  ok('part of it is saved', num($('vaultAll').textContent) === 1500, $('vaultAll').textContent);
+  ok('and the month stops asking', !/left over/.test(sweepFlat()), sweepFlat().slice(0, 140));
+  ok('the rest stays spendable this month', num($('secVal').textContent) === 26795 - 1500, $('secVal').textContent);
+
+  dom = await boot(JSON.parse(JSON.stringify(twoMonths)));
+  w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('tabMonth').click();
+  [...d.querySelectorAll('#sweepBox button')].find(b => /Not this month/.test(b.textContent)).click();
+  ok('"Not this month" clears the offer', !/left over/.test(sweepFlat()), sweepFlat().slice(0, 140));
+  ok('and nothing was saved', !d.querySelectorAll('#vaultLogList li').length && num($('secVal').textContent) === 26795,
+     $('secVal').textContent);
+  ok('the choice is stored', JSON.parse(w.localStorage.getItem('slip:v4')).sweepSkip['2026-07-28'] === 1,
+     JSON.stringify(JSON.parse(w.localStorage.getItem('slip:v4')).sweepSkip));
+  ok('you can still put money away by hand', [...d.querySelectorAll('#sweepBox button')].some(b => /Put money away|Add more/.test(b.textContent)),
+     [...d.querySelectorAll('#sweepBox button')].map(b => b.textContent).join(' / '));
 
   console.log('\n=== 22. two devices merge instead of clobbering ===');
   const merge = eval('(' + require('fs').readFileSync(path.join(__dirname, 'index.html'), 'utf8')
@@ -549,6 +563,9 @@ const seed = {
   ok('entries from both sides survive', m.entries.map(e => e.id).join() === '1,2,3',
      m.entries.map(e => e.id).join());
   ok('settings follow the newer device', m.goal === 4000, String(m.goal));
+  m = merge(Object.assign({}, phone, { sweepSkip: { '2026-07-28': 1 } }), Object.assign({}, droid, { sweepSkip: { '2026-08-28': 1 } }));
+  ok('"not this month" from either device survives', Object.keys(m.sweepSkip).sort().join() === '2026-07-28,2026-08-28',
+     JSON.stringify(m.sweepSkip));
 
   const deletedThere = { rev: 300, deleted: { 2: Date.now() },
     entries: [{ id: 1, date: '2026-08-28', amt: 100 }] };
@@ -1228,7 +1245,7 @@ const seed = {
   console.log('\n=== 47. savings show the month and the total ===');
   dom = await boot(twoMonths); w = dom.window; d = w.document; $ = id => d.getElementById(id);
   $('tabMonth').click();
-  [...d.querySelectorAll('#sweepBox button')].find(b => /Save R/.test(b.textContent)).click();
+  [...d.querySelectorAll('#sweepBox button')].find(b => /Put money away/.test(b.textContent)).click();
   $('vaultSave').click();
   await new Promise(r => setTimeout(r, 60));
   ok('the total counts it', num($('vaultAll').textContent) === 6000, $('vaultAll').textContent);
@@ -2014,7 +2031,9 @@ const seed = {
   const planSeed = () => ({
     day: 25, starts: {}, goal: 3000, theme: 'light', rates: { ZAR: 1 }, cats: [], groups: [],
     ticks: {}, potCats: [], exclude: [], deleted: {}, holdings: [], bills: [],
-    planBuf: 1000, planSave: { '2026-11': 4000 },
+    // no savings goal any more: the expected saving is only what is filled in per month
+    planBuf: 1000, planSave: { '2026-09': 3000, '2026-10': 3000, '2026-11': 4000, '2026-12': 3000, '2027-01': 3000,
+      '2027-02': 3000, '2027-03': 3000, '2027-04': 3000, '2027-05': 3000, '2027-06': 3000 },
     plans: [
       { id: 'a', o: 1, n: 'Item A', price: 3500, m: '2026-11', status: 'planned', rev: 1 },
       { id: 'b', o: 2, n: 'Item B', price: 9000, m: '2027-01', only: true, status: 'planned', rev: 1 },
@@ -2633,7 +2652,7 @@ const seed = {
   mv = st.entries.find(e => e.note === 'Brokeee');
   ok('taking out the whole pot is a withdrawal, not a deposit', mv && mv.type === 'unsave' && mv.cur === 'GBP' && mv.orig === 200, JSON.stringify(mv));
   ok('so the pot reads empty and the card says nothing is put away',
-     $('vaultAll').textContent === 'R0' && /no goal held back/.test($('vaultSub').textContent) && !/goal is done/.test($('vaultSub').textContent),
+     $('vaultAll').textContent === 'R0' && /nothing put away this month/.test($('vaultSub').textContent),
      $('vaultAll').textContent + ' / ' + $('vaultSub').textContent);
   ok('and the vault total for the month is not positive', $('vault').textContent === 'R0', $('vault').textContent);
 
