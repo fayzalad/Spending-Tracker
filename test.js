@@ -939,7 +939,8 @@ const seed = {
   ok('there is a bottom bar', !!$('tabbar'));
   ok('with five destinations, plus Home which only a wide desktop window shows', $('tabbar').querySelectorAll('button').length === 6,
      String($('tabbar').querySelectorAll('button').length));
-  ok('the header is just the name', d.querySelector('.top').textContent.trim() === 'Tracker',
+  ok('the header is the name, today’s date and the theme switch', d.querySelector('.top .brand').textContent === 'Tracker' &&
+     $('todayLine').textContent === 'Monday, 31 August' && !!$('themeBtn'),
      d.querySelector('.top').textContent.trim());
   ok('the week/month toggle is pinned with it',
      !!d.querySelector('#stickytop .seg'));
@@ -2821,6 +2822,66 @@ const seed = {
   w.__bridgeFn({ data: { type: 'files', files: [{ name: 'fx.pdf', kind: 'pdf-text', text: fxText }] } });
   const fxRow = [...d.querySelectorAll('#rvList .rvrow:not(.bad)')][0];
   ok('₵70 (about R99) is recognised as the R101 entry already there', fxRow && fxRow.classList.contains('dup') && /exchange rate differs/.test(fxRow.textContent), fxRow && fxRow.textContent.slice(0, 140));
+
+  console.log('\n=== 84. overhaul fixes: re-dating, refunds, renames, backups, escaping, wording ===');
+  const ovSeed = JSON.parse(JSON.stringify(seed));
+  ovSeed.entries.push({ id: 96, amt: -50, cat: 'Other', note: 'Returned <cable> & plug', date: '2026-08-31', type: 'out', refund: true, cyc: '2026-08-28' });
+  ovSeed.cats = [{ n: 'Gym', g: 'Living', i: '🏋' }];
+  ovSeed.bills = [{ id: 'b1', n: 'Gym fee', a: 300, cat: 'Gym', every: 'month' }];
+  ovSeed.budgets = { '2026-09': { inc: 0, lines: [{ id: 1, n: 'Gym', cat: 'Gym', a: 300 }], rev: 1 } };
+  ovSeed.tok = 'ghp_TESTTOKEN'; ovSeed.avKey = 'AVTESTKEY'; ovSeed.day = 1;
+  dom = await boot(ovSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  const rowFor = re => [...d.querySelectorAll('#log li')].find(li => re.test(li.textContent));
+  // a note with markup characters shows as typed, and does not become HTML
+  const refRow = rowFor(/Returned/);
+  ok('a note with < and & shows as typed', refRow && /Returned <cable> & plug/.test(refRow.textContent) && !refRow.querySelector('cable'),
+     refRow && refRow.innerHTML.slice(0, 160));
+  // re-dating an entry into the month before moves it there instead of pinning it to its old month
+  $('tabMonth').click();
+  rowFor(/−R262/).querySelector('.n').click();
+  $('moveDate').value = '2026-08-20'; $('moveSave').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const moved = st.entries.find(e => e.id === 5);
+  ok('an entry re-dated to 20 Aug is filed in the month that holds 20 Aug', moved.date === '2026-08-20' && moved.cyc === '2026-07-01' && !moved.man,
+     JSON.stringify(moved));
+  // editing a refund's amount as a plain number keeps it a refund
+  rowFor(/Returned/).querySelector('.n').click();
+  $('moveAmt').value = '60'; $('moveSave').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('a refund edited to 60 is still a refund of R60', st.entries.find(e => e.id === 96).amt === -60,
+     String(st.entries.find(e => e.id === 96).amt));
+  // renaming a category carries its bill and budget line with it
+  [...d.querySelectorAll('#catList span')].find(s => /Gym/.test(s.textContent)).click();
+  $('catName').value = 'Fitness'; $('catSave').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('the bill follows the renamed category', st.bills[0].cat === 'Fitness', st.bills[0].cat);
+  ok('so does the budget line', st.budgets['2026-09'].lines[0].cat === 'Fitness', JSON.stringify(st.budgets['2026-09']));
+  // the downloaded backup carries neither the GitHub token nor the prices key
+  let backup = null;
+  w.Blob = require('buffer').Blob;
+  w.URL.createObjectURL = b => { backup = b; return 'blob:x'; };
+  w.HTMLAnchorElement.prototype.click = function () {};
+  $('exportBtn').click();
+  await new Promise(r => setTimeout(r, 30));
+  const btxt = backup ? Buffer.from(await backup.arrayBuffer()).toString() : '';
+  ok('a backup file never contains the GitHub token', btxt.length > 100 && btxt.indexOf('ghp_TESTTOKEN') < 0, btxt.slice(0, 80));
+  ok('or the prices key', btxt.indexOf('AVTESTKEY') < 0);
+  ok('but this device keeps both', JSON.parse(w.localStorage.getItem('slip:v4')).tok === 'ghp_TESTTOKEN');
+  // ordinals and wording
+  $('kIn').click();
+  ok('the allowance day reads "the 1st", not "the 1th"', /instead of the 1st$/.test($('startTodayLbl').textContent), $('startTodayLbl').textContent);
+  $('openHist').click();
+  ok('the Months hint no longer says a month runs from the 1st to the 1st', /usually from the 1st/.test($('histHint').textContent) && !/to the 1th|to the 1st and/.test($('histHint').textContent),
+     $('histHint').textContent);
+  ok('the bills tile says bills, not subscriptions', /Bills still due/.test($('dueStat').textContent));
+  // the theme switch cycles Auto → Light → Dark and remembers it before first paint
+  const themeSeq = [];
+  for (let i = 0; i < 3; i++) { $('themeBtn').click(); themeSeq.push(JSON.parse(w.localStorage.getItem('slip:v4')).theme); }
+  ok('the header button cycles light → dark → auto from light', themeSeq.join(',') === 'dark,auto,light', themeSeq.join(','));
+  ok('and keeps a small copy for the first paint', w.localStorage.getItem('slip:theme') === 'light');
+  ok('the warnings sit together in one group', ['updBanner', 'banner', 'billBanner', 'incBanner'].every(id => $('notices').contains($(id))));
+  ok('the Add form comes before the savings card, near the top on a phone',
+     !!($('logCard').compareDocumentPosition($('saveCard')) & w.Node.DOCUMENT_POSITION_FOLLOWING));
 
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');

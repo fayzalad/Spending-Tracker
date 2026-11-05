@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**680 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**695 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -245,7 +245,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 680 | 355 |
+| Tests | 695 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The
@@ -339,6 +339,11 @@ a stranded entry correct itself on launch. Full detail in the session log below.
     Joining now sets `data.rev=0` before the first pull. Fixed 2026-10-20 (test section 75).
 17. **`input{-webkit-appearance:none}` also hid every checkbox tick.** Checkboxes need
     `appearance:auto`. Fixed 2026-10-20.
+18. **User text in `innerHTML`.** Notes, bill and category names must go through `escH()` (or
+    `textContent`); a note like `<3` broke its row. Fixed 2026-11-05 (test section 84).
+19. **The edit sheet compared the month picker with the entry's *new* month**, so re-dating an entry
+    dragged it back into its old month and pinned it. Compare with where it was filed when the sheet
+    opened. Backups must also never carry `tok` or `avKey`. Both fixed 2026-11-05.
 
 ## 11. Known gaps and limitations
 

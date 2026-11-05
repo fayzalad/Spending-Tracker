@@ -2,6 +2,30 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-11-05 — Overhaul pass 2: grouped warnings, Add form higher, touch targets (still build `2026-11-05-1`, DESKTOP)
+
+- **Did:** Wrapped `updBanner`/`banner`/`billBanner`/`incBanner` in `#notices` (one card with hairline splits; hidden via `:has` when none show). Moved `#logCard` from the bottom of `.colB` to `.colA` right after `#msg`. Added a `@media (pointer:coarse)` block raising row ×, History CSV/PDF, plan buttons, settings chip ×, chips and `.pay` to 36–40px. Two checks added to test section 84.
+- **Why:** Second pass requested; the three items left open after pass 1 (stacked warnings, Add form at the bottom on a phone, sheets review).
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`
+- **Undo:** `git revert` the commit (pass 1 and 2 are not committed separately yet).
+- **Checked:** `node test.js` 695 passed, 0 failed. Measured every main sheet at 390px: no horizontal overflow, and every touch target now 36px or more. Desktop 1440px screenshot looks right. Phone screenshots of the sheets were unreliable because the browser pane was hidden, so the sheets were checked by measuring the page, not by looking at them. Not tried on the phone itself.
+
+### 2026-11-05 — Overhaul pass 1: six bug fixes + header/theme polish (build `2026-11-05-1`, DESKTOP)
+
+- **Did:** Read the whole script for bugs and fixed six: backup export carried `tok`/`avKey`; the edit sheet pinned a re-dated entry to its old month; editing a refund's amount flipped it to a spend; renaming a category left bills/budgets/exclude/potCats/stmtRules on the old name; user text was injected as HTML (`escH()` added); "1th/22th" ordinals and a wrong Months hint. UI: header with date + Auto/Light/Dark theme button (pre-paint via `localStorage['slip:theme']`), global `:focus-visible` ring, named transitions instead of `transition:<all>`, "Bills still due" wording, teal PDF statement. Test section 84 (13 checks) + updated the header test.
+- **Why:** Requested overhaul ("refine the entire tool, look for bugs, more professional"), audited with the craft / heuristics / accessibility skills.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`
+- **Undo:** `git revert` the commit, bump `slip-build`, push.
+- **Checked:** `node test.js` 693 passed, 0 failed (680 before). Section 84 run against the previous `index.html`: every bug check fails there, so they catch the bugs. Looked at it in the browser pane at 375px (dark and light) and 1440px desktop with invented data; no console errors. NOT checked on the phone itself, and not pushed yet.
+
+### 2026-11-05 — Installed 5 UX review skills (DESKTOP)
+
+- **Did:** Copied `craft`, `ux-heuristics-review`, `accessibility`, `cognitive-load-conversion`, `dieter-rams-principles` from github.com/tommyjepsen/awesome-ux-skills into `~/.claude/skills/<name>/SKILL.md` (fetched with `gh api`; did not run the repo's `install.sh`).
+- **Why:** Requested, to use as audit checklists for the upcoming UI overhaul of the tracker.
+- **Files:** `~/.claude/skills/{craft,ux-heuristics-review,accessibility,cognitive-load-conversion,dieter-rams-principles}/` (user-level, not in the repo)
+- **Undo:** delete those five folders
+- **Checked:** read each file first: plain prompt text, no commands or URLs; none of the names clashed with existing skills. Not yet confirmed they show up in a new session's skill list.
+
 ### 2026-10-21 — Reconciling "app says R1 040, bank says R142" (analysis; reader fix, build `2026-10-21-9`)
 
 - **Did:** read the owner's 24 Sep–21 Oct Wise statements (GBP and ZAR) through the app's reader (preview only, nothing added) and replayed their real data in jsdom (`scratchpad/whatif.js`, read-only) adding each missing item and reading the app's own "Available now": R1 040 → −R1 404 (four transfers to Aliyyah, £111.50) → R92 (£68.25 received from Papa Darfoor) → −R188 (Uber Eats R280.40, 29 Sep, never logged) → R7 (remove the Uber Eats R195.09 entry that the bank reversed). Bank balance R142.13, so about R135 is unexplained (rate differences are the likely part). Fixed the reader: positive card lines are refunds; a charge and refund with the same bank reference cancel (two such pairs were on the statement: R1 439.66 Pick N Pay, R195.09 Uber Eats).

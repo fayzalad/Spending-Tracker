@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**680 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**695 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,27 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-11-05-1` — overhaul pass: six bug fixes, theme switch, cleaner header
+
+- **Backups no longer contain your GitHub token or prices key.** "Download a backup" used to write both into the
+  file. Restoring still keeps this device's own token.
+- **Changing an entry's date to another month now moves it there.** It used to stay filed in its old month and
+  get pinned there.
+- **Editing a refund's amount keeps it a refund.** Typing a plain number used to turn it into money spent.
+- **Renaming a category carries everything with it.** Its bills, budget lines, the Kept-out and food lists, and
+  statement-reader rules now follow the new name. Before, a renamed category's bill never ticked off again.
+- **Notes and names show exactly as typed.** Text such as `<3` or `Tom & Jo` used to break or vanish from its row.
+- "the 1th / 22th" now reads "the 1st / 22nd"; the Months hint no longer says a month runs "from the 25th to the 25th".
+- Header: today's date, and a theme button that cycles Auto → Light → Dark. The theme is applied before first
+  paint, so a dark page no longer flashes light. On a wide desktop window the date is the page title.
+- Keyboard focus rings on every control; "Subscriptions still due" is now "Bills still due"; the PDF statement
+  uses the app's teal instead of the old purple.
+- Warnings (backup, bills not logged, income due, update ready) now sit together as one card split by hairlines
+  instead of a stack of separate boxes.
+- The **Add an entry** form moved up, straight under the status line, so it is no longer at the very bottom on a phone.
+- On a touch screen every small control (row ×, History CSV/PDF, plan ↑↓, settings chip ×, filter chips, Log it) is
+  now at least 36–40px, so it can be hit with a thumb.
 
 ### `2026-11-04-1` — no savings goal: you put away what you choose
 
