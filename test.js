@@ -2883,6 +2883,111 @@ const seed = {
   ok('the Add form comes before the savings card, near the top on a phone',
      !!($('logCard').compareDocumentPosition($('saveCard')) & w.Node.DOCUMENT_POSITION_FOLLOWING));
 
+  console.log('\n=== 85. regular charges, price rises and a suggested budget ===');
+  // invented numbers. Months run from the 25th: today (31 Aug) is in 25 Aug – 24 Sep (September).
+  let rid = 500;
+  const ent = (date, amt, cat, note, type) => ({ id: rid++, amt, cat, note: note || '', date, type: type || 'out' });
+  const repSeed = {
+    day: 25, starts: {}, theme: 'light', rates: { ZAR: 1, GBP: 21.78, USD: 15.96, GHS: 1.44 },
+    cats: [], groups: [], ticks: {},
+    bills: [{ id: 'b1', n: 'iCloud', a: 49.99, cur: 'ZAR', cat: 'Subscriptions', every: 'month' },
+            { id: 'b2', n: 'Spotify', a: 60, cur: 'ZAR', cat: 'Subscriptions', every: 'month' }],
+    budgets: { '2026-09': { inc: 0, rev: 1, lines: [{ id: 'g', n: 'Groceries', cat: 'Groceries', a: 1500 }] } },
+    entries: [
+      ent('2026-06-03', 199, 'Subscriptions', 'Netflix'), ent('2026-07-03', 199, 'Subscriptions', 'Netflix'), ent('2026-08-03', 199, 'Subscriptions', 'Netflix'),
+      ent('2026-06-05', 412, 'Groceries', 'Checkers'), ent('2026-07-05', 380, 'Groceries', 'Checkers'), ent('2026-08-05', 455, 'Groceries', 'Checkers'),
+      ent('2026-06-10', 229, 'Games', 'Xbox Game Pass'), ent('2026-07-10', 229, 'Games', 'Xbox Game Pass'), ent('2026-08-10', 229, 'Games', 'Xbox Game Pass'),
+      ent('2026-06-01', 500, 'Electricity', 'Prepaid electricity'), ent('2026-07-01', 650, 'Electricity', 'Prepaid electricity'), ent('2026-08-01', 580, 'Electricity', 'Prepaid electricity'),
+      ent('2026-03-15', 129, 'Subscriptions', 'Disney plus'), ent('2026-04-15', 129, 'Subscriptions', 'Disney plus'), ent('2026-05-15', 129, 'Subscriptions', 'Disney plus'),
+      ent('2025-08-25', 250, 'Subscriptions', 'Domain renewal'), ent('2026-08-25', 250, 'Subscriptions', 'Domain renewal'),
+      ent('2026-06-12', 49.99, 'Subscriptions', 'iCloud'), ent('2026-07-12', 49.99, 'Subscriptions', 'iCloud'), ent('2026-08-12', 49.99, 'Subscriptions', 'iCloud'),
+      ent('2026-06-28', 60, 'Subscriptions', 'Spotify'), ent('2026-07-28', 60, 'Subscriptions', 'Spotify'), ent('2026-08-28', 70, 'Subscriptions', 'Spotify'),
+      ent('2026-05-26', 20000, 'Money in', 'Pay', 'in'), ent('2026-06-26', 21000, 'Money in', 'Pay', 'in'), ent('2026-07-26', 22000, 'Money in', 'Pay', 'in')
+    ]
+  };
+  dom = await boot(repSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  ok('the bills banner names the unlogged bill and the price rise',
+     /1 bill not logged yet/.test($('billBannerText').textContent) && /Spotify went from R60 to R70/.test($('billBannerText').textContent),
+     $('billBannerText').textContent);
+  $('dueStat').click();
+  const subsRows = () => [...$('subsList').querySelectorAll('li')];
+  const repRows = () => subsRows().filter(li => li.classList.contains('repeat'));
+  const repNames = () => repRows().map(li => li.querySelector('s').textContent);
+  const hikeRow = subsRows().find(li => li.classList.contains('hike'));
+  ok('a price rise is listed with the old and new price', hikeRow && /Spotify/.test(hikeRow.textContent) &&
+     /was R60, now R70/.test(hikeRow.textContent), hikeRow && hikeRow.textContent);
+  ok('it sits under its own heading', /Price went up/.test($('subsList').textContent));
+  ok('a monthly subscription with no bill is found', repNames().includes('Netflix'), repNames().join());
+  ok('the same amount every month counts outside the bill categories too', repNames().includes('Xbox Game Pass'), repNames().join());
+  ok('a bill-category charge may vary month to month', repNames().includes('Prepaid Electricity'), repNames().join());
+  ok('a yearly charge is found from two a year apart', repNames().includes('Domain Renewal'), repNames().join());
+  ok('groceries at the same shop for different amounts are not a bill', !repNames().some(n => /Checkers/.test(n)), repNames().join());
+  ok('a charge that stopped months ago is not offered', !repNames().some(n => /Disney/.test(n)), repNames().join());
+  ok('charges already covered by a bill are not offered', !repNames().some(n => /iCloud|Spotify/.test(n)), repNames().join());
+  const elecRow = repRows().find(li => /Electricity/.test(li.textContent));
+  ok('a varying bill is offered at the middle of its last three amounts', /R580 a month · 3 times since 0?1 Jun/.test(elecRow.textContent), elecRow.textContent);
+  ok('the biggest comes first', repNames()[0] === 'Prepaid Electricity', repNames().join());
+
+  repRows().find(li => /Netflix/.test(li.textContent)).querySelector('button:last-child').click();
+  ok('Add opens the bill sheet filled in', $('billDlg').open && $('billName').value === 'Netflix' && Number($('billAmt').value) === 199 &&
+     $('billCat').value === 'Subscriptions' && $('billEvery').value === 'month',
+     [$('billName').value, $('billAmt').value, $('billCat').value, $('billEvery').value].join('/'));
+  $('billSave').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('saving it makes a new bill, not an edit of another', st.bills.length === 3 && st.bills[2].n === 'Netflix' && st.bills[2].a === 199,
+     JSON.stringify(st.bills.map(b => b.n)));
+  ok('and it is no longer offered', !repNames().includes('Netflix'), repNames().join());
+  repRows().find(li => /Domain/.test(li.textContent)).querySelector('button:last-child').click();
+  ok('a yearly one opens as yearly, in the month it was charged', $('billEvery').value === 'year' && $('billMonth').value === '9',
+     $('billEvery').value + ' ' + $('billMonth').value);
+  $('billCancel').click();
+  repRows().find(li => /Xbox/.test(li.textContent)).querySelector('button.ghosty').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('Not a bill hides it for good', !repNames().includes('Xbox Game Pass') && Object.keys(st.repeatSkip || {}).length === 1,
+     JSON.stringify(st.repeatSkip));
+  subsRows().find(li => li.classList.contains('hike')).querySelector('button:last-child').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('Update sets the bill to the new price', st.bills.find(b => b.id === 'b2').a === 70, JSON.stringify(st.bills.find(b => b.id === 'b2')));
+  ok('and the price rise is gone', !subsRows().some(li => li.classList.contains('hike')));
+  ok('entries are never touched', st.entries.length === repSeed.entries.length);
+
+  dom = await boot(repSeed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  $('dueStat').click();
+  subsRows().find(li => li.classList.contains('hike')).querySelector('button.ghosty').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  ok('keeping the old price remembers the amount you said no to', st.hikeSkip && st.hikeSkip.b2 === 70 && st.bills.find(b => b.id === 'b2').a === 60,
+     JSON.stringify(st.hikeSkip));
+  ok('so it stops asking', !subsRows().some(li => li.classList.contains('hike')));
+  m = merge({ rev: 1, deleted: {}, entries: [], repeatSkip: { a: 1 }, hikeSkip: { b1: 10 } },
+            { rev: 2, deleted: {}, entries: [], repeatSkip: { b: 1 } });
+  ok('both answers survive a sync from either device', m.repeatSkip.a && m.repeatSkip.b && m.hikeSkip.b1 === 10, JSON.stringify(m));
+
+  console.log('  -- suggested budget');
+  asked = '';
+  w.confirm = q => { asked = q; return true; };
+  $('closeSubs').click(); $('budLine').click();
+  $('budSuggest').click();
+  st = JSON.parse(w.localStorage.getItem('slip:v4'));
+  const sugLines = st.budgets['2026-09'].lines;
+  ok('it names the three months it learned from', /June, July and August/.test(asked), asked.split('\n')[0]);
+  ok('a category that already has a line is left alone', sugLines.filter(l => l.cat === 'Groceries').length === 1 &&
+     sugLines.find(l => l.cat === 'Groceries').a === 1500, JSON.stringify(sugLines));
+  ok('the middle month, rounded up: electricity R580 → R600', sugLines.some(l => l.cat === 'Electricity' && l.a === 600), JSON.stringify(sugLines));
+  ok('never below what is already spent: subscriptions R309 typical but R320 spent → R350',
+     sugLines.some(l => l.cat === 'Subscriptions' && l.a === 350), JSON.stringify(sugLines));
+  ok('small amounts round to the next R50 under R1 000: R229 → R250', sugLines.some(l => l.cat === 'Games' && l.a === 250), JSON.stringify(sugLines));
+  ok('four lines in all', sugLines.length === 4, String(sugLines.length));
+  ok('expected income is filled from the middle month when it was empty', st.budgets['2026-09'].inc === 21000, String(st.budgets['2026-09'].inc));
+  asked = '';
+  let said = ''; w.alert = q => { said = q; };
+  $('budSuggest').click();
+  ok('pressing it again adds nothing', !asked && /already has a line/.test(said) && JSON.parse(w.localStorage.getItem('slip:v4')).budgets['2026-09'].lines.length === 4, said);
+  dom = await boot(seed); w = dom.window; d = w.document; $ = id => d.getElementById(id);
+  said = ''; w.alert = q => { said = q; };
+  $('budLine').click(); $('budSuggest').click();
+  ok('with under two months of history it says so and adds nothing', /at least two months/.test(said) &&
+     !JSON.parse(w.localStorage.getItem('slip:v4')).budgets, said);
+
   console.log('\n=== result ===');
   console.log(pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);

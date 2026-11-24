@@ -56,7 +56,7 @@ Owner: Fayzal, Gqeberha, South Africa. Primary currency rand.
 node test.js
 ```
 
-**695 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
+**727 checks.** The suite boots the real `index.html` in jsdom with `Date` frozen (usually at
 `2026-08-31`; some sections install their own clock because the bug under test only exists on a
 particular date). It asserts on rendered DOM, not on internals. It has caught a dozen genuine
 bugs that code review missed. Run it before and after every change.
@@ -199,6 +199,17 @@ other eleven. A bill can be marked paid without logging, for something that came
 account. Foreign-currency bills lock their rand figure at save time. Payment **labels** let one
 entry say what it covered, and an optional **split** peels the excess off onto another category.
 
+**Found bills and price rises (from build 2026-11-24-1).** Ideas from the open-source "broke" app (MIT),
+rebuilt here. `findRepeats()` offers a charge as a bill when it repeats monthly (3+ times, gaps 26–35 days,
+last within 45 days) or yearly (two charges 350–380 days apart); outside the Bills group it must be the same
+amount every time; a bill in the same category that names it or costs within 25% already covers it.
+`findHikes()` flags a rand bill whose previous matched payment equalled its price and whose latest (≤45 days
+old) came to more. Shown in the bills sheet and the bills banner; "not a bill" → `data.repeatSkip[key]`, "keep
+the old price" → `data.hikeSkip[billId]=amount`, both unioned in `mergeStores`. **Suggest a budget** (budget
+sheet): per category, the median of the last three cycles with spending (before now, for a month ahead),
+never below what the month has spent, rounded up (R10 / R50 / R100 steps); only adds lines for categories
+without one, and fills expected income only when empty.
+
 **Recurring income.** A nudge only — never auto-logged, never reserved. Matched on amount alone.
 
 **Currency.** Four currencies (R, £, $, ₵) in the personal build. A cycle's currency is a display
@@ -245,7 +256,7 @@ Transparency on. Convention: raised or tinted means pressable, flat outline mean
 | Default allowance day | 25 | 1 |
 | Investments | Yes | Removed |
 | Locale | `en-ZA` | `en-GB` |
-| Tests | 695 | 355 |
+| Tests | 727 | 355 |
 | README | Technical reference + changelog | Plain-language guide for the friend |
 
 Independent history — a commit in one never touches the other. Changes are ported by hand. The

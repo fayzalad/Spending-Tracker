@@ -2,6 +2,14 @@
 
 Newest first, about 5 lines each. Older entries (up to 2026-10-06) are in `CLAUDE.md` → Session log.
 
+### 2026-11-24 — Found bills, price-rise alerts, suggested budget (build `2026-11-24-1`, DESKTOP)
+
+- **Did:** Compared the tracker with NextWork's "broke" project (github.com/nextwork-projects/broke) and decided to keep ours and borrow three ideas. `index.html`: `findRepeats()` / `findHikes()` with "Price went up" and "Looks like a regular bill" sections in the bills sheet (`renderHikes`, `renderRepeats`), the bills banner now also names price rises and, when nothing else is due, found bills; `openBill(b,preset)` prefills a new bill; `data.repeatSkip` / `data.hikeSkip` unioned in `mergeStores`; `suggestBudget()` + **Suggest a budget** button (`budSuggest`) in the budget sheet. Build stamp bumped. Test section 85 (32 checks).
+- **Why:** Requested ("build all three") after the comparison: bills had to be typed by hand, a price rise went unnoticed because bill matching allows 25%, and a budget could only be copied from last month.
+- **Files:** `index.html`, `test.js`, `README.md`, `CLAUDE.md`
+- **Undo:** `git revert` the commit, bump `slip-build`, push. Saved `repeatSkip`/`hikeSkip` are harmless to an older build.
+- **Checked:** `node test.js` 727 passed, 0 failed (695 before). Looked at it in the browser pane with invented data on `127.0.0.1:8765` (not `localhost:8765`, which holds earlier saved data that was left alone; the invented data was cleared afterwards) at 375px dark and 1440px desktop: on the phone the detail line was cut off, so it now wraps. Light theme and frosted glass not looked at. Not committed or pushed; not tried on the phone itself.
+
 ### 2026-11-05 — Overhaul pass 2: grouped warnings, Add form higher, touch targets (still build `2026-11-05-1`, DESKTOP)
 
 - **Did:** Wrapped `updBanner`/`banner`/`billBanner`/`incBanner` in `#notices` (one card with hairline splits; hidden via `:has` when none show). Moved `#logCard` from the bottom of `.colB` to `.colA` right after `#msg`. Added a `@media (pointer:coarse)` block raising row ×, History CSV/PDF, plan buttons, settings chip ×, chips and `.pay` to 36–40px. Two checks added to test section 84.

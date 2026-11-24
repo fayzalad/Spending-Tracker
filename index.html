@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Tracker">
 <meta name="theme-color" content="#F1F5F4">
-<meta name="slip-build" content="2026-11-05-1">
+<meta name="slip-build" content="2026-11-24-1">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -381,6 +381,8 @@
   #dueList{box-shadow:none;border:1px solid var(--line);margin-top:4px}
   #subsList{box-shadow:none;border:1px solid var(--line);max-height:56vh;overflow:auto}
   #subsList li.done{opacity:.55}
+  #subsList li.hike .dot{background:var(--warn-soft);color:var(--warn-ink)}
+  #subsList li.hike .n em,#subsList li.repeat .n em{white-space:normal;overflow:visible}
   #subsList li.done .dot{background:var(--good-soft);color:var(--good)}
   #subsList .sep{display:block;padding:10px 15px;font-size:10.5px;font-weight:700;
     letter-spacing:.09em;text-transform:uppercase;color:var(--mut);background:var(--sunk);
@@ -1252,9 +1254,10 @@
   <ul id="budList"></ul>
   <div class="bgrid">
     <button class="ghost" id="budAdd">Add a line</button>
+    <button class="ghost" id="budSuggest">Suggest a budget</button>
     <button class="ghost" id="budFromBills">Add my bills</button>
     <button class="ghost" id="budCopy">Copy last month</button>
-    <button class="danger" id="budClear">Clear this month</button>
+    <button class="danger" id="budClear" style="grid-column:1/-1">Clear this month</button>
   </div>
   <p class="hint" style="margin-top:12px">A budget is a plan. It does not change what you can
     spend today; the bills under Subscriptions &amp; bills are still held back as before.
@@ -2326,6 +2329,9 @@
       .sort((x,y)=>x.date<y.date?-1:x.date>y.date?1:0);
     out.deleted=tomb;
     out.sweepSkip=Object.assign({},older.sweepSkip||{},newer.sweepSkip||{});
+    // "not a bill" and "keep the old price" answers stay answered on every device
+    out.repeatSkip=Object.assign({},older.repeatSkip||{},newer.repeatSkip||{});
+    out.hikeSkip=Object.assign({},older.hikeSkip||{},newer.hikeSkip||{});
     // planned purchases merge item by item too: union by id, a deletion wins, the newer edit wins
     const pm={};
     (older.plans||[]).forEach(p=>{pm[p.id]=p});
@@ -3397,6 +3403,41 @@
     setBud(b=>{b.inc=Number(prev.inc)||0;
       b.lines=(prev.lines||[]).map(l=>Object.assign({},l,{id:Date.now()+Math.random()}))});
   };
+  // A suggested budget from the three months before (before this one, for a month still ahead): the middle
+  // month's spending per category, so one unusual month does not set it, rounded up, and never below what the
+  // month has spent already. Needs two months with spending. Idea from the open-source "broke" app (MIT).
+  const roundUp=v=>{const s=v<200?10:v<1000?50:100;return Math.ceil(v/s-1e-9)*s};
+  function suggestBudget(cs){
+    const now=cycStart(today()), months=[];
+    let p=cs>now?now:cs;
+    for(let i=0;i<3;i++){p=cycPrev(p);if(inCyc(p).some(isSpend))months.unshift(p)}
+    if(months.length<2)return null;
+    const per={};
+    months.forEach((m,i)=>inCyc(m).filter(isSpend).forEach(e=>{
+      (per[e.cat]=per[e.cat]||months.map(()=>0))[i]+=e.amt}));
+    const spent={};
+    inCyc(cs).filter(isSpend).forEach(e=>{spent[e.cat]=(spent[e.cat]||0)+e.amt});
+    const lines=Object.keys(per).map(cat=>{const m=median(per[cat]);
+      return {cat,a:m>0.5?roundUp(Math.max(m,spent[cat]||0)):0}}).filter(l=>l.a>0).sort((x,y)=>y.a-x.a);
+    return {months,lines,inc:Math.round(median(months.map(m=>sum(inCyc(m),isIn))))};
+  }
+  $('budSuggest').onclick=()=>{
+    const s=suggestBudget(budCs);
+    if(!s){alert('A suggestion needs at least two months of spending before '+cycName(budCs)+'.');return}
+    const have=budgets()[ymOf(budCs)], lines=(have&&have.lines)||[];
+    const add=s.lines.filter(l=>!lines.some(x=>x.cat===l.cat));
+    const setInc=!(have&&Number(have.inc)>0)&&s.inc>0;
+    if(!add.length&&!setInc){alert('Every category you usually spend on already has a line this month.');return}
+    const names=s.months.map(cycName), from=names.length>1?names.slice(0,-1).join(', ')+' and '+names[names.length-1]:names[0];
+    const RB=n=>Rcyc(n,budCs);
+    if(!confirm('From what you spent in '+from+' (the middle month, rounded up), add '+
+      (add.length?add.length+(add.length===1?' line':' lines'):'no lines')+' to '+cycName(budCs)+'?\n\n'+
+      add.map(l=>l.cat+'  '+RB(l.a)).join('\n')+
+      (setInc?(add.length?'\n\n':'')+'Money you expect: '+RB(s.inc):'')+
+      (lines.length?'\n\nCategories that already have a line are left as they are.':'')))return;
+    setBud(b=>{if(setInc)b.inc=s.inc;
+      add.forEach(l=>b.lines.push({id:Date.now()+Math.random(),n:l.cat,cat:l.cat,a:l.a}))});
+  };
   $('budClear').onclick=()=>{
     if(!confirm('Clear the whole budget for '+cycName(budCs)+'? Your entries are not touched.'))return;
     setBud(b=>{b.inc=0;b.lines=[]});
@@ -3621,11 +3662,115 @@
     if($('subsDlg').open)renderSubs();
   };
 
+  // ---- Regular charges that are not a bill yet, and bills whose price went up. Both ideas come from
+  // the open-source "broke" app (MIT); rebuilt here on this app's months, categories and bill matching.
+  const sameAmt=(a,b)=>Math.abs(a-b)<=Math.max(1,Math.abs(b)*0.02);
+  const median=a=>{const s=a.slice().sort((x,y)=>x-y),n=s.length;
+    return !n?0:n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2};
+  // A charge that repeats monthly (3+ times) or yearly (twice), still running, with no bill covering it.
+  // In a Bills-group category the amount may vary (electricity); anywhere else everyday spending repeats
+  // without being a bill (the same shop each week), so there it must be the same amount every time.
+  function findRepeats(){
+    const t=today(), from=addDays(t,-400), groups={}, skip=data.repeatSkip||{};
+    data.entries.forEach(e=>{
+      if(!isSpend(e)||!(e.amt>0)||e.date<from||e.date>t)return;
+      const mk=merchantKey(e.note||''), vary=isFixedCat(e.cat)&&mk;
+      const k=e.cat+'|'+mk+(vary?'':'|'+Math.round(e.amt));
+      (groups[k]=groups[k]||[]).push(e);
+    });
+    const out=[];
+    Object.keys(groups).forEach(k=>{
+      if(skip[k])return;
+      const byDay={};               // two charges on one day count once, so the gaps stay true
+      groups[k].forEach(e=>{if(!byDay[e.date]||e.amt>byDay[e.date].amt)byDay[e.date]=e});
+      const es=Object.keys(byDay).sort().map(d=>byDay[d]).slice(-6);
+      if(es.length<2)return;
+      const gaps=es.slice(1).map((e,i)=>diff(es[i].date,e.date));
+      const last=es[es.length-1], age=diff(last.date,t);
+      let every=null;
+      if(es.length>=3&&age<=45&&gaps.filter(g=>g>=26&&g<=35).length>=Math.ceil(gaps.length*0.7))every='month';
+      else if(gaps[gaps.length-1]>=350&&gaps[gaps.length-1]<=380&&age<=380)every='year';
+      if(!every)return;
+      const ref=every==='year'?es.slice(-2):es;
+      const amts=ref.slice(-3).map(e=>e.amt);
+      const a=Math.round((amts.every(x=>sameAmt(x,last.amt))?last.amt:median(amts))*100)/100;
+      // a bill in the same category that names it, or costs about the same, already covers it
+      const nm=(last.note||'').toLowerCase();
+      if(expected().some(b=>b.cat===last.cat&&((b.n&&nm.indexOf(b.n.toLowerCase())>-1)||
+        Math.abs(a-billZar(b))<=Math.max(50,billZar(b)*0.25))))return;
+      out.push({key:k,cat:last.cat,n:last.note?cleanMerchant(last.note):last.cat,a,every,
+        count:es.length,since:es[0].date,month:D(cycEnd(cycStart(last.date))).getMonth()+1});
+    });
+    return out.sort((x,y)=>y.a-x.a);
+  }
+  // A bill that was paid at its price before and came to more the last time (within 45 days). Rand bills
+  // only: a foreign bill's rand figure moves with the exchange rate, which is not a price rise.
+  function findHikes(){
+    const bills=expected().filter(b=>!b.cur||b.cur==='ZAR'), hist={}, out=[];
+    if(!bills.length)return out;
+    let cs=cycStart(today());
+    for(let i=0;i<6;i++){
+      const map=billAssign(cs);
+      bills.forEach(b=>{if(map[b.id])(hist[b.id]=hist[b.id]||[]).push(map[b.id])});
+      cs=cycPrev(cs);
+    }
+    bills.forEach(b=>{
+      const h=hist[b.id]||[], p=billZar(b), now=h[0];
+      if(h.length<2||!now||now.date<addDays(today(),-45))return;
+      if(!(now.amt>p)||sameAmt(now.amt,p)||!sameAmt(h[1].amt,p))return;
+      if(data.hikeSkip&&sameAmt(now.amt,Number(data.hikeSkip[b.id])||0))return;
+      out.push({b,was:p,now:Math.round(now.amt*100)/100,date:now.date});
+    });
+    return out;
+  }
+  const dShort=s=>D(s).toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+  function subsSection(box,label){
+    const li=document.createElement('li');
+    li.style.padding='0'; li.innerHTML='<span class="sep">'+label+'</span>';
+    box.appendChild(li);
+  }
+  function subsBtn(li,text,cls,label,fn){
+    const bt=document.createElement('button'); bt.type='button';
+    bt.className=cls; bt.textContent=text; if(label)bt.setAttribute('aria-label',label);
+    bt.onclick=fn; li.appendChild(bt);
+  }
+  function renderHikes(box){
+    const list=findHikes(); if(!list.length)return;
+    subsSection(box,'Price went up');
+    list.forEach(h=>{
+      const li=document.createElement('li'); li.className='hike';
+      li.innerHTML='<span class="dot">'+iconOf(h.b.cat)+'</span>'+
+        '<span class="n"><s>'+escH(h.b.n)+'</s><em>was '+R(h.was)+', now '+R(h.now)+' · '+dShort(h.date)+'</em></span>';
+      subsBtn(li,'×','pay ghosty','Keep '+h.b.n+' at '+R(h.was),()=>{
+        data.hikeSkip=Object.assign({},data.hikeSkip,{[h.b.id]:h.now}); save(); renderSubs()});
+      subsBtn(li,'Update','pay','Update '+h.b.n+' to '+R(h.now),()=>{
+        data.bills=expected().map(x=>x.id===h.b.id?Object.assign({},x,{a:h.now,zar:0}):x);
+        save(); fillSet(); renderSubs()});
+      box.appendChild(li);
+    });
+  }
+  function renderRepeats(box){
+    const list=findRepeats().slice(0,5); if(!list.length)return;
+    subsSection(box,'Looks like a regular bill');
+    list.forEach(r=>{
+      const li=document.createElement('li'); li.className='repeat';
+      li.innerHTML='<span class="dot">'+iconOf(r.cat)+'</span>'+
+        '<span class="n"><s>'+escH(r.n)+'</s><em>'+R(r.a)+(r.every==='year'?' a year':' a month')+
+        ' · '+r.count+' times since '+dShort(r.since)+'</em></span>';
+      subsBtn(li,'×','pay ghosty','Not a bill: '+r.n,()=>{
+        data.repeatSkip=Object.assign({},data.repeatSkip,{[r.key]:1}); save(); renderSubs()});
+      subsBtn(li,'Add','pay','Add '+r.n+' as an expected bill',()=>openBill(null,r));
+      box.appendChild(li);
+    });
+  }
+
   function renderSubs(){
     const c=calc(), cs=c.cs;
     const all=dueBills(cs);
     const box=$('subsList'); box.innerHTML='';
+    renderHikes(box);
     if(!all.length){
+      renderRepeats(box);
       $('subsCard').style.display='none'; $('subsWarn').style.display='none';
       $('subsSum').textContent='No expected bills yet.';
       $('subsFoot').textContent='Add rent, fibre and your subscriptions in settings and they '+
@@ -3712,6 +3857,7 @@
         box.appendChild(li);
       });
     }
+    renderRepeats(box);
   }
   $('closeSubs').onclick=()=>$('subsDlg').close();
   $('subsAdd').onclick=()=>openBill(null);
@@ -4648,10 +4794,19 @@
   function showBillBanner(){
     const b=$('billBanner');
     if(billBannerOff){b.style.display='none';return}
-    const list=unpaid(cycStart(today()));
-    if(!list.length){b.style.display='none';return}
-    $('billBannerText').innerHTML='<b>'+list.length+(list.length===1?' bill':' bills')+
-      ' not logged yet</b>'+escH(list.map(x=>x.n).join(', '));
+    const list=unpaid(cycStart(today())), hikes=findHikes();
+    // a found regular charge is the least urgent, so it only speaks when nothing else needs saying
+    const reps=list.length||hikes.length?[]:findRepeats();
+    if(!list.length&&!hikes.length&&!reps.length){b.style.display='none';return}
+    const title=list.length?list.length+(list.length===1?' bill':' bills')+' not logged yet'
+      :hikes.length?(hikes.length===1?hikes[0].b.n+' costs more now':hikes.length+' bills cost more now')
+      :reps.length===1?reps[0].n+' looks like a regular bill':reps.length+' charges look like regular bills';
+    const parts=[];
+    if(list.length)parts.push(list.map(x=>x.n).join(', '));
+    hikes.forEach(h=>parts.push(h.b.n+' went from '+R(h.was)+' to '+R(h.now)));
+    if(reps.length)parts.push(reps.length===1?R(reps[0].a)+(reps[0].every==='year'?' a year':' a month'):
+      reps.slice(0,4).map(r=>r.n).join(', '));
+    $('billBannerText').innerHTML='<b>'+escH(title)+'</b>'+escH(parts.join(' · '));
     b.style.display='flex';
   }
   $('billBannerAct').onclick=()=>$('dueStat').click();
@@ -5363,20 +5518,22 @@
   }
 
   let editBill=null;
-  function openBill(b){
+  // preset: a regular charge found in your history ({n,a,cat,every,month}) to start a new bill from
+  function openBill(b,preset){
     editBill=b||null;
-    $('billName').value=b?b.n:'';
-    $('billAmt').value=b?b.a:'';
+    const p=b||preset||null;
+    $('billName').value=p?p.n:'';
+    $('billAmt').value=p?p.a:'';
     $('billCur').value=b&&b.cur?b.cur:'ZAR';
     $('billZar').value=b&&b.zar>0?b.zar:'';
     billCurChanged();
     $('billCat').innerHTML=catOptions(false);
-    $('billCat').value=b?b.cat:'Rent';
+    $('billCat').value=p?p.cat:'Rent';
     $('billNote').value=b&&b.note?b.note:'';
     $('billMonth').innerHTML=MONTHNAMES.map((m,n)=>'<option value="'+(n+1)+'">'+m+'</option>').join('');
-    $('billEvery').value=b&&b.every?b.every:'month';
+    $('billEvery').value=p&&p.every?p.every:'month';
     $('billSpread').checked=!!(b&&b.spread);
-    $('billMonth').value=b&&b.month?b.month:String(D(today()).getMonth()+1);
+    $('billMonth').value=p&&p.month?p.month:String(D(today()).getMonth()+1);
     billEveryChanged();
     $('billLabels').value=b&&b.labels?b.labels.join(', '):'';
     $('billDlg').querySelector('h2').textContent=b?'Edit '+b.n:'Expected bill';

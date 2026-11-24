@@ -30,7 +30,7 @@ the hard way, with the owner-specific choices stripped out.
 node test.js
 ```
 
-**695 checks, all passing.** Run it before and after every change — it has caught genuine bugs
+**727 checks, all passing.** Run it before and after every change — it has caught genuine bugs
 that code review missed, several in the same session they were introduced.
 
 ## Deploying
@@ -134,6 +134,22 @@ as spending.
 ## Changelog
 
 Newest first. Each entry is keyed to the `slip-build` stamp it shipped under.
+
+### `2026-11-24-1` — found bills, price rises, suggested budget
+
+Three ideas borrowed from the open-source [broke](https://github.com/nextwork-projects/broke) app (MIT), rebuilt
+for this tracker's months and bills.
+
+- **Charges that look like a regular bill.** The bills sheet lists anything you have paid on a steady monthly
+  rhythm (three or more times, still running) or once a year, that no expected bill covers yet. **Add** opens a
+  new bill already filled in; **×** means "not a bill" and it stays hidden on every device. Outside the Bills
+  group only charges that are the same amount every time count, so a weekly grocery shop is never offered.
+- **Price went up.** When a bill was paid at its usual price and the latest payment came to more, the bills sheet
+  and the banner say so (e.g. Spotify R60 → R70). **Update** sets the bill to the new price so the right amount
+  is held back; **×** keeps the old one and stops asking about that amount. Rand bills only.
+- **Suggest a budget.** A new button in the budget sheet: for each category, the middle of your last three
+  months, rounded up and never below what you have already spent this month. It only adds categories that have
+  no line yet, and fills "money you expect" only if it is empty. It asks before changing anything.
 
 ### `2026-11-05-1` — overhaul pass: six bug fixes, theme switch, cleaner header
 
